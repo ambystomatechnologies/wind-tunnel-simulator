@@ -1147,6 +1147,26 @@ document.addEventListener('DOMContentLoaded', () => {
     return uaCheck || touchScreenCheck || coarsePointer;
   }
 
+  // --- PANTALLA COMPLETA AUTOMÁTICA EN MÓVILES ---
+  async function triggerFullscreen() {
+    if (document.fullscreenElement) return;
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        await el.webkitRequestFullscreen();
+      } else if (el.mozRequestFullScreen) {
+        await el.mozRequestFullScreen();
+      } else if (el.msRequestFullscreen) {
+        await el.msRequestFullscreen();
+      }
+      if (screen.orientation && screen.orientation.lock) {
+        try { await screen.orientation.lock('landscape'); } catch (e) {}
+      }
+    } catch (e) {}
+  }
+
   // --- CARTEL INICIAL PARA TELÉFONOS CELULARES ---
   const mobileModal = document.getElementById('mobile-warning-modal');
   const btnCloseMobileWarning = document.getElementById('btn-close-mobile-warning');
@@ -1157,12 +1177,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCloseMobileWarning) {
       btnCloseMobileWarning.addEventListener('click', () => {
         mobileModal.style.display = 'none';
+        triggerFullscreen();
       });
     }
 
     mobileModal.addEventListener('click', (e) => {
-      if (e.target === mobileModal) mobileModal.style.display = 'none';
+      if (e.target === mobileModal) {
+        mobileModal.style.display = 'none';
+        triggerFullscreen();
+      }
     });
+  }
+
+  // Gesto inicial para entrar automáticamente en pantalla completa en el primer toque móvil
+  const onFirstMobileGesture = () => {
+    if (isMobileOrTabletDevice() && !document.fullscreenElement) {
+      triggerFullscreen();
+    }
+    window.removeEventListener('touchstart', onFirstMobileGesture);
+    window.removeEventListener('click', onFirstMobileGesture);
+  };
+  window.addEventListener('touchstart', onFirstMobileGesture, { passive: true });
+  window.addEventListener('click', onFirstMobileGesture, { passive: true });
+
+  // Si el navegador móvil permite entrar en pantalla completa al cargar
+  if (isMobileOrTabletDevice()) {
+    setTimeout(triggerFullscreen, 300);
   }
 
   // --- CONTROL DE VISTA HORIZONTAL OBLIGATORIA EN MÓVILES ---
@@ -1185,22 +1225,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnRequestLandscape) {
     btnRequestLandscape.addEventListener('click', async () => {
+      await triggerFullscreen();
       try {
-        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        }
         if (screen.orientation && screen.orientation.lock) {
           await screen.orientation.lock('landscape');
         }
-      } catch (err) {
-        // En navegadores que requieren giro físico del usuario
-      }
+      } catch (err) {}
     });
   }
 
   window.addEventListener('resize', checkOrientationLock);
   window.addEventListener('orientationchange', () => {
     setTimeout(checkOrientationLock, 150);
+  });
+  document.addEventListener('fullscreenchange', () => {
+    setTimeout(() => {
+      checkOrientationLock();
+      if (sim && typeof sim.resizeCanvas === 'function') {
+        sim.resizeCanvas();
+      }
+    }, 150);
   });
   checkOrientationLock();
 
@@ -1263,11 +1307,29 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSideTabStates();
   }
 
-  if (btnToggleScene) btnToggleScene.addEventListener('click', toggleLeftPanel);
-  if (sideTabLeft) sideTabLeft.addEventListener('click', toggleLeftPanel);
+  let lastToggleTime = 0;
+  function handleSideTabToggle(e, toggleFn) {
+    const now = Date.now();
+    if (now - lastToggleTime < 280) return;
+    lastToggleTime = now;
+    if (e) {
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+    }
+    toggleFn();
+  }
 
-  if (btnToggleProps) btnToggleProps.addEventListener('click', toggleRightPanel);
-  if (sideTabRight) sideTabRight.addEventListener('click', toggleRightPanel);
+  if (btnToggleScene) btnToggleScene.addEventListener('click', (e) => handleSideTabToggle(e, toggleLeftPanel));
+  if (sideTabLeft) {
+    sideTabLeft.addEventListener('click', (e) => handleSideTabToggle(e, toggleLeftPanel));
+    sideTabLeft.addEventListener('touchend', (e) => handleSideTabToggle(e, toggleLeftPanel), { passive: false });
+  }
+
+  if (btnToggleProps) btnToggleProps.addEventListener('click', (e) => handleSideTabToggle(e, toggleRightPanel));
+  if (sideTabRight) {
+    sideTabRight.addEventListener('click', (e) => handleSideTabToggle(e, toggleRightPanel));
+    sideTabRight.addEventListener('touchend', (e) => handleSideTabToggle(e, toggleRightPanel), { passive: false });
+  }
 
   if (btnCloseSceneDrawer) btnCloseSceneDrawer.addEventListener('click', () => {
     if (panelLeft) panelLeft.classList.remove('mobile-open');

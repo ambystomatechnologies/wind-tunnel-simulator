@@ -489,10 +489,8 @@ html, body {
 /* --- MAIN WORKSPACE LAYOUT (3 Columnas) --- */
 .workspace-layout {
   display: flex;
-  flex: 1 1 0%;
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: calc(100vh - 60px);
-  height: calc(100vh - 60px);
   overflow: hidden;
   position: relative;
 }
@@ -1856,13 +1854,19 @@ html, body {
   cursor: pointer;
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 255, 204, 0.3);
-  z-index: 170;
+  z-index: 200;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
   user-select: none;
   touch-action: manipulation;
+  pointer-events: auto !important;
+  -webkit-tap-highlight-color: transparent;
   transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1), right 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+}
+
+.side-tab-toggle * {
+  pointer-events: none;
 }
 
 .side-tab-toggle:hover,
@@ -1877,7 +1881,7 @@ html, body {
 }
 
 .side-tab-left.is-open {
-  left: 246px !important;
+  left: 266px !important;
   background: rgba(0, 255, 204, 0.22);
 }
 
@@ -1886,7 +1890,7 @@ html, body {
 }
 
 .side-tab-right.is-open {
-  right: 256px !important;
+  right: 266px !important;
   background: rgba(0, 255, 204, 0.22);
 }
 
@@ -2347,9 +2351,9 @@ html, body {
     position: fixed !important;
     top: 40px !important;
     bottom: 38px !important;
-    z-index: 165 !important;
-    background: rgba(15, 17, 26, 0.95) !important;
-    backdrop-filter: blur(14px) !important;
+    z-index: 180 !important;
+    background: rgba(15, 17, 26, 0.96) !important;
+    backdrop-filter: blur(16px) !important;
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.85) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
@@ -2360,8 +2364,8 @@ html, body {
 
   .panel-left {
     left: 0 !important;
-    width: 240px !important;
-    max-width: 46vw !important;
+    width: 260px !important;
+    max-width: 48vw !important;
     border-right: 1px solid var(--border) !important;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.7) !important;
     transform: translateX(-100%) !important;
@@ -2373,7 +2377,7 @@ html, body {
 
   .panel-right {
     right: 0 !important;
-    width: 250px !important;
+    width: 260px !important;
     max-width: 48vw !important;
     border-left: 1px solid var(--border) !important;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.7) !important;
@@ -2386,11 +2390,13 @@ html, body {
 
   /* Desplazamiento dinámico de los botones desplegables cuando el panel está abierto */
   .side-tab-left.is-open {
-    left: 246px !important;
+    left: calc(min(260px, 48vw) + 6px) !important;
+    z-index: 200 !important;
   }
 
   .side-tab-right.is-open {
-    right: 256px !important;
+    right: calc(min(260px, 48vw) + 6px) !important;
+    z-index: 200 !important;
   }
 
   .toolbar-bottom {

@@ -375,7 +375,12 @@ let currentLang = 'es'; // Por defecto español según el usuario
 
 function t(key, params = {}) {
   const dict = FLUID_I18N[currentLang] || FLUID_I18N['es'];
-  let text = dict[key] || FLUID_I18N['en'][key] || key;
+  let text = dict[key] || FLUID_I18N['en'][key] || null;
+  if (!text) {
+    if (key === 'btnMobileScene') return (currentLang === 'en' ? 'Tunnel' : 'Túnel');
+    if (key === 'btnMobileProps') return (currentLang === 'en' ? 'Fluid' : 'Fluido');
+    return key;
+  }
   for (const [k, v] of Object.entries(params)) {
     text = text.replace(`{${k}}`, v);
   }
