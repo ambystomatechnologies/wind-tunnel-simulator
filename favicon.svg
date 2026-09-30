@@ -1,0 +1,33 @@
+<svg viewBox="0 0 48 48" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="12" fill="#0f111a"/>
+  <defs>
+    <linearGradient id="fluidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00ffcc"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="streamGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#00ffcc" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="streamGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.2"/>
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Líneas de corriente del túnel aerodinámico (Streamlines) -->
+  <path d="M4 12 C14 12 18 8 28 8 C38 8 41 12 44 13" stroke="url(#streamGrad1)" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M3 18 C13 18 17 14 26 14 C36 14 41 20 45 20" stroke="url(#streamGrad1)" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M3 30 C13 30 17 34 26 34 C36 34 40 28 45 28" stroke="url(#streamGrad2)" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M4 36 C14 36 18 40 28 40 C38 40 41 36 44 35" stroke="url(#streamGrad2)" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Perfil alar aerodinámico NACA (Airfoil) -->
+  <path d="M13 24 C14 20 20 18 27 21 C33 23 37 24 37 24 C37 24 32 26 26 27 C20 28 14 27 13 24 Z" fill="url(#fluidGrad)" fill-opacity="0.85" stroke="#00ffcc" stroke-width="1.5" stroke-linejoin="round"/>
+
+  <!-- Partículas / filamentos de vórtice en la estela -->
+  <circle cx="39" cy="22" r="1.2" fill="#00ffcc" fill-opacity="0.8"/>
+  <circle cx="42" cy="25" r="1.4" fill="#38bdf8" fill-opacity="0.9"/>
+  <circle cx="40" cy="27" r="1" fill="#0284c7" fill-opacity="0.7"/>
+</svg>

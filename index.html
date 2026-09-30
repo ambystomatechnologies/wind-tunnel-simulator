@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="pageTitle">Simulador de Fluidos y Túnel de Viento 2D · Ambystoma Studio · Física en Tiempo Real</title>
+  <meta name="description" content="Simulador interactivo 2D de mecánica de fluidos y túnel aerodinámico con solver Navier-Stokes, perfiles NACA deformables, cálculo en tiempo real de sustentación, arrastre y vórtices. 100% gratuito por Ambystoma Technologies." data-i18n="pageDesc">
+  <meta name="keywords" content="simulador de fluidos, túnel de viento, fluid dynamics simulator, navier stokes, cfd web, aerodinámica, naca airfoil, arrastre drag, sustentacion lift, ambystoma technologies">
+  <meta name="author" content="Ambystoma Technologies">
+  <meta name="theme-color" content="#0f111a">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <!-- Favicon Oficial -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260927_01">
+  <link rel="alternate icon" href="favicon.ico?v=20260927_01">
+  <link rel="apple-touch-icon" href="favicon_logo.png?v=20260927_01">
+
+  <!-- Tipografía Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos Principales con versionado para invalidar caché -->
+  <link rel="stylesheet" href="css/style.css?v=portal_ambystoma_20260930_v2">
+
+  <!-- Estilos Selector de Idioma (Portal Ambystoma Oficial) -->
+  <style>
+    /* Selector de Idiomas (ENG / SPA) - Idéntico a Portal Ambystoma */
+    .lang-switch {
+      display: inline-flex !important;
+      align-items: center !important;
+      background: rgba(255, 255, 255, 0.05) !important;
+      padding: 3px !important;
+      border-radius: 9999px !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      gap: 3px !important;
+      user-select: none !important;
+    }
+
+    .lang-btn {
+      min-width: 40px !important;
+      height: 26px !important;
+      padding: 0 8px !important;
+      border-radius: 9999px !important;
+      border: 1px solid transparent !important;
+      background: transparent !important;
+      color: #94a3b8 !important;
+      font-family: inherit !important;
+      font-size: 0.72rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.05em !important;
+      cursor: pointer !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: all 0.2s ease !important;
+      opacity: 0.75 !important;
+      user-select: none !important;
+      line-height: 1 !important;
+      box-sizing: border-box !important;
+      outline: none !important;
+      text-transform: uppercase !important;
+    }
+
+    .lang-btn:hover {
+      opacity: 1 !important;
+      color: #ffffff !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    .lang-btn.active {
+      opacity: 1 !important;
+      color: #ffffff !important;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.28) 0%, rgba(37, 99, 235, 0.28) 100%) !important;
+      border-color: rgba(56, 189, 248, 0.6) !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+      font-weight: 800 !important;
+      transform: none !important;
+    }
+  </style>
+
+  <!-- Google AdSense Oficial Ambystoma Technologies -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5786595894984320" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Encabezado Superior con Publicidad en el centro -->
+    <header class="header-navbar">
+      <a href="https://ambystomatechnologies.github.io/" target="_blank" rel="noopener noreferrer" class="nav-brand" title="Ambystoma Technologies - Portal Principal">
+        <img src="logo.png" alt="Ambystoma Technologies" class="navbar-logo-img">
+        <div class="brand-text">
+          <h1 data-i18n="brandTitle">Simulador de Fluidos y Túnel 2D <span>Ambystoma Studio</span></h1>
+          <p data-i18n="brandDesc">Navier-Stokes en Tiempo Real, Resistencia Hidrodinámica, Sustentación y Formas Deformables</p>
+        </div>
+      </a>
+
+      <!-- Espacio Publicitario Central en el Header -->
+      <div class="header-ad-zone" id="header-ad-zone">
+        <span class="ad-tag-header" data-i18n="adLabel">PUBLICIDAD</span>
+        <div class="ad-slot-box-header" id="ad-header-slot">
+          <ins class="adsbygoogle"
+               style="display:inline-block;min-width:280px;max-width:468px;width:100%;height:44px;"
+               data-ad-client="ca-pub-5786595894984320"
+               data-ad-slot="3294264167"
+               data-ad-format="horizontal"
+               data-full-width-responsive="false"></ins>
+          <script>
+               (adsbygoogle = window.adsbygoogle || []).push({});
+          </script>
+        </div>
+      </div>
+
+      <div class="nav-right-actions">
+        <!-- Selector de Idiomas (ENG / SPA) -->
+        <div class="lang-switch" role="group" aria-label="Language selector">
+          <button type="button" class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')" title="English" aria-label="English">ENG</button>
+          <button type="button" class="lang-btn active" id="btn-lang-es" onclick="setLanguage('es')" title="Español" aria-label="Español">SPA</button>
+        </div>
+
+        <button type="button" class="btn-nav-about" id="btn-open-about" data-i18n-title="btnAboutTitle">
+          <span>ℹ️</span>
+          <span data-i18n="btnAbout">Acerca de</span>
+        </button>
+
+        <div class="badge-security" data-i18n-title="securityBadgeTitle">
+          <span>⚡</span>
+          <span data-i18n="securityBadgeText">100% en Navegador</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Workspace Principal (3 Columnas) -->
+    <div class="workspace-layout">
+
+      <!-- Columna Izquierda: Obstáculos de la Escena y Telemetría HUD -->
+      <aside class="panel-left" id="panel-left">
+        <div class="mobile-drawer-header">
+          <span class="mobile-drawer-title" data-i18n="panelSceneTitle">Panel de Túnel</span>
+          <button type="button" class="btn-close-drawer" id="btn-close-scene-drawer" data-i18n="btnCloseDrawer">✕ Cerrar</button>
+        </div>
+
+        <!-- Barra de Pestañas del Panel Izquierdo -->
+        <div class="panel-left-tab-bar">
+          <button type="button" class="panel-tab-btn active" id="tab-btn-scene" data-i18n="tabScene">
+            <span>✈️</span> <span>Escena / HUD</span>
+          </button>
+          <button type="button" class="panel-tab-btn" id="tab-btn-tools" data-i18n="tabTools">
+            <span>🛠️</span> <span>Herramientas</span>
+          </button>
+        </div>
+
+        <!-- Pestaña 1: Escena & Telemetría -->
+        <div class="panel-tab-pane active" id="tab-pane-scene">
+          <!-- Barra de Guardar / Abrir Configuración -->
+          <div class="scene-io-bar">
+            <button type="button" class="btn-scene-io btn-save-scene" id="btn-save-scene" data-i18n="btnSaveScene" data-i18n-title="btnSaveSceneTitle">
+              💾 Guardar
+            </button>
+            <button type="button" class="btn-scene-io btn-open-scene" id="btn-open-scene" data-i18n="btnOpenScene" data-i18n-title="btnOpenSceneTitle">
+              📂 Abrir
+            </button>
+            <input type="file" id="file-input-scene" accept=".json,application/json" style="display: none;">
+          </div>
+          <div class="scene-import-bar">
+            <button type="button" class="btn-scene-io btn-import-image" id="btn-import-vector-image" data-i18n="btnImportImage" data-i18n-title="btnImportImageTitle">
+              🖼️ Abrir figura SVG / PNG
+            </button>
+            <input type="file" id="file-input-vector-image" accept=".svg,.png,image/svg+xml,image/png" style="display: none;">
+          </div>
+
+          <!-- Selector de Modo de Vista CFD / Físico en Panel Izquierdo -->
+          <div class="scene-vis-mode-box" style="padding: 0.5rem 0.75rem 0.35rem 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.07); margin-bottom: 0.35rem;">
+            <div class="ctrl-label-row" style="margin-bottom: 0.35rem;">
+              <span data-i18n="lblVisMode" style="font-size: 0.8rem; font-weight: 600; color: #8bb4e8;">Modo de Vista CFD / Físico:</span>
+            </div>
+            <select id="cb-vis-mode-left" class="select-cfd select-vis-mode-highlight" style="width: 100%;">
+              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Réplica Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
+              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
+              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
+              <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
+              <option value="pressure" data-i18n="visPressure">📊 CFD: Mapa de Presión Estática (Pa)</option>
+              <option value="velocity" data-i18n="visVelocity">⚡ CFD: Magnitud de Velocidad (m/s)</option>
+              <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad y Remolinos (s⁻¹)</option>
+              <option value="particles" data-i18n="visParticles">✨ CFD: Trazadores de Partículas</option>
+            </select>
+          </div>
+
+          <div style="padding: 0.5rem 0.75rem 0.25rem 0.75rem;">
+            <h4 class="group-title" data-i18n="panelSceneTitle">Obstáculos en el Túnel</h4>
+          </div>
+          <ul class="scene-list" id="list-scene-elements">
+            <!-- Renderizado dinámico vía JavaScript -->
+          </ul>
+          <button type="button" class="btn-delete-element" id="btn-delete-element" data-i18n="btnDeleteElement">Eliminar Obstáculo</button>
+
+          <!-- Monitor de Telemetría Aerodinámica / Hidrodinámica -->
+          <div class="telemetry-box">
+            <div class="telemetry-header">
+              <span data-i18n="panelTelemetryTitle">Telemetría Aerodinámica (HUD)</span>
+              <span class="hud-live-badge">● EN VIVO</span>
+            </div>
+            <div id="lbl-telemetry-info">
+              <div class="hud-elem-title" id="hud-elem-name">Airfoil NACA 0012</div>
+              <div class="hud-metrics-grid">
+                <div class="hud-cell"><span class="hud-label">Arrastre (Fd):</span> <b class="hud-val hud-val-drag" id="hud-drag-val">0.00 N</b></div>
+                <div class="hud-cell"><span class="hud-label">Sustentación (Fl):</span> <b class="hud-val hud-val-lift" id="hud-lift-val">0.00 N</b></div>
+                <div class="hud-cell"><span class="hud-label">Coef. Cd:</span> <b class="hud-val hud-val-drag" id="hud-cd-val">0.000</b></div>
+                <div class="hud-cell"><span class="hud-label">Coef. Cl:</span> <b class="hud-val hud-val-lift" id="hud-cl-val">0.000</b></div>
+                <div class="hud-cell"><span class="hud-label">Eficiencia L/D:</span> <b class="hud-val hud-val-eff" id="hud-eff-val">0.00</b></div>
+                <div class="hud-cell"><span class="hud-label">Ángulo (α):</span> <b class="hud-val hud-val-angle" id="hud-aoa-val">0°</b></div>
+                <div class="hud-cell"><span class="hud-label">Reynolds (Re):</span> <b class="hud-val" id="hud-re-val">0</b></div>
+                <div class="hud-cell"><span class="hud-label">Régimen:</span> <b class="hud-val hud-regime-badge regime-laminar" id="hud-regime-val">Laminar</b></div>
+              </div>
+              <div class="hud-pressure-row">
+                <span>P. Estanc: <b class="hud-val-drag" id="hud-pmax-val">+0.0 Pa</b></span>
+                <span class="hud-sep">|</span>
+                <span>Succión: <b class="hud-val-lift" id="hud-pmin-val">-0.0 Pa</b></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestaña 2: Herramientas del Túnel (Movidass desde la barra de abajo) -->
+        <div class="panel-tab-pane" id="tab-pane-tools" style="display: none;">
+          <!-- 1. Control de Simulación -->
+          <div class="tools-group">
+            <span class="tools-group-title" data-i18n="groupSimControl">Control de Simulación</span>
+            <div class="tools-sim-row">
+              <button type="button" class="btn-tool btn-play-pause-prominent" id="btn-play-pause" title="Pausar / Reanudar Simulación (Barra espaciadora)">
+                <span id="btn-play-icon">⏸️</span>
+                <span id="btn-play-text">Pausar</span>
+              </button>
+              <button type="button" class="btn-tool btn-flow-toggle" id="btn-toggle-flow" title="Detener el flujo de aire (desvanecimiento natural)">
+                <span id="btn-flow-icon">⏹️</span>
+                <span id="btn-flow-text">Detener Flujo</span>
+              </button>
+              <button type="button" class="btn-tool" id="btn-step-sim" title="Avanzar un fotograma (Paso a paso)">
+                ⏭️ Paso
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Herramientas de Edición -->
+          <div class="tools-group">
+            <span class="tools-group-title" data-i18n="groupEditTools">Herramientas y Nodos</span>
+            <div class="tools-grid-2col">
+              <button type="button" class="btn-tool active" id="btn-tool-select" data-i18n="btnSelect" data-i18n-title="btnSelectTitle">🔍 Mover / Rotar</button>
+              <button type="button" class="btn-tool" id="btn-tool-node-edit" data-i18n="btnNodeEdit" data-i18n-title="btnNodeEditTitle">✏️ Deformar Nodos</button>
+              <button type="button" class="btn-tool" id="btn-tool-draw-freehand" data-i18n="btnDrawFreehand" data-i18n-title="btnDrawFreehandTitle">✍️ Mano Alzada</button>
+              <button type="button" class="btn-tool" id="btn-tool-draw-poly" data-i18n="btnDrawPoly" data-i18n-title="btnDrawPolyTitle">📐 Polígono</button>
+            </div>
+            <button type="button" class="btn-tool btn-finish-draw" id="btn-tool-finish-draw" data-i18n="btnFinishDraw" data-i18n-title="btnFinishDrawTitle" disabled style="width: 100%; margin-top: 0.35rem;">
+              ✅ Finalizar Polígono
+            </button>
+            <button type="button" class="btn-tool" id="btn-tool-probe" data-i18n="btnProbe" data-i18n-title="btnProbeTitle" style="width: 100%; margin-top: 0.35rem;">
+              🎯 Sensor / Sonda Pitot
+            </button>
+          </div>
+
+          <!-- 3. Formas y Perfiles -->
+          <div class="tools-group">
+            <span class="tools-group-title" data-i18n="groupShapes">Agregar Cuerpos</span>
+            <button type="button" class="btn-tool btn-add-airfoil-special" id="btn-add-airfoil" data-i18n="btnAddAirfoil" data-i18n-title="btnAddAirfoilTitle" style="width: 100%;">
+              ✈️ Perfil NACA
+            </button>
+            <select id="cb-add-shapes" class="select-cfd" style="width: 100%; margin-top: 0.4rem;">
+              <option value="" selected data-i18n="optAddShapes">-- Agregar Figura Hidrodinámica --</option>
+              <option value="schroeder_line" data-i18n="optSchroederLine">Línea / Placa de Schroeder (Calle de Vórtices)</option>
+              <option value="wedge" data-i18n="optWedge">Cuña Aerodinámica / Deflector</option>
+              <option value="naca0012" data-i18n="optNaca0012">Perfil Alar NACA 0012 (Simétrico)</option>
+              <option value="naca2412" data-i18n="optNaca2412">Perfil Alar NACA 2412 (Asimétrico)</option>
+              <option value="cylinder" data-i18n="optCylinder">Cilindro Circular (Calle de Vórtices)</option>
+              <option value="teardrop" data-i18n="optTeardrop">Gota Aerodinámica (Bajo Arrastre)</option>
+              <option value="flat_plate" data-i18n="optFlatPlate">Placa Plana (Ángulo de Ataque)</option>
+              <option value="square" data-i18n="optSquare">Cuerpo Cuadrado Romo (Separación)</option>
+              <option value="car" data-i18n="optCar">Silueta de Bólido / Downforce</option>
+              <option value="venturi" data-i18n="optVenturi">Tobera Venturi / Estrangulamiento</option>
+            </select>
+          </div>
+
+          <!-- 4. Visualización Rápida y Demos -->
+          <div class="tools-group">
+            <span class="tools-group-title" data-i18n="groupVisDemos">Visualización y Demos</span>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;" data-i18n="lblVisMode">Visor CFD / LBM:</div>
+            <select id="cb-vis-mode-toolbar" class="select-cfd select-vis-mode-highlight" style="width: 100%; margin-bottom: 0.5rem;">
+              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Réplica Schroeder (LBM · Vorticidad)</option>
+              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo</option>
+              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Rapidez de Flujo</option>
+              <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
+              <option value="pressure" data-i18n="visPressure">📊 CFD: Presión Estática (Pa)</option>
+              <option value="velocity" data-i18n="visVelocity">⚡ CFD: Velocidad (m/s)</option>
+              <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad (s⁻¹)</option>
+              <option value="particles" data-i18n="visParticles">✨ CFD: Partículas Trazadoras</option>
+            </select>
+
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;" data-i18n="lblDemos">Demos Didácticas:</div>
+            <select id="cb-demos" class="select-cfd" style="width: 100%;">
+              <option value="" selected data-i18n="optDemos">Demos de Física...</option>
+              <option value="13" data-i18n="optDemo13">13. [LBM] Placa / Línea de Schroeder (Vórtices Físicos)</option>
+              <option value="14" data-i18n="optDemo14">14. [LBM] Cuña Aerodinámica con Turbulencia Real</option>
+              <option value="1" data-i18n="optDemo1">1. Perfil NACA 0012 (Sustentación)</option>
+              <option value="2" data-i18n="optDemo2">2. Calle de Vórtices de Von Kármán</option>
+              <option value="3" data-i18n="optDemo3">3. Gota vs. Placa Plana (Arrastre)</option>
+              <option value="4" data-i18n="optDemo4">4. Pérdida / Stall (Alto Ángulo de Ataque)</option>
+              <option value="5" data-i18n="optDemo5">5. Efecto Venturi y Tubo de Bernoulli</option>
+              <option value="6" data-i18n="optDemo6">6. Aerodinámica de Bólido y Estela</option>
+              <option value="7" data-i18n="optDemo7">7. Ala Multielemento con Flap</option>
+              <option value="8" data-i18n="optDemo8">8. Cuerpos Romos: Cuadrado vs Cilindro</option>
+              <option value="9" data-i18n="optDemo9">9. Rebufo Aerodinámico (Drafting)</option>
+              <option value="10" data-i18n="optDemo10">10. Tobera Convergente-Divergente</option>
+              <option value="11" data-i18n="optDemo11">11. Hidroala con Efecto Suelo</option>
+              <option value="12" data-i18n="optDemo12">12. Figura Esculpida a Mano</option>
+            </select>
+          </div>
+
+          <!-- 5. Acciones y Coordenadas -->
+          <div class="tools-group">
+            <button type="button" class="btn-tool btn-clear-scene" id="btn-clear-scene" data-i18n="btnClear" data-i18n-title="btnClearTitle" style="width: 100%;">
+              🗑️ Limpiar Túnel
+            </button>
+            <div class="tools-status-card" style="margin-top: 0.5rem;">
+              <div class="status-coords-inline" id="lbl-coords" style="margin-left: 0; text-align: center; margin-bottom: 0.35rem;">X: 0.0 m, Y: 0.0 m</div>
+              <div class="status-msg-inline" id="status-msg" data-i18n="statusReady" style="text-align: center; white-space: normal;">Listo. Selecciona, deforma o añade figuras en el túnel de viento.</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Área Central del Canvas -->
+      <main class="canvas-area">
+        <canvas id="fluid-canvas"></canvas>
+
+        <!-- Botón superior izquierdo desplegable (Escena) -->
+        <button type="button" class="side-tab-toggle side-tab-left" id="side-tab-left" title="Desplegar / Ocultar Escena" aria-label="Toggle Scene Panel">
+          <span class="tab-text" data-i18n="panelSceneTitle">Túnel</span>
+          <span class="tab-arrow" id="arrow-tab-left">▶</span>
+        </button>
+
+        <!-- Botón superior derecho desplegable (Ajustes) -->
+        <button type="button" class="side-tab-toggle side-tab-right" id="side-tab-right" title="Desplegar / Ocultar Ajustes" aria-label="Toggle Settings Panel">
+          <span class="tab-arrow" id="arrow-tab-right">◀</span>
+          <span class="tab-text" data-i18n="panelPropertiesTitle">Fluido</span>
+        </button>
+
+        <!-- Controles Flotantes de Zoom / Vista -->
+        <div class="canvas-view-controls">
+          <button type="button" class="btn-view-ctl" id="btn-zoom-in" title="Zoom In (+)">+</button>
+          <button type="button" class="btn-view-ctl" id="btn-zoom-out" title="Zoom Out (-)">−</button>
+          <button type="button" class="btn-view-ctl" id="btn-reset-view" title="Reset View (1:1)" style="font-size: 0.75rem;">1:1</button>
+        </div>
+      </main>
+
+      <!-- Columna Derecha: Propiedades Físicas del Fluido -->
+      <aside class="panel-right" id="panel-right">
+        <div class="mobile-drawer-header">
+          <span class="mobile-drawer-title" data-i18n="panelPropertiesTitle">Propiedades del Fluido y Túnel</span>
+          <button type="button" class="btn-close-drawer" id="btn-close-props-drawer" data-i18n="btnCloseDrawer">✕ Cerrar</button>
+        </div>
+
+        <!-- 1. Medio Fluido y Flujo de Entrada -->
+        <div class="group-box">
+          <h4 class="group-title" data-i18n="gbFluidTitle">Medio Fluido y Flujo de Entrada</h4>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblInflowSpeed">Velocidad del Flujo (U∞):</span>
+              <span class="ctrl-value" id="lbl-speed-value">5.0 m/s</span>
+            </div>
+            <input type="range" id="slider-speed" class="slider-custom" min="0.5" max="12.0" step="0.1" value="5.0">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblInflowAngle">Ángulo de Dirección:</span>
+              <span class="ctrl-value" id="lbl-angle-value">0°</span>
+            </div>
+            <input type="range" id="slider-angle" class="slider-custom" min="-45" max="45" step="1" value="0">
+          </div>
+
+          <!-- Control de Régimen de Flujo (Laminar vs Turbulento) -->
+          <div class="ctrl-row">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblFlowRegimeSelect">Régimen de Flujo:</span>
+              <span class="ctrl-value" id="lbl-regime-status">Laminar</span>
+            </div>
+            <div class="regime-toggle-container">
+              <button type="button" class="btn-regime-toggle active" id="btn-regime-laminar" data-regime="laminar" data-i18n="btnRegimeLaminar">
+                🌊 Flujo Laminar
+              </button>
+              <button type="button" class="btn-regime-toggle" id="btn-regime-turbulent" data-regime="turbulent" data-i18n="btnRegimeTurbulent">
+                🌪️ Flujo Turbulento
+              </button>
+            </div>
+          </div>
+
+          <div class="ctrl-row" id="row-turbulence-intensity">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblTurbulenceIntensity">Intensidad de Turbulencia (Tu):</span>
+              <span class="ctrl-value" id="lbl-turb-intensity-val">0% (Laminar)</span>
+            </div>
+            <input type="range" id="slider-turbulence" class="slider-custom" min="0" max="30" step="1" value="0">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblViscosity">Viscosidad Cinemática (ν):</span>
+              <span class="ctrl-value" id="lbl-viscosity-value">0.00015 m²/s</span>
+            </div>
+            <input type="range" id="slider-viscosity" class="slider-custom" min="1" max="100" value="15">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblDensity">Densidad del Fluido (ρ, kg/m³):</span>
+            </div>
+            <input type="number" id="spin-density" class="input-num" min="0.1" max="2000.0" step="0.1" value="1.225">
+          </div>
+
+          <div class="preset-buttons-grid">
+            <button type="button" class="btn-mat-preset active" data-mat="air" data-i18n="btnPresetAir">Aire</button>
+            <button type="button" class="btn-mat-preset" data-mat="water" data-i18n="btnPresetWater">Agua</button>
+            <button type="button" class="btn-mat-preset" data-mat="oil" data-i18n="btnPresetOil">Aceite</button>
+            <button type="button" class="btn-mat-preset" data-mat="glycerin" data-i18n="btnPresetHoney">Glicerina</button>
+            <button type="button" class="btn-mat-preset" data-mat="superfluid" data-i18n="btnPresetSuper">Superfluido</button>
+          </div>
+
+          <div style="margin-top: 0.85rem; padding-top: 0.65rem; border-top: 1px solid var(--border);">
+            <label class="chk-row" style="margin: 0; cursor: pointer;">
+              <input type="checkbox" id="chk-show-particles" checked>
+              <span style="font-weight: 600; color: #e2e8f0;" data-i18n="chkShowParticles">Partículas</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Transformación y Ángulo de Ataque -->
+        <div class="group-box">
+          <h4 class="group-title" data-i18n="gbTransformTitle">Transformación y Ángulo de Ataque</h4>
+          <div class="ctrl-row">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblAoA">Ángulo de Ataque (α):</span>
+              <span class="ctrl-value" id="lbl-rot-value">0°</span>
+            </div>
+            <input type="range" id="slider-rotation" class="slider-custom" min="0" max="360" value="0">
+          </div>
+
+          <label class="chk-row">
+            <input type="checkbox" id="chk-smooth" checked>
+            <span data-i18n="chkSmoothCurve">Curva Suave (Catmull-Rom)</span>
+          </label>
+
+          <label class="chk-row">
+            <input type="checkbox" id="chk-show-forces" checked>
+            <span data-i18n="chkShowForces">Mostrar Vectores de Fuerza (Fd, Fl)</span>
+          </label>
+        </div>
+
+        <!-- 3. Modos de Visualización CFD -->
+        <div class="group-box">
+          <h4 class="group-title" data-i18n="gbVisTitle">Visualización y Renderizado CFD</h4>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblVisMode">Modo de Vista CFD / Físico:</span>
+            </div>
+            <select id="cb-vis-mode" class="select-cfd" style="width: 100%; margin-top: 0.35rem;">
+              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Réplica Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
+              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
+              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
+              <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
+              <option value="pressure" data-i18n="visPressure">📊 CFD: Mapa de Presión Estática (Pa)</option>
+              <option value="velocity" data-i18n="visVelocity">⚡ CFD: Magnitud de Velocidad (m/s)</option>
+              <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad y Remolinos (s⁻¹)</option>
+              <option value="particles" data-i18n="visParticles">✨ CFD: Trazadores de Partículas</option>
+            </select>
+          </div>
+
+          <div class="ctrl-row" id="row-lbm-contrast" style="margin-top: 0.45rem; display: none;">
+            <div class="ctrl-label-row">
+              <span data-i18n="lblLbmContrast">Contraste de Vorticidad (LBM):</span>
+              <span class="ctrl-value" id="lbl-contrast-value">1.0x</span>
+            </div>
+            <input type="range" id="slider-contrast" class="slider-custom" min="-8" max="8" step="1" value="0">
+          </div>
+
+          <label class="chk-row" style="margin-top: 0.65rem; background: rgba(255, 255, 255, 0.05); padding: 0.45rem 0.6rem; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.12);">
+            <input type="checkbox" id="chk-pause">
+            <span style="font-weight: 700; color: #ffffff;" data-i18n="chkPause">⏸️ Pausar Simulación (Espacio)</span>
+          </label>
+        </div>
+
+        <!-- 4. Túnel y Simulación Global -->
+        <div class="group-box">
+          <h4 class="group-title" data-i18n="gbSolverTitle">Túnel de Viento y Simulación</h4>
+
+          <label class="chk-row">
+            <input type="checkbox" id="chk-grid" checked>
+            <span data-i18n="chkShowGrid">Mostrar Rejilla del Túnel</span>
+          </label>
+
+          <label class="chk-row">
+            <input type="checkbox" id="chk-closed-walls">
+            <span data-i18n="chkClosedWalls">Túnel Cerrado (Paredes Sólidas)</span>
+          </label>
+        </div>
+
+        <!-- Publicidad en Sidebar Oficial -->
+        <aside class="ad-sidebar-card">
+          <div style="font-size: 0.62rem; color: #64748b; margin-bottom: 0.35rem;" data-i18n="adLabel">PUBLICIDAD</div>
+          <ins class="adsbygoogle"
+               style="display:block"
+               data-ad-client="ca-pub-5786595894984320"
+               data-ad-slot="auto"
+               data-ad-format="auto"
+               data-full-width-responsive="true"></ins>
+          <script>
+               (adsbygoogle = window.adsbygoogle || []).push({});
+          </script>
+        </aside>
+      </aside>
+    </div>
+
+  </div>
+
+  <!-- Modal Acerca de -->
+  <div class="modal-overlay" id="about-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 data-i18n="aboutModalTitle">Acerca del Simulador de Fluidos 2D</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-about">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="text-align: center; margin-bottom: 0.5rem;">
+          <a href="https://ambystomatechnologies.github.io/" target="_blank" rel="noopener noreferrer">
+            <img src="logo.png" alt="Ambystoma Technologies" style="max-height: 44px; max-width: 80%;">
+          </a>
+          <div style="font-size: 0.78rem; color: var(--accent); font-weight: 700; margin-top: 0.35rem;" data-i18n="aboutDevBadge">Dinámica de Fluidos Computacional · Ambystoma Technologies</div>
+          <p data-i18n="aboutDevDesc" style="color: var(--text-dim); font-size: 0.82rem;">Suite interactiva de mecánica de fluidos y túnel de viento en tiempo real.</p>
+        </div>
+
+        <div style="background: rgba(0, 255, 204, 0.06); border: 1px solid rgba(0, 255, 204, 0.3); border-radius: 8px; padding: 0.85rem;">
+          <h5 style="color: var(--accent); margin-bottom: 0.4rem;" data-i18n="aboutPhysicsTitle">🔬 Aspectos Técnicos del Motor Físico</h5>
+          <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.35rem;">
+            <li data-i18n="aboutPhysics1">Resolución bidimensional completa de Navier-Stokes incompresible con proyección de presión.</li>
+            <li data-i18n="aboutPhysics2">Integración en superficie de presión y tensiones viscosas para cálculo de Drag Cd y Lift Cl.</li>
+            <li data-i18n="aboutPhysics3">Splines cerradas Catmull-Rom deformables interactivamente en tiempo real.</li>
+            <li data-i18n="aboutPhysics4">Filamentos de humo aerodinámico, partículas fluidas y visualización de vórtices de Von Kármán.</li>
+          </ul>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
+          <h5 style="color: #ffffff; margin-bottom: 0.35rem;" data-i18n="aboutFreeTitle">✨ 100% Gratuito y de Acceso Libre</h5>
+          <p style="font-size: 0.82rem; color: var(--text-dim);" data-i18n="aboutFreeDesc">Funciona directamente en tu navegador con aceleración por hardware. Sin registros ni servidores externos.</p>
+        </div>
+
+        <!-- Bibliografía y Créditos Científicos LBM -->
+        <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
+          <h5 style="color: #38bdf8; margin-bottom: 0.4rem;" data-i18n="aboutBiblioTitle">📚 Bibliografía y Créditos Científicos (Visores Schroeder LBM)</h5>
+          <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.45rem;" data-i18n="aboutBiblioDesc">
+            Los modos de visualización Réplica Schroeder (LBM · Vorticidad/Curl, Líneas de Flujo y Rapidez) están basados en el algoritmo y trabajo de investigación de:
+          </p>
+          <ul style="padding-left: 1.25rem; font-size: 0.8rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.35rem;">
+            <li>
+              <a href="https://physics.weber.edu/schroeder/fluids/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; font-weight: 700; text-decoration: underline;">Dan Schroeder (Daniel V. Schroeder)</a>: 
+              <span data-i18n="biblioSchroeder">Department of Physics, Weber State University. Creador de la simulación de fluidos Lattice-Boltzmann (LBM D2Q9) y técnicas de visualización de curl/vorticidad y líneas de flujo (physics.weber.edu/schroeder/fluids/).</span>
+            </li>
+            <li>
+              <b>Graham Pullan</b>: <span data-i18n="biblioPullan">Cambridge University (código y condiciones de contorno de túnel de viento para simulación LBM).</span>
+            </li>
+            <li>
+              <b>Thomas Pohl</b>: <span data-i18n="biblioPohl">Applet interactivo LBA (Lattice Boltzmann Applet).</span>
+            </li>
+            <li>
+              <b>Lukas Wagner</b>: <span data-i18n="biblioWagner">North Dakota State University (algoritmos y códigos base de Lattice-Boltzmann).</span>
+            </li>
+            <li>
+              <b>Norbert Gonsalves &amp; Sauro Succi</b>: <span data-i18n="biblioSucci">Sauro Succi (2001), The Lattice Boltzmann Equation for Fluid Dynamics and Beyond, Oxford University Press.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" id="btn-accept-about" data-i18n="btnAcceptAbout">Entendido, ¡Comenzar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de Toasts -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts en orden de dependencia -->
+  <script src="js/i18n.js?v=schroeder_biblio_20260930_v3"></script>
+  <script src="js/physics.js?v=schroeder_biblio_20260930_v3"></script>
+  <script src="js/lbm.js?v=schroeder_biblio_20260930_v3"></script>
+  <script src="js/elements.js?v=schroeder_biblio_20260930_v3"></script>
+  <script src="js/canvas.js?v=schroeder_biblio_20260930_v3"></script>
+  <script src="js/app.js?v=schroeder_biblio_20260930_v3"></script>
+</body>
+</html>
