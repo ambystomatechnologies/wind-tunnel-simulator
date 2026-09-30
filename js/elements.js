@@ -78,7 +78,7 @@ class FluidElement {
  * Admite traslación, rotación continua en tiempo real, manipulación interactiva de nodos y curvado suave Catmull-Rom.
  */
 class HydrodynamicObstacle extends FluidElement {
-  constructor(controlPoints, name = "Aerodynamic Body", isSmooth = false, loops = null) {
+  constructor(controlPoints, name = "Aerodynamic Body", isSmooth = false, loops = null, isImportedImage = false) {
     super(name);
     this.loops = loops ? loops.map(l => l.map(p => [parseFloat(p[0]), parseFloat(p[1])])) : null;
     if (this.loops && this.loops.length > 0 && (!controlPoints || controlPoints.length === 0)) {
@@ -90,6 +90,7 @@ class HydrodynamicObstacle extends FluidElement {
     this.currentRotationDeg = 0.0;
     this.color = '#38bdf8'; // Azul aerodinámico
     this.fillColor = 'rgba(23, 37, 84, 0.85)';
+    this.isImportedImage = Boolean(isImportedImage || (this.loops && this.loops.length > 0) || (name && name.startsWith('Figura:')));
 
     // Cache para acelerar comprobaciones espaciales en la simulación a 60 FPS
     this._cachedBoundaryPts = null;

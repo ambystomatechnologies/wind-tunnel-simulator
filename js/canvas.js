@@ -295,9 +295,65 @@ class FluidCanvasController {
     return null;
   }
 
+  // --- VERIFICACIÓN DE DISPOSITIVO MÓVIL Y PERMISOS DE TRANSFORMACIÓN ---
+  isMobileDevice() {
+    const uaCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const touchScreenCheck = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) && (window.innerWidth <= 1024 || window.innerHeight <= 1024);
+    const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    return Boolean(uaCheck || touchScreenCheck || coarsePointer || window.innerHeight <= 620 || window.innerWidth <= 950);
+  }
+
+  canResizeElement(elem) {
+    if (!elem || !(elem instanceof HydrodynamicObstacle)) return false;
+    // En computadoras de escritorio, se mantiene el redimensionamiento completo para todas las figuras
+    if (!this.isMobileDevice()) return true;
+    // En la versión optimizada para celulares, el redimensionamiento SOLO se habilitará
+    // para imágenes importadas (PNG o SVG). Las figuras por default solo se podrán girar y mover.
+    return Boolean(elem.isImportedImage || (elem.loops && elem.loops.length > 0) || (elem.name && elem.name.startsWith('Figura:')));
+  }
+
+  isRotationHandleAt(screenX, screenY, worldPos = null) {
+    if (this.mode !== CanvasMode.SELECT || !this.selectedElement || !(this.selectedElement instanceof HydrodynamicObstacle)) {
+      return false;
+    }
+    const isMobile = this.isMobileDevice();
+    const centroid = this.selectedElement.getCentroid();
+    const sCentroid = this.worldToScreen(centroid[0], centroid[1]);
+    const dToCentroid = Math.hypot(screenX - sCentroid.x, screenY - sCentroid.y);
+    const ringRadius = (this.selectedElement.getReferenceLength() * 0.7 * this.zoomLevel) + 26;
+
+    // 1. Tirador circular knob específico de rotación
+    const angleRad = (this.selectedElement.currentRotationDeg * Math.PI) / 180.0;
+    const hx = sCentroid.x + ringRadius * Math.cos(angleRad);
+    const hy = sCentroid.y + ringRadius * Math.sin(angleRad);
+    const knobHitDist = isMobile ? 36 : 16;
+    if (Math.hypot(screenX - hx, screenY - hy) <= knobHitDist) {
+      return true;
+    }
+
+    // 2. Anillo circular de rotación
+    // Si el toque/clic cae directamente dentro del cuerpo físico del obstáculo, se prioriza mover/arrastrar,
+    // a menos que se haya presionado el knob de rotación.
+    const isInsideBody = worldPos && this.selectedElement.containsPoint(worldPos[0], worldPos[1]);
+    if (!isInsideBody) {
+      const ringTolerance = isMobile ? 26 : 14;
+      if (Math.abs(dToCentroid - ringRadius) <= ringTolerance) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // --- REDIMENSIONAMIENTO DE OBSTÁCULOS TIRANDO DE LOS BORDES ---
   getResizeHandleAt(screenX, screenY) {
     if (this.mode !== CanvasMode.SELECT || !this.selectedElement || !(this.selectedElement instanceof HydrodynamicObstacle)) {
+      return null;
+    }
+
+    // En móviles, solo se redimensionan imágenes importadas (PNG o SVG).
+    // Las figuras por default del simulador solo se rotan y mueven.
+    if (!this.canResizeElement(this.selectedElement)) {
       return null;
     }
 
@@ -312,9 +368,10 @@ class FluidCanvasController {
     const top = Math.min(p0.y, p1.y);
     const bottom = Math.max(p0.y, p1.y);
 
-    const cornerHitR = 12; // Radio en px para esquinas
-    const edgeHitR = 10;   // Radio para tiradores de borde
-    const borderHitDist = 7; // Tolerancia para agarrar los bordes
+    const isMobile = this.isMobileDevice();
+    const cornerHitR = isMobile ? 20 : 12; // Radio en px para esquinas
+    const edgeHitR = isMobile ? 16 : 10;   // Radio para tiradores de borde
+    const borderHitDist = isMobile ? 12 : 7; // Tolerancia para agarrar los bordes
 
     // 1. Esquinas (prioridad alta)
     if (Math.hypot(screenX - left, screenY - top) <= cornerHitR) return 'nw';
@@ -468,14 +525,10 @@ class FluidCanvasController {
           return;
         }
 
-        // 2. Comprobar si hace clic en el anillo de rotación del elemento seleccionado
+        // 2. Comprobar si hace clic en el anillo o tirador de rotación del elemento seleccionado
         if (this.selectedElement && this.selectedElement instanceof HydrodynamicObstacle) {
-          const centroid = this.selectedElement.getCentroid();
-          const sCentroid = this.worldToScreen(centroid[0], centroid[1]);
-          const dToCentroid = Math.hypot(pos.x - sCentroid.x, pos.y - sCentroid.y);
-          const handleRadius = (this.selectedElement.getReferenceLength() * 0.7 * this.zoomLevel) + 26;
-
-          if (Math.abs(dToCentroid - handleRadius) < 14) {
+          if (this.isRotationHandleAt(pos.x, pos.y, worldPos)) {
+            const centroid = this.selectedElement.getCentroid();
             this.isRotating = true;
             this.rotateStartAngle = Math.atan2(worldPos[1] - centroid[1], worldPos[0] - centroid[0]);
             this.elemStartRotDeg = this.selectedElement.currentRotationDeg;
@@ -588,11 +641,7 @@ class FluidCanvasController {
         }
 
         if (this.selectedElement && this.selectedElement instanceof HydrodynamicObstacle) {
-          const centroid = this.selectedElement.getCentroid();
-          const sCentroid = this.worldToScreen(centroid[0], centroid[1]);
-          const dToCentroid = Math.hypot(pos.x - sCentroid.x, pos.y - sCentroid.y);
-          const handleRadius = (this.selectedElement.getReferenceLength() * 0.7 * this.zoomLevel) + 26;
-          if (Math.abs(dToCentroid - handleRadius) < 14) {
+          if (this.isRotationHandleAt(pos.x, pos.y, worldPos)) {
             this.canvas.style.cursor = 'grab';
             return;
           }
@@ -662,26 +711,68 @@ class FluidCanvasController {
         this.lastMousePos = pos;
         const worldPos = this.screenToWorld(pos.x, pos.y);
 
-        const resizeHandle = this.getResizeHandleAt(pos.x, pos.y);
-        if (resizeHandle && this.selectedElement) {
-          this.isResizing = true;
-          this.resizeHandle = resizeHandle;
-          this.resizeStartWorld = [worldPos[0], worldPos[1]];
-          this.resizeInitialPoints = this.selectedElement.controlPoints.map(p => [p[0], p[1]]);
-          this.resizeInitialLoops = this.selectedElement.loops ? this.selectedElement.loops.map(l => l.map(p => [p[0], p[1]])) : null;
-          this.resizeInitialAABB = [...this.selectedElement.getAABB()];
-          return;
-        }
+        if (this.mode === CanvasMode.SELECT) {
+          // 1. Comprobar si toca el tirador circular o anillo de rotación del elemento seleccionado
+          if (this.selectedElement && this.selectedElement instanceof HydrodynamicObstacle) {
+            if (this.isRotationHandleAt(pos.x, pos.y, worldPos)) {
+              const centroid = this.selectedElement.getCentroid();
+              this.isRotating = true;
+              this.rotateStartAngle = Math.atan2(worldPos[1] - centroid[1], worldPos[0] - centroid[0]);
+              this.elemStartRotDeg = this.selectedElement.currentRotationDeg;
+              return;
+            }
+          }
 
-        const hit = this.findObstacleAt(worldPos);
-        if (hit) {
-          this.selectElement(hit);
-          this.isDraggingElement = true;
-          this.dragStartWorld = worldPos;
+          // 2. Comprobar si toca un tirador de redimensionamiento (solo si está habilitado para el elemento)
+          const resizeHandle = this.getResizeHandleAt(pos.x, pos.y);
+          if (resizeHandle && this.selectedElement) {
+            this.isResizing = true;
+            this.resizeHandle = resizeHandle;
+            this.resizeStartWorld = [worldPos[0], worldPos[1]];
+            this.resizeInitialPoints = this.selectedElement.controlPoints.map(p => [p[0], p[1]]);
+            this.resizeInitialLoops = this.selectedElement.loops ? this.selectedElement.loops.map(l => l.map(p => [p[0], p[1]])) : null;
+            this.resizeInitialAABB = [...this.selectedElement.getAABB()];
+            return;
+          }
+
+          // 3. Comprobar si toca una figura para moverla
+          const hit = this.findObstacleAt(worldPos);
+          if (hit) {
+            this.selectElement(hit);
+            this.isDraggingElement = true;
+            this.dragStartWorld = worldPos;
+            this.dragStartElemPos = hit.getCentroid();
+          } else {
+            // Tocar espacio vacío deselecciona y activa paneo suave con 1 dedo
+            this.selectElement(null);
+            this.isPanning = true;
+          }
+        } else if (this.mode === CanvasMode.NODE_EDIT) {
+          const found = this.findClosestNode(worldPos);
+          if (found.element && found.nodeIdx !== -1) {
+            this.selectElement(found.element);
+            this.selectedNodeIdx = found.nodeIdx;
+            this.isDraggingElement = true;
+          } else {
+            const hit = this.findObstacleAt(worldPos);
+            if (hit) this.selectElement(hit);
+          }
+        } else if (this.mode === CanvasMode.DRAW_FREEHAND) {
+          this.isDrawing = true;
+          this.drawPoints = [worldPos];
+        } else if (this.mode === CanvasMode.DRAW_POLYGON) {
+          this.drawPoints.push(worldPos);
+          if (this.onSceneChanged) this.onSceneChanged();
+        } else if (this.mode === CanvasMode.PROBE) {
+          const probe = new FlowProbe(worldPos[0], worldPos[1], `Sensor ${this.elements.length + 1}`);
+          this.addElement(probe);
+          this.setMode(CanvasMode.SELECT);
         }
       } else if (e.touches.length === 2) {
         this.isDraggingElement = false;
         this.isResizing = false;
+        this.isRotating = false;
+        this.isPanning = false;
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         touchDist0 = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -690,22 +781,73 @@ class FluidCanvasController {
     }, { passive: true });
 
     this.canvas.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 1 && this.isResizing && this.selectedElement) {
+      if (e.touches.length === 1) {
         const t = e.touches[0];
         const rect = this.canvas.getBoundingClientRect();
         const pos = { x: t.clientX - rect.left, y: t.clientY - rect.top };
         const worldPos = this.screenToWorld(pos.x, pos.y);
-        this.applyResize(worldPos);
-      } else if (e.touches.length === 1 && this.isDraggingElement && this.selectedElement) {
-        const t = e.touches[0];
-        const rect = this.canvas.getBoundingClientRect();
-        const pos = { x: t.clientX - rect.left, y: t.clientY - rect.top };
-        const dx = (pos.x - this.lastMousePos.x) / this.zoomLevel;
-        const dy = (pos.y - this.lastMousePos.y) / this.zoomLevel;
+        const dx = pos.x - this.lastMousePos.x;
+        const dy = pos.y - this.lastMousePos.y;
         this.lastMousePos = pos;
-        this.selectedElement.translate(dx, dy);
-        this.fluid.rasterizeObstacles(this.elements);
-        if (this.onSceneChanged) this.onSceneChanged();
+
+        if (this.onCoordsChanged) {
+          this.onCoordsChanged(worldPos[0], worldPos[1]);
+        }
+
+        // Paneo con 1 dedo
+        if (this.isPanning) {
+          this.panOffset.x += dx;
+          this.panOffset.y += dy;
+          this.clampPanOffset();
+          return;
+        }
+
+        // Redimensionamiento
+        if (this.isResizing && this.selectedElement) {
+          this.applyResize(worldPos);
+          return;
+        }
+
+        // Rotación continua en tiempo real con 1 dedo
+        if (this.isRotating && this.selectedElement) {
+          const centroid = this.selectedElement.getCentroid();
+          const currentAngle = Math.atan2(worldPos[1] - centroid[1], worldPos[0] - centroid[0]);
+          const deltaAngle = currentAngle - this.rotateStartAngle;
+          const newDeg = (this.elemStartRotDeg + (deltaAngle * 180.0 / Math.PI)) % 360.0;
+          this.selectedElement.setAbsoluteRotation(newDeg < 0 ? newDeg + 360 : newDeg);
+          this.fluid.rasterizeObstacles(this.elements);
+          this.lbm.rasterizeObstacles(this.elements, this.fluid.domainWidth, this.fluid.domainHeight);
+          if (this.onSceneChanged) this.onSceneChanged();
+          return;
+        }
+
+        // Arrastre / Movimiento de la figura
+        if (this.isDraggingElement && this.selectedElement) {
+          if (this.mode === CanvasMode.SELECT) {
+            const wdx = dx / this.zoomLevel;
+            const wdy = dy / this.zoomLevel;
+            this.selectedElement.translate(wdx, wdy);
+            this.fluid.rasterizeObstacles(this.elements);
+            this.lbm.rasterizeObstacles(this.elements, this.fluid.domainWidth, this.fluid.domainHeight);
+            if (this.onSceneChanged) this.onSceneChanged();
+          } else if (this.mode === CanvasMode.NODE_EDIT && this.selectedNodeIdx >= 0) {
+            const pts = this.selectedElement.controlPoints;
+            pts[this.selectedNodeIdx][0] = worldPos[0];
+            pts[this.selectedNodeIdx][1] = worldPos[1];
+            this.selectedElement.invalidateCache();
+            this.fluid.rasterizeObstacles(this.elements);
+            this.lbm.rasterizeObstacles(this.elements, this.fluid.domainWidth, this.fluid.domainHeight);
+            if (this.onSceneChanged) this.onSceneChanged();
+          }
+          return;
+        }
+
+        if (this.mode === CanvasMode.DRAW_FREEHAND && this.isDrawing) {
+          const last = this.drawPoints[this.drawPoints.length - 1];
+          if (!last || Math.hypot(worldPos[0] - last[0], worldPos[1] - last[1]) > 0.15) {
+            this.drawPoints.push(worldPos);
+          }
+        }
       } else if (e.touches.length === 2 && touchDist0) {
         const t1 = e.touches[0];
         const t2 = e.touches[1];
@@ -722,14 +864,29 @@ class FluidCanvasController {
       }
     }, { passive: true });
 
-    this.canvas.addEventListener('touchend', () => {
+    const endTouch = () => {
+      this.isPanning = false;
       this.isDraggingElement = false;
+      this.isRotating = false;
       this.isResizing = false;
       this.resizeHandle = null;
       this.resizeInitialPoints = null;
       this.resizeInitialAABB = null;
       touchDist0 = null;
-    });
+
+      if (this.mode === CanvasMode.DRAW_FREEHAND && this.isDrawing) {
+        this.isDrawing = false;
+        if (this.drawPoints.length >= 4) {
+          const obs = new HydrodynamicObstacle(this.drawPoints, `Custom Sculpt ${this.elements.length + 1}`, true);
+          this.addElement(obs);
+          this.setMode(CanvasMode.SELECT);
+        }
+        this.drawPoints = [];
+      }
+    };
+
+    this.canvas.addEventListener('touchend', endTouch);
+    this.canvas.addEventListener('touchcancel', endTouch);
   }
 
   finishPolygon() {
@@ -1192,7 +1349,7 @@ class FluidCanvasController {
       }
     }
 
-    // Modo Selección: Dibujar Bounding Box y tiradores para redimensionar tirando de los bordes
+    // Modo Selección: Dibujar Bounding Box y tiradores (solo si la figura admite redimensionamiento)
     if (this.mode === CanvasMode.SELECT && obs.isSelected) {
       const aabb = obs.getAABB();
       if (aabb) {
@@ -1203,44 +1360,55 @@ class FluidCanvasController {
         const bw = Math.abs(p1.x - p0.x);
         const bh = Math.abs(p1.y - p0.y);
 
+        const allowResize = this.canResizeElement(obs);
+
         ctx.save();
 
-        // 1. Marco delimitador punteado cyan
-        ctx.strokeStyle = 'rgba(0, 255, 204, 0.7)';
-        ctx.lineWidth = 1.3;
-        ctx.setLineDash([5, 4]);
-        ctx.strokeRect(bx, by, bw, bh);
-        ctx.setLineDash([]);
+        if (allowResize) {
+          // 1. Marco delimitador punteado cyan
+          ctx.strokeStyle = 'rgba(0, 255, 204, 0.7)';
+          ctx.lineWidth = 1.3;
+          ctx.setLineDash([5, 4]);
+          ctx.strokeRect(bx, by, bw, bh);
+          ctx.setLineDash([]);
 
-        // 2. Tiradores en esquinas (cuadraditos 8x8 con contorno oscuro)
-        ctx.fillStyle = '#00ffcc';
-        ctx.strokeStyle = '#021024';
-        ctx.lineWidth = 1.5;
-        const corners = [
-          { x: bx, y: by },
-          { x: bx + bw, y: by },
-          { x: bx + bw, y: by + bh },
-          { x: bx, y: by + bh }
-        ];
-        for (const c of corners) {
-          ctx.fillRect(c.x - 4, c.y - 4, 8, 8);
-          ctx.strokeRect(c.x - 4, c.y - 4, 8, 8);
+          // 2. Tiradores en esquinas (cuadraditos con contorno oscuro)
+          ctx.fillStyle = '#00ffcc';
+          ctx.strokeStyle = '#021024';
+          ctx.lineWidth = 1.5;
+          const corners = [
+            { x: bx, y: by },
+            { x: bx + bw, y: by },
+            { x: bx + bw, y: by + bh },
+            { x: bx, y: by + bh }
+          ];
+          for (const c of corners) {
+            ctx.fillRect(c.x - 4, c.y - 4, 8, 8);
+            ctx.strokeRect(c.x - 4, c.y - 4, 8, 8);
+          }
+
+          // 3. Tiradores en el centro de los bordes
+          ctx.fillStyle = '#38bdf8';
+          // Borde Superior
+          ctx.fillRect(bx + bw / 2 - 9, by - 3, 18, 6);
+          ctx.strokeRect(bx + bw / 2 - 9, by - 3, 18, 6);
+          // Borde Inferior
+          ctx.fillRect(bx + bw / 2 - 9, by + bh - 3, 18, 6);
+          ctx.strokeRect(bx + bw / 2 - 9, by + bh - 3, 18, 6);
+          // Borde Izquierdo
+          ctx.fillRect(bx - 3, by + bh / 2 - 9, 6, 18);
+          ctx.strokeRect(bx - 3, by + bh / 2 - 9, 6, 18);
+          // Borde Derecho
+          ctx.fillRect(bx + bw - 3, by + bh / 2 - 9, 6, 18);
+          ctx.strokeRect(bx + bw - 3, by + bh / 2 - 9, 6, 18);
+        } else {
+          // Para figuras por default en celular: marco sutil de selección limpio sin tiradores de borde
+          ctx.strokeStyle = 'rgba(0, 255, 204, 0.4)';
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(bx, by, bw, bh);
+          ctx.setLineDash([]);
         }
-
-        // 3. Tiradores en el centro de los bordes (pastillas para invitar a tirar del borde)
-        ctx.fillStyle = '#38bdf8';
-        // Borde Superior
-        ctx.fillRect(bx + bw / 2 - 9, by - 3, 18, 6);
-        ctx.strokeRect(bx + bw / 2 - 9, by - 3, 18, 6);
-        // Borde Inferior
-        ctx.fillRect(bx + bw / 2 - 9, by + bh - 3, 18, 6);
-        ctx.strokeRect(bx + bw / 2 - 9, by + bh - 3, 18, 6);
-        // Borde Izquierdo
-        ctx.fillRect(bx - 3, by + bh / 2 - 9, 6, 18);
-        ctx.strokeRect(bx - 3, by + bh / 2 - 9, 6, 18);
-        // Borde Derecho
-        ctx.fillRect(bx + bw - 3, by + bh / 2 - 9, 6, 18);
-        ctx.strokeRect(bx + bw - 3, by + bh / 2 - 9, 6, 18);
 
         // 4. Etiqueta con dimensiones métricas (ej: 3.80m × 1.25m)
         const wMeters = Math.max(0.1, aabb[2] - aabb[0]).toFixed(2);
@@ -1261,10 +1429,11 @@ class FluidCanvasController {
 
       const refLen = obs.getReferenceLength() * this.zoomLevel;
       const ringRadius = refLen * 0.7 + 26;
+      const isMobile = this.isMobileDevice();
 
-      ctx.strokeStyle = 'rgba(0, 255, 204, 0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = isMobile ? 'rgba(0, 255, 204, 0.65)' : 'rgba(0, 255, 204, 0.35)';
+      ctx.lineWidth = isMobile ? 2.0 : 1.5;
+      ctx.setLineDash([5, 4]);
       ctx.beginPath();
       ctx.arc(sCentroid.x, sCentroid.y, ringRadius, 0, Math.PI * 2);
       ctx.stroke();
@@ -1275,15 +1444,26 @@ class FluidCanvasController {
       const hx = sCentroid.x + ringRadius * Math.cos(angleRad);
       const hy = sCentroid.y + ringRadius * Math.sin(angleRad);
 
+      // En pantallas táctiles móviles: halo resplandeciente para fácil ubicación táctil
+      if (isMobile) {
+        ctx.fillStyle = 'rgba(0, 255, 204, 0.25)';
+        ctx.beginPath();
+        ctx.arc(hx, hy, 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.fillStyle = '#00ffcc';
+      ctx.strokeStyle = '#021024';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(hx, hy, 6, 0, Math.PI * 2);
+      ctx.arc(hx, hy, isMobile ? 9 : 6, 0, Math.PI * 2);
       ctx.fill();
+      ctx.stroke();
 
       // Etiqueta del ángulo
       ctx.fillStyle = '#e2e8f0';
-      ctx.font = '10px Inter, sans-serif';
-      ctx.fillText(`${Math.round(obs.currentRotationDeg)}°`, hx + 10, hy - 4);
+      ctx.font = isMobile ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
+      ctx.fillText(`${Math.round(obs.currentRotationDeg)}°`, hx + (isMobile ? 14 : 10), hy - 4);
     }
 
     ctx.restore();

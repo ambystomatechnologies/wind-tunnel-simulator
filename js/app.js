@@ -782,7 +782,9 @@ document.addEventListener('DOMContentLoaded', () => {
               name: e.name,
               controlPoints: e.controlPoints,
               isSmooth: e.isSmooth,
-              rotationDeg: e.currentRotationDeg
+              rotationDeg: e.currentRotationDeg,
+              loops: e.loops || null,
+              isImportedImage: Boolean(e.isImportedImage)
             };
           } else if (e instanceof FlowProbe) {
             return {
@@ -825,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (data.elements && Array.isArray(data.elements)) {
             data.elements.forEach(item => {
               if (item.type === 'HydrodynamicObstacle') {
-                const obs = new HydrodynamicObstacle(item.controlPoints, item.name, item.isSmooth);
+                const obs = new HydrodynamicObstacle(item.controlPoints, item.name, item.isSmooth, item.loops || null, Boolean(item.isImportedImage));
                 obs.currentRotationDeg = item.rotationDeg || 0;
                 sim.addElement(obs);
               } else if (item.type === 'FlowProbe') {
@@ -859,7 +861,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetCenter = [6.0, domainH / 2.0];
         const result = await ImageContourTracer.traceFile(file, 3.8, targetCenter);
 
-        const obs = new HydrodynamicObstacle(result.points, result.name, false, result.loops);
+        const obs = new HydrodynamicObstacle(result.points, result.name, false, result.loops, true);
+        obs.isImportedImage = true;
         obs.color = '#38bdf8';
         sim.addElement(obs);
         sim.selectElement(obs);
@@ -1144,7 +1147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uaCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const touchScreenCheck = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && (window.innerWidth <= 1024 || window.innerHeight <= 1024);
     const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-    return uaCheck || touchScreenCheck || coarsePointer;
+    return Boolean(uaCheck || touchScreenCheck || coarsePointer || window.innerHeight <= 620 || window.innerWidth <= 950);
   }
 
   // --- PANTALLA COMPLETA AUTOMÁTICA EN MÓVILES ---
