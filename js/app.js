@@ -1133,6 +1133,154 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCloseAbout && aboutModal) btnCloseAbout.addEventListener('click', () => aboutModal.style.display = 'none');
   if (btnAcceptAbout && aboutModal) btnAcceptAbout.addEventListener('click', () => aboutModal.style.display = 'none');
 
+  if (aboutModal) {
+    aboutModal.addEventListener('click', (e) => {
+      if (e.target === aboutModal) aboutModal.style.display = 'none';
+    });
+  }
+
+  // --- DETECCIÓN DE DISPOSITIVO MÓVIL ---
+  function isMobileOrTabletDevice() {
+    const uaCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const touchScreenCheck = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && (window.innerWidth <= 1024 || window.innerHeight <= 1024);
+    const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    return uaCheck || touchScreenCheck || coarsePointer;
+  }
+
+  // --- CARTEL INICIAL PARA TELÉFONOS CELULARES ---
+  const mobileModal = document.getElementById('mobile-warning-modal');
+  const btnCloseMobileWarning = document.getElementById('btn-close-mobile-warning');
+
+  if (mobileModal && isMobileOrTabletDevice()) {
+    mobileModal.style.display = 'flex';
+
+    if (btnCloseMobileWarning) {
+      btnCloseMobileWarning.addEventListener('click', () => {
+        mobileModal.style.display = 'none';
+      });
+    }
+
+    mobileModal.addEventListener('click', (e) => {
+      if (e.target === mobileModal) mobileModal.style.display = 'none';
+    });
+  }
+
+  // --- CONTROL DE VISTA HORIZONTAL OBLIGATORIA EN MÓVILES ---
+  const landscapeOverlay = document.getElementById('landscape-lock-overlay');
+  const btnRequestLandscape = document.getElementById('btn-request-landscape');
+
+  function checkOrientationLock() {
+    if (!landscapeOverlay) return;
+    const isMobile = isMobileOrTabletDevice();
+    const isPortrait = window.innerHeight > window.innerWidth;
+    if (isMobile && isPortrait) {
+      landscapeOverlay.style.setProperty('display', 'flex', 'important');
+    } else {
+      landscapeOverlay.style.setProperty('display', 'none', 'important');
+      if (sim && typeof sim.resizeCanvas === 'function') {
+        sim.resizeCanvas();
+      }
+    }
+  }
+
+  if (btnRequestLandscape) {
+    btnRequestLandscape.addEventListener('click', async () => {
+      try {
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        }
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape');
+        }
+      } catch (err) {
+        // En navegadores que requieren giro físico del usuario
+      }
+    });
+  }
+
+  window.addEventListener('resize', checkOrientationLock);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(checkOrientationLock, 150);
+  });
+  checkOrientationLock();
+
+  // --- CONTROLES DE PANELES EN MÓVILES Y PESTAÑAS LATERALES DESPLEGABLES ---
+  const btnToggleScene = document.getElementById('btn-toggle-scene');
+  const btnToggleProps = document.getElementById('btn-toggle-props');
+  const sideTabLeft = document.getElementById('side-tab-left');
+  const sideTabRight = document.getElementById('side-tab-right');
+  const arrowTabLeft = document.getElementById('arrow-tab-left');
+  const arrowTabRight = document.getElementById('arrow-tab-right');
+  const btnCloseSceneDrawer = document.getElementById('btn-close-scene-drawer');
+  const btnClosePropsDrawer = document.getElementById('btn-close-props-drawer');
+  const panelLeft = document.getElementById('panel-left');
+  const panelRight = document.getElementById('panel-right');
+
+  function updateSideTabStates() {
+    const isLeftOpen = panelLeft && panelLeft.classList.contains('mobile-open');
+    const isRightOpen = panelRight && panelRight.classList.contains('mobile-open');
+
+    if (sideTabLeft) {
+      sideTabLeft.classList.toggle('is-open', Boolean(isLeftOpen));
+      if (arrowTabLeft) arrowTabLeft.textContent = isLeftOpen ? '◀' : '▶';
+    }
+
+    if (sideTabRight) {
+      sideTabRight.classList.toggle('is-open', Boolean(isRightOpen));
+      if (arrowTabRight) arrowTabRight.textContent = isRightOpen ? '▶' : '◀';
+    }
+
+    if (btnToggleScene) btnToggleScene.classList.toggle('active', Boolean(isLeftOpen));
+    if (btnToggleProps) btnToggleProps.classList.toggle('active', Boolean(isRightOpen));
+
+    // Ocultar controles de zoom (+, -, 1:1) en dispositivos móviles
+    const isMobile = isMobileOrTabletDevice() || window.innerHeight <= 620 || window.innerWidth <= 950;
+    const zoomControls = document.querySelector('.canvas-view-controls');
+    if (zoomControls) {
+      zoomControls.style.display = isMobile ? 'none' : '';
+    }
+  }
+
+  function toggleLeftPanel() {
+    if (!panelLeft) return;
+    const willOpen = !panelLeft.classList.contains('mobile-open');
+    // Si se va a abrir el panel izquierdo, cerramos el derecho para no invadir el canvas
+    if (willOpen && panelRight && panelRight.classList.contains('mobile-open')) {
+      panelRight.classList.remove('mobile-open');
+    }
+    panelLeft.classList.toggle('mobile-open', willOpen);
+    updateSideTabStates();
+  }
+
+  function toggleRightPanel() {
+    if (!panelRight) return;
+    const willOpen = !panelRight.classList.contains('mobile-open');
+    // Si se va a abrir el panel derecho, cerramos el izquierdo para mantener despejada la vista
+    if (willOpen && panelLeft && panelLeft.classList.contains('mobile-open')) {
+      panelLeft.classList.remove('mobile-open');
+    }
+    panelRight.classList.toggle('mobile-open', willOpen);
+    updateSideTabStates();
+  }
+
+  if (btnToggleScene) btnToggleScene.addEventListener('click', toggleLeftPanel);
+  if (sideTabLeft) sideTabLeft.addEventListener('click', toggleLeftPanel);
+
+  if (btnToggleProps) btnToggleProps.addEventListener('click', toggleRightPanel);
+  if (sideTabRight) sideTabRight.addEventListener('click', toggleRightPanel);
+
+  if (btnCloseSceneDrawer) btnCloseSceneDrawer.addEventListener('click', () => {
+    if (panelLeft) panelLeft.classList.remove('mobile-open');
+    updateSideTabStates();
+  });
+  if (btnClosePropsDrawer) btnClosePropsDrawer.addEventListener('click', () => {
+    if (panelRight) panelRight.classList.remove('mobile-open');
+    updateSideTabStates();
+  });
+
+  window.addEventListener('resize', updateSideTabStates);
+  updateSideTabStates();
+
   // Escena inicial: Perfil NACA 0012 · Humo y Líneas de Corriente · Velocidad 10 m/s
   (() => {
     sim.clearScene();

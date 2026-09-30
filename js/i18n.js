@@ -181,6 +181,8 @@ const FLUID_I18N = {
     landscapeDesc: "Wind tunnels and fluid streamlines require a wide horizontal viewport for best flow observation.",
     landscapeDesktopNotice: "💡 Recommended on desktop for advanced aerodynamic modeling.",
     btnRotateRequest: "🔄 Enable Landscape View",
+    btnMobileScene: "Tunnel",
+    btnMobileProps: "Fluid",
     btnCloseDrawer: "✕ Close",
     adLabel: "ADVERTISEMENT"
   },
@@ -362,6 +364,8 @@ const FLUID_I18N = {
     landscapeDesc: "Los túneles de fluidos requieren un lienzo panorámico para visualizar correctamente las líneas de corriente.",
     landscapeDesktopNotice: "💡 Recomendado en PC para un modelado preciso.",
     btnRotateRequest: "🔄 Activar Pantalla Horizontal",
+    btnMobileScene: "Túnel",
+    btnMobileProps: "Fluido",
     btnCloseDrawer: "✕ Cerrar",
     adLabel: "PUBLICIDAD"
   }

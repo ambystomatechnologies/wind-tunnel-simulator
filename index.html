@@ -336,14 +336,14 @@
 
         <!-- Botón superior izquierdo desplegable (Escena) -->
         <button type="button" class="side-tab-toggle side-tab-left" id="side-tab-left" title="Desplegar / Ocultar Escena" aria-label="Toggle Scene Panel">
-          <span class="tab-text" data-i18n="panelSceneTitle">Túnel</span>
+          <span class="tab-text" data-i18n="btnMobileScene">Túnel</span>
           <span class="tab-arrow" id="arrow-tab-left">▶</span>
         </button>
 
         <!-- Botón superior derecho desplegable (Ajustes) -->
         <button type="button" class="side-tab-toggle side-tab-right" id="side-tab-right" title="Desplegar / Ocultar Ajustes" aria-label="Toggle Settings Panel">
           <span class="tab-arrow" id="arrow-tab-right">◀</span>
-          <span class="tab-text" data-i18n="panelPropertiesTitle">Fluido</span>
+          <span class="tab-text" data-i18n="btnMobileProps">Fluido</span>
         </button>
 
         <!-- Controles Flotantes de Zoom / Vista -->
@@ -587,6 +587,77 @@
       <div class="modal-footer">
         <button type="button" class="btn-primary" id="btn-accept-about" data-i18n="btnAcceptAbout">Entendido, ¡Comenzar!</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Cartel Inicial para Dispositivos Móviles (Teléfonos Celulares) -->
+  <div class="modal-overlay modal-mobile-overlay" id="mobile-warning-modal" style="display: none;">
+    <div class="modal-card modal-card-mobile-warning">
+      <div class="modal-mobile-icon-box">
+        <div class="device-icon-wrapper">
+          <span class="device-icon-desktop">🖥️</span>
+          <span class="device-icon-mobile">📱</span>
+        </div>
+      </div>
+
+      <div class="modal-header modal-header-center">
+        <h3 class="modal-mobile-title" data-i18n="mobileWarningTitle">Experiencia de Escritorio Recomendada</h3>
+      </div>
+
+      <div class="modal-body modal-body-mobile">
+        <p class="modal-mobile-highlight-msg" data-i18n="mobileWarningMsg">
+          Para vivir la mejor experiencia te recomendamos entrar desde tu computadora de escritorio.
+        </p>
+
+        <p class="modal-mobile-desc" data-i18n="mobileWarningSub">
+          Hemos habilitado controles táctiles para que puedas explorar la simulación de fluidos, ver demos y controlar el túnel aerodinámico desde tu celular.
+        </p>
+
+        <div class="modal-mobile-tips-container">
+          <div class="mobile-tip-row">
+            <span class="tip-badge">👆</span>
+            <span class="tip-text" data-i18n="mobileTipDrag">1 Dedo: Arrastra obstáculos o desplaza la vista</span>
+          </div>
+          <div class="mobile-tip-row">
+            <span class="tip-badge">✌️</span>
+            <span class="tip-text" data-i18n="mobileTipPinch">2 Dedos: Pellizca para zoom y mueve el lienzo</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-center">
+        <button type="button" class="btn-primary btn-mobile-continue" id="btn-close-mobile-warning" data-i18n="mobileWarningBtn">
+          Continuar en el celular
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de Bloqueo: Obliga a Vista Horizontal en Teléfonos Celulares -->
+  <div class="landscape-lock-overlay" id="landscape-lock-overlay">
+    <div class="landscape-lock-card">
+      <div class="landscape-phone-animation">
+        <div class="phone-anim-body">
+          <div class="phone-anim-screen">
+            <span class="phone-anim-dot"></span>
+          </div>
+        </div>
+        <div class="phone-anim-arrow">↻</div>
+      </div>
+
+      <h2 class="landscape-title" data-i18n="landscapeTitle">Gira tu teléfono horizontalmente</h2>
+
+      <p class="landscape-desc" data-i18n="landscapeDesc">
+        El Simulador de Fluidos requiere vista panorámica (horizontal) para visualizar el túnel de viento, los campos de presión y las líneas de corriente con total comodidad.
+      </p>
+
+      <div class="landscape-desktop-notice" data-i18n="landscapeDesktopNotice">
+        ⚠️ Para vivir la mejor experiencia te recomendamos entrar desde tu computadora de escritorio.
+      </div>
+
+      <button type="button" class="btn-primary btn-rotate-request" id="btn-request-landscape" data-i18n="btnRotateRequest">
+        🔄 Activar Pantalla Horizontal
+      </button>
     </div>
   </div>
 

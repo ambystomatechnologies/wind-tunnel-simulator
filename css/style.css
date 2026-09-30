@@ -1811,6 +1811,261 @@ html, body {
 }
 
 /* ==========================================================================
+   ESTILOS PARA DISPOSITIVOS MÓVILES (TELÉFONOS CELULARES Y TABLETS)
+   ========================================================================== */
+
+/* Botones de alternancia de paneles en el Header */
+.btn-nav-mobile-toggle {
+  display: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 9999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-nav-mobile-toggle:hover,
+.btn-nav-mobile-toggle.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 255, 204, 0.12);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Botones Desplegables de Paneles en Móviles sobre el Canvas */
+.side-tab-toggle {
+  display: none;
+  position: absolute;
+  top: 10px !important;
+  transform: none !important;
+  background: rgba(23, 25, 38, 0.92);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 255, 204, 0.3);
+  z-index: 170;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  user-select: none;
+  touch-action: manipulation;
+  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1), right 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, color 0.2s;
+}
+
+.side-tab-toggle:hover,
+.side-tab-toggle:active {
+  background: var(--accent);
+  color: #0f111a;
+  box-shadow: 0 0 18px var(--accent-glow);
+}
+
+.side-tab-left {
+  left: 10px !important;
+}
+
+.side-tab-left.is-open {
+  left: 246px !important;
+  background: rgba(0, 255, 204, 0.22);
+}
+
+.side-tab-right {
+  right: 10px !important;
+}
+
+.side-tab-right.is-open {
+  right: 256px !important;
+  background: rgba(0, 255, 204, 0.22);
+}
+
+.tab-arrow {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Cabeceras de Drawer dentro de los paneles en Móvil */
+.mobile-drawer-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.mobile-drawer-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--accent);
+}
+
+.btn-close-drawer {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-close-drawer:hover {
+  color: #ffffff;
+  border-color: var(--danger);
+  background: rgba(255, 85, 119, 0.15);
+}
+
+/* Backdrop para Drawer en Móviles - DESACTIVADO para no bloquear la simulación */
+.drawer-backdrop,
+.drawer-backdrop.active {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Modal Cartel Inicial de Recomendación de Escritorio */
+.modal-mobile-overlay {
+  z-index: 1100;
+}
+
+.modal-card-mobile-warning {
+  max-width: 440px;
+  border: 1px solid rgba(0, 255, 204, 0.4);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 255, 204, 0.25);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.modal-mobile-icon-box {
+  padding-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+}
+
+.device-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(0, 255, 204, 0.1);
+  border: 1px solid rgba(0, 255, 204, 0.35);
+  padding: 0.5rem 1.1rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 18px rgba(0, 255, 204, 0.2);
+}
+
+.device-icon-desktop {
+  font-size: 1.8rem;
+  animation: pulseDevice 2s infinite ease-in-out;
+}
+
+.device-icon-mobile {
+  font-size: 1.4rem;
+  opacity: 0.75;
+}
+
+@keyframes pulseDevice {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(0, 255, 204, 0.4)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 12px rgba(0, 255, 204, 0.8)); }
+}
+
+.modal-header-center {
+  justify-content: center;
+  border-bottom: none;
+  padding: 0.75rem 1.25rem 0.25rem;
+}
+
+.modal-mobile-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.modal-body-mobile {
+  padding: 0.5rem 1.25rem 1rem;
+  gap: 0.85rem;
+  text-align: center;
+}
+
+.modal-mobile-highlight-msg {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0, 255, 204, 0.09);
+  border: 1px solid rgba(0, 255, 204, 0.3);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  line-height: 1.45;
+  box-shadow: 0 0 14px rgba(0, 255, 204, 0.1);
+}
+
+.modal-mobile-desc {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.modal-mobile-tips-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  text-align: left;
+  margin-top: 0.25rem;
+}
+
+.mobile-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-main);
+}
+
+.tip-badge {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  line-height: 1.35;
+}
+
+.modal-footer-center {
+  justify-content: center;
+  border-top: 1px solid var(--border-light);
+  padding: 1rem 1.25rem;
+}
+
+.btn-mobile-continue {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border-radius: 10px;
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+/* ==========================================================================
    MEDIA QUERIES RESPONSIVAS
    ========================================================================== */
 
@@ -1919,7 +2174,7 @@ html, body {
 /* Solo se activa si la pantalla es móvil Y está en orientación vertical (portrait) */
 @media (max-width: 900px) and (orientation: portrait) {
   .landscape-lock-overlay {
-    display: flex !important;
+    display: flex;
   }
 }
 
@@ -2042,6 +2297,11 @@ html, body {
   /* Ocultar botones de zoom (+, -, 1:1) en móvil: eliminados completamente de la vista */
   .canvas-view-controls {
     display: none !important;
+  }
+
+  .workspace-layout {
+    height: calc(100vh - 78px) !important;
+    max-height: calc(100vh - 78px) !important;
   }
 
   .header-navbar {
