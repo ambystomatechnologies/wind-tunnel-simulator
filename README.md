@@ -1,97 +1,97 @@
-# 🌊 Simulador de Mecánica de Fluidos y Túnel Aerodinámico 2D · Ambystoma Studio
+# 🌊 2D Fluid Dynamics & Wind Tunnel Simulator · Ambystoma Studio
 **Interactive 2D Navier-Stokes Fluid & Wind Tunnel Simulator for the Web**
 
 [![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20100%25%20In--Browser-blue?style=for-the-badge)](index.html)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-Desarrollado por **[Ambystoma Technologies](https://ambystomatechnologies.github.io/)** · 100% Gratuito y de Código Abierto.
+Developed by **[Ambystoma Technologies](https://ambystomatechnologies.github.io/)** · 100% Free and Open Source.
 
 ---
 
-## ✨ Características Principales
+## ✨ Key Features
 
-- 🌊 **Ecuaciones de Navier-Stokes en Tiempo Real:** Resolución bidimensional completa de fluidos incompresibles con advección Semi-Lagrangiana RK2, difusión viscosa y proyección de presión Poisson con aceleración SOR a 60 FPS.
-- 💨 **Túnel Aerodinámico y Filamentos de Humo:** Inyección de líneas de corriente continuas (streaklines) y miles de partículas trazadoras Lagrangianas que muestran la recirculación, estela turbulenta y vórtices.
-- ✈️ **Perfiles Alares NACA Auténticos:** Generador de perfiles aerodinámicos estándar NACA de 4 dígitos (NACA 0012 simétrico, NACA 2412 sustentador, etc.) calculados con ecuaciones analíticas de curvatura y espesor.
-- 🎯 **Telemetría Hidrodinámica en Vivo (HUD):**
-  - **Fuerza y Coeficiente de Arrastre ($F_D, C_D$)**
-  - **Fuerza y Coeficiente de Sustentación ($F_L, C_L$)**
-  - **Eficiencia Aerodinámica ($L/D$)**
-  - **Número de Reynolds ($Re$)**
-  - **Ángulo de Ataque ($\alpha$) en tiempo real**
-  - **Puntos de estancamiento de máxima presión y succión de extradós**
-- ✏️ **Cuerpos Deformables y Edición de Nodos a Mano:** Mueve, rota y arrastra los vértices de cualquier figura directamente en el lienzo para esculpir alas y cuerpos aerodinámicos orgánicos mediante splines suaves Catmull-Rom. El fluido se adapta instantáneamente a las nuevas formas.
-- 📐 **Herramientas de Geometría:** Cilindros, gotas aerodinámicas de mínimo arrastre, placas planas con ángulo de ataque, cuerpos cuadrados romos, cuñas deflectoras, silueta de bólido de carreras y tobera Venturi.
-- 📊 **6 Modos de Visualización CFD:**
-  1. Humo aerodinámico y líneas de corriente
-  2. Mapa de presión estática (Pa, escala Cool-Warm de sustentación y estancamiento)
-  3. Magnitud de velocidad (m/s, mapa térmico Jet/Viridis de aceleración Bernoulli)
-  4. Vorticidad y remolinos ($\omega = \partial v/\partial x - \partial u/\partial y$, desprendimiento de Calle de Vórtices de Von Kármán)
-  5. Flota de partículas luminiscentes
-  6. Rejilla de flechas vectoriales de velocidad
-- 📚 **12 Demos de Física de Fluidos:**
-  1. Perfil NACA 0012 (Sustentación y líneas de flujo)
-  2. Calle de Vórtices de Von Kármán tras cilindro
-  3. Gota aerodinámica vs. Placa plana (Comparativa de resistencia)
-  4. Entrada en pérdida (Stall) a alto ángulo de ataque
-  5. Efecto Venturi y Tubo de Bernoulli
-  6. Aerodinámica de bólido de carreras y carga trasera
-  7. Ala multielemento con flap ranurado
-  8. Cuerpos romos: Cuadrado vs. Cilindro
-  9. Rebufo aerodinámico (Drafting entre vehículos)
-  10. Tobera convergente-divergente
-  11. Hidroala con efecto suelo
-  12. Figura orgánica esculpida a mano
-- 💾 **Guardar y Cargar Escenas:** Exporta e importa montajes de túnel en archivos `.json`.
-- 🌐 **Totalmente Bilingüe:** Español e Inglés seleccionable con cambio en tiempo real.
-- ⚡ **100% en Navegador:** Renderizado acelerado por Canvas, sin servidores externos.
+- 🌊 **Real-Time Navier-Stokes Equations:** Full 2D incompressible fluid solver featuring RK2 Semi-Lagrangian advection, implicit viscous diffusion, and Poisson pressure projection with SOR acceleration running at 60 FPS.
+- 💨 **Wind Tunnel & Smoke Streamlines:** Injection of continuous streaklines and thousands of Lagrangian tracer particles revealing flow recirculation, turbulent wakes, and vortex shedding.
+- ✈️ **Authentic NACA Airfoils:** Standard 4-digit NACA airfoil generator (symmetric NACA 0012, cambered high-lift NACA 2412, etc.) computed from analytical thickness and mean camber line equations.
+- 🎯 **Live Hydrodynamic Telemetry (HUD):**
+  - **Drag Force & Coefficient ($F_D, C_D$)**
+  - **Lift Force & Coefficient ($F_L, C_L$)**
+  - **Aerodynamic Efficiency ($L/D$)**
+  - **Reynolds Number ($Re$)**
+  - **Real-Time Angle of Attack ($\alpha$)**
+  - **Leading edge stagnation points and upper-surface suction peaks**
+- ✏️ **Deformable Bodies & Hand Node Editing:** Move, rotate, and interactively drag vertices of any geometry directly on the canvas to sculpt wings and organic aerodynamic bodies using smooth Catmull-Rom splines. The fluid flow adapts instantaneously to deformed shapes.
+- 📐 **Geometry Tools:** Circular cylinders, minimum-drag aerodynamic teardrops, flat plates with angle of attack, bluff square bodies, wedge deflectors, racing car silhouettes, and Venturi nozzles.
+- 📊 **6 CFD Visualization Modes:**
+  1. Aerodynamic smoke and streamlines
+  2. Static pressure field (Pa, Cool-Warm scale showing stagnation and suction)
+  3. Flow velocity magnitude (m/s, Jet/Viridis colormap showing Bernoulli acceleration)
+  4. Vorticity and eddies ($\omega = \partial v/\partial x - \partial u/\partial y$, Von Kármán vortex street shedding)
+  5. Fleet of glow tracer particles
+  6. Vector velocity arrow grid
+- 📚 **12 Fluid Physics Demos:**
+  1. NACA 0012 Airfoil (Lift & streamlines)
+  2. Von Kármán Vortex Street behind a cylinder
+  3. Aerodynamic Teardrop vs. Flat Plate (Drag comparison)
+  4. Aerodynamic Stall at high angle of attack
+  5. Venturi Effect & Bernoulli Tube
+  6. Race Car Aerodynamics & Downforce
+  7. Multi-Element Wing with slotted flap
+  8. Bluff Bodies: Square vs. Cylinder
+  9. Aerodynamic Drafting between vehicles
+  10. Convergent-Divergent Nozzle
+  11. Hydrofoil in Ground Effect
+  12. Hand-Sculpted Organic Body
+- 💾 **Save & Load Scenes:** Export and import complete wind tunnel setups as `.json` files.
+- 🌐 **Fully Bilingual:** English and Spanish toggleable with real-time live switching.
+- ⚡ **100% In-Browser:** Canvas hardware-accelerated rendering with zero external server dependencies.
 
 ---
 
-## 🚀 Cómo Ejecutar en Local
+## 🚀 How to Run Locally
 
-1. Ejecuta con Python:
+1. Run with Python:
    ```bash
    python -m http.server 8082
    ```
-   *(En Windows puedes hacer doble clic en `start.bat`)*
-2. Abre en tu navegador web:
+   *(On Windows, you can also double-click `start.bat`)*
+2. Open in your web browser:
    ```text
    http://localhost:8082/index.html
    ```
 
 ---
 
-## ⚙️ Esquemas Numéricos y Modelado de Turbulencia
+## ⚙️ Numerical Schemes & Turbulence Modeling
 
-El simulador implementa dos motores computacionales de dinámica de fluidos (CFD) de alto rendimiento en tiempo real:
+The simulator implements two high-performance real-time computational fluid dynamics (CFD) engines:
 
-### 1. Solucionador Navier-Stokes Incompresible (Malla Euleriana)
-- **Esquema de Advección:** Advección Semi-Lagrangiana combinada con integración Runge-Kutta de 2do orden (RK2) para el trazado hacia atrás e interpolación bilineal espacial.
-- **Difusión Viscosa:** Formulación implícita resuelta iterativamente mediante relajación de Gauss-Seidel.
-- **Acoplamiento Presión-Velocidad:** Método de proyección de Chorin (descomposición de Helmholtz-Hodge). La ecuación de Poisson para la presión se resuelve iterativamente mediante Gauss-Seidel / SOR con diferencias finitas centrales.
-- **Modelado de Turbulencia y Submalla:**
-  - **Confinamiento de Vorticidad (Fedkiw, Stam y Jensen):** Restituye el momento angular y remolinos disipados por la viscosidad numérica de la malla.
-  - **Generador de Turbulencia Estocástica:** Inyección en la entrada (inflow) mediante cascada espectral de Kolmogorov y cizalladura angular dinámica.
-  - **Inestabilidad de Capa Límite:** Excitación periódica calibrada por número de Strouhal ($St \approx 0.22$) en la estela de cuerpos romos para el desprendimiento de vórtices de Von Kármán.
+### 1. Incompressible Navier-Stokes Solver (Eulerian Grid)
+- **Advection Scheme:** Semi-Lagrangian advection integrated with 2nd-order Runge-Kutta (RK2) trajectory back-tracing and bilinear spatial interpolation.
+- **Viscous Diffusion:** Implicit formulation solved iteratively via Gauss-Seidel relaxation.
+- **Pressure-Velocity Coupling:** Chorin projection method (Helmholtz-Hodge decomposition). The Poisson equation for pressure is solved iteratively using Gauss-Seidel / SOR with central finite differences.
+- **Turbulence Modeling & Subgrid Treatment:**
+  - **Vorticity Confinement (Fedkiw, Stam, and Jensen):** Restores angular momentum and coherent eddies dissipated by numerical grid viscosity.
+  - **Stochastic Turbulence Generator:** Inflow perturbation modeled after the Kolmogorov spectral cascade with dynamic angular shear.
+  - **Boundary Layer Instability:** Periodic excitation calibrated with the Strouhal number ($St \approx 0.22$) in the wake of bluff bodies to trigger authentic Von Kármán vortex shedding.
 
-### 2. Motor Lattice-Boltzmann (LBM D2Q9)
-- **Cinética de Red:** Retícula bidimensional D2Q9 con operador de colisión BGK (*Bhatnagar-Gross-Krook*) de tiempo de relajación simple acoplado a la viscosidad cinemática ($\tau = 3\nu + 0.5$).
-- **Streaming y Condiciones de Contorno:** Paso de propagación discreta libre de difusión numérica, rebote *bounce-back* no-slip en obstáculos y condiciones de equilibrio en entrada y salida.
-- **Dinámica Turbulenta:** Captura directa a nivel mesoscópico de inestabilidades, capas de cizalladura y vórtices a números de Reynolds moderados sin requerir cierres empíricos de viscosidad turbulenta.
+### 2. Lattice Boltzmann Method Engine (LBM D2Q9)
+- **Lattice Kinetics:** Two-dimensional D2Q9 lattice with single-relaxation-time BGK (*Bhatnagar-Gross-Krook*) collision operator coupled to kinematic viscosity ($\tau = 3\nu + 0.5$).
+- **Streaming & Boundary Conditions:** Discrete streaming step free of numerical diffusion, half-way bounce-back scheme on no-slip solid obstacles, and equilibrium boundary conditions for tunnel inlet and outlet.
+- **Turbulent Dynamics:** Mesoscopic resolution directly capturing shear layers, flow instabilities, and vortex shedding at moderate Reynolds numbers without requiring empirical turbulence closures.
 
 ---
 
-## 📚 Bibliografía y Referencias Científicas
+## 📚 Scientific Bibliography & References
 
-Los modos de visor y simulación **Schroeder LBM (Vorticidad/Curl, Flowlines y Magnitud de Velocidad)** están basados en el trabajo científico, didáctico y computacional de:
+The **Schroeder LBM (Vorticity/Curl, Flowlines, and Speed Magnitude)** visualization and simulation modes are based on the scientific, educational, and computational work of:
 
-- **[Daniel V. Schroeder (Dan Schroeder)](https://physics.weber.edu/schroeder/fluids/)** — *Department of Physics, Weber State University, Ogden, Utah*. Creador de la simulación de fluidos Lattice-Boltzmann D2Q9 interactiva en Canvas, algoritmos de renderizado cromático de vorticidad (curl), paleta Jet, contraste perceptual dinámico y estelas de líneas de flujo (flowlines).
-- **Graham Pullan** — *Cambridge University (Many-Core Group)*. Condiciones de contorno de túnel de viento para retículas Lattice-Boltzmann.
+- **[Daniel V. Schroeder (Dan Schroeder)](https://physics.weber.edu/schroeder/fluids/)** — *Department of Physics, Weber State University, Ogden, Utah*. Creator of the interactive Canvas Lattice-Boltzmann D2Q9 fluid simulation, chromatic vorticity (curl) rendering algorithms, Jet colormap, dynamic perceptual contrast, and flowline tracers.
+- **Graham Pullan** — *Cambridge University (Many-Core Group)*. Wind tunnel boundary conditions for Lattice-Boltzmann grids.
 - **Thomas Pohl** — *Lattice Boltzmann Applet (LBA)*.
-- **Lukas Wagner** — *North Dakota State University (NDSU)*. Códigos y algoritmos base de Lattice-Boltzmann.
-- **Norbert Gonsalves & Sauro Succi** — Modelos teóricos y numéricos de la ecuación de Boltzmann (*The Lattice Boltzmann Equation for Fluid Dynamics and Beyond*, Oxford University Press).
+- **Lukas Wagner** — *North Dakota State University (NDSU)*. Lattice-Boltzmann base algorithms and codes.
+- **Norbert Gonsalves & Sauro Succi** — Theoretical and numerical foundations of the Boltzmann equation (*The Lattice Boltzmann Equation for Fluid Dynamics and Beyond*, Oxford University Press).
 
 ---
 
-© 2026 **[Ambystoma Technologies](https://ambystomatechnologies.github.io/)** · Desarrollando herramientas de ciencia y tecnología accesibles para todos.
+© 2026 **[Ambystoma Technologies](https://ambystomatechnologies.github.io/)** · Developing open science and technology accessible to everyone.
