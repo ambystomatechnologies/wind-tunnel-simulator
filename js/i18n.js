@@ -397,11 +397,11 @@ let currentLang = 'es'; // Por defecto español según el usuario
 
 function t(key, params = {}) {
   const dict = FLUID_I18N[currentLang] || FLUID_I18N['es'];
-  let text = dict[key] || FLUID_I18N['en'][key] || null;
+  let text = dict?.[key] || FLUID_I18N['en']?.[key] || FLUID_I18N['es']?.[key] || null;
   if (!text) {
     if (key === 'btnMobileScene') return (currentLang === 'en' ? 'Tunnel' : 'Túnel');
     if (key === 'btnMobileProps') return (currentLang === 'en' ? 'Fluid' : 'Fluido');
-    return key;
+    return null;
   }
   for (const [k, v] of Object.entries(params)) {
     text = text.replace(`{${k}}`, v);
@@ -420,19 +420,26 @@ function setLanguage(lang) {
   if (btnEn) btnEn.classList.toggle('active', lang === 'en');
   if (btnEs) btnEs.classList.toggle('active', lang === 'es');
 
-  // Traducir todos los elementos con atributos data-i18n
+  // Traducir todos los elementos con atributos data-i18n (solo si existe traducción)
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    el.innerHTML = t(key);
+    const val = t(key);
+    if (val) {
+      el.innerHTML = val;
+    }
   });
 
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     const key = el.getAttribute('data-i18n-title');
-    el.title = t(key);
+    const val = t(key);
+    if (val) {
+      el.title = val;
+    }
   });
 
   // Traducir título del documento
-  document.title = t('pageTitle');
+  const pageTitle = t('pageTitle');
+  if (pageTitle) document.title = pageTitle;
 }
 
 window.FLUID_I18N = FLUID_I18N;
