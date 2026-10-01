@@ -183,14 +183,14 @@ const FLUID_I18N = {
 
     // Mobile Overlay
     mobileWarningTitle: "Desktop Experience Recommended",
-    mobileWarningMsg: "For the ultimate fluid dynamics modeling experience, a desktop browser with mouse is recommended.",
-    mobileWarningSub: "Touch gestures allow moving shapes, rotating angle of attack, and pinching to zoom.",
-    mobileTipDrag: "1 Finger: Drag obstacles, deform nodes, or pan view",
-    mobileTipPinch: "2 Fingers: Pinch to zoom in/out smoothly",
-    mobileWarningBtn: "Continue on Mobile Device",
-    landscapeTitle: "Rotate Your Device to Landscape",
-    landscapeDesc: "Wind tunnels and fluid streamlines require a wide horizontal viewport for best flow observation.",
-    landscapeDesktopNotice: "💡 Recommended on desktop for advanced aerodynamic modeling.",
+    mobileWarningMsg: "For an optimal aerodynamic modeling and shape deformation experience, we recommend using a computer.",
+    mobileWarningSub: "Touch controls have been enabled to move shapes, adjust angle of attack, and zoom.",
+    mobileTipDrag: "1 Finger: Move obstacles, deform nodes, or pan view",
+    mobileTipPinch: "2 Fingers: Pinch for smooth zoom",
+    mobileWarningBtn: "Continue on Mobile",
+    landscapeTitle: "Rotate your device horizontally",
+    landscapeDesc: "Fluid tunnels require a panoramic canvas to properly visualize streamlines.",
+    landscapeDesktopNotice: "💡 Recommended on PC for precise modeling.",
     btnRotateRequest: "🔄 Enable Landscape View",
     btnMobileScene: "Tunnel",
     btnMobileProps: "Fluid",
@@ -447,7 +447,7 @@ const FLUID_I18N = {
   }
 };
 
-let currentLang = 'es'; // Por defecto español según el usuario
+let currentLang = 'en'; // Por defecto inglés
 
 function t(key, params = {}) {
   const dict = FLUID_I18N[currentLang] || FLUID_I18N['es'];

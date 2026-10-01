@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const sim = new FluidCanvasController(canvasElement);
   window.sim = sim;
 
-  // Idioma inicial guardado o detección
-  const savedLang = localStorage.getItem('fluid_sim_lang') || 'es';
+  // Idioma inicial guardado o detección (por defecto inglés 'en')
+  const savedLang = localStorage.getItem('fluid_sim_lang') || 'en';
   window.setLanguage(savedLang);
 
   // --- ELEMENTOS DE LA INTERFAZ ---
