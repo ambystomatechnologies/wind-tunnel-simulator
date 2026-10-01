@@ -62,6 +62,26 @@ Desarrollado por **[Ambystoma Technologies](https://ambystomatechnologies.github
 
 ---
 
+## ⚙️ Esquemas Numéricos y Modelado de Turbulencia
+
+El simulador implementa dos motores computacionales de dinámica de fluidos (CFD) de alto rendimiento en tiempo real:
+
+### 1. Solucionador Navier-Stokes Incompresible (Malla Euleriana)
+- **Esquema de Advección:** Advección Semi-Lagrangiana combinada con integración Runge-Kutta de 2do orden (RK2) para el trazado hacia atrás e interpolación bilineal espacial.
+- **Difusión Viscosa:** Formulación implícita resuelta iterativamente mediante relajación de Gauss-Seidel.
+- **Acoplamiento Presión-Velocidad:** Método de proyección de Chorin (descomposición de Helmholtz-Hodge). La ecuación de Poisson para la presión se resuelve iterativamente mediante Gauss-Seidel / SOR con diferencias finitas centrales.
+- **Modelado de Turbulencia y Submalla:**
+  - **Confinamiento de Vorticidad (Fedkiw, Stam y Jensen):** Restituye el momento angular y remolinos disipados por la viscosidad numérica de la malla.
+  - **Generador de Turbulencia Estocástica:** Inyección en la entrada (inflow) mediante cascada espectral de Kolmogorov y cizalladura angular dinámica.
+  - **Inestabilidad de Capa Límite:** Excitación periódica calibrada por número de Strouhal ($St \approx 0.22$) en la estela de cuerpos romos para el desprendimiento de vórtices de Von Kármán.
+
+### 2. Motor Lattice-Boltzmann (LBM D2Q9)
+- **Cinética de Red:** Retícula bidimensional D2Q9 con operador de colisión BGK (*Bhatnagar-Gross-Krook*) de tiempo de relajación simple acoplado a la viscosidad cinemática ($\tau = 3\nu + 0.5$).
+- **Streaming y Condiciones de Contorno:** Paso de propagación discreta libre de difusión numérica, rebote *bounce-back* no-slip en obstáculos y condiciones de equilibrio en entrada y salida.
+- **Dinámica Turbulenta:** Captura directa a nivel mesoscópico de inestabilidades, capas de cizalladura y vórtices a números de Reynolds moderados sin requerir cierres empíricos de viscosidad turbulenta.
+
+---
+
 ## 📚 Bibliografía y Referencias Científicas
 
 Los modos de visor y simulación **Schroeder LBM (Vorticidad/Curl, Flowlines y Magnitud de Velocidad)** están basados en el trabajo científico, didáctico y computacional de:

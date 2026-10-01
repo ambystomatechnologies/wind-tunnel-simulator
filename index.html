@@ -552,9 +552,40 @@
           </ul>
         </div>
 
-        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
-          <h5 style="color: #ffffff; margin-bottom: 0.35rem;" data-i18n="aboutFreeTitle">✨ 100% Gratuito y de Acceso Libre</h5>
-          <p style="font-size: 0.82rem; color: var(--text-dim);" data-i18n="aboutFreeDesc">Funciona directamente en tu navegador con aceleración por hardware. Sin registros ni servidores externos.</p>
+        <!-- Esquemas Numéricos y Modelado de Turbulencia -->
+        <div style="background: rgba(168, 85, 247, 0.07); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
+          <h5 style="color: #c084fc; margin-bottom: 0.45rem;" data-i18n="aboutNumericsTitle">⚙️ Esquemas Numéricos y Modelado de Turbulencia</h5>
+          <div style="font-size: 0.8rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.55rem; line-height: 1.5;">
+            <div>
+              <div style="color: #e9d5ff; font-weight: 700; margin-bottom: 0.2rem;" data-i18n="aboutNumericsNSHeader">1. Solucionador Navier-Stokes Incompresible (Malla Euleriana)</div>
+              <ul style="padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                <li data-i18n="aboutNumericsNS1"><b>Esquema de Advección:</b> Advección Semi-Lagrangiana con integración Runge-Kutta de 2do orden (RK2) para el trazado hacia atrás e interpolación bilineal.</li>
+                <li data-i18n="aboutNumericsNS2"><b>Difusión Viscosa:</b> Formulación implícita resuelta iterativamente con relajación de Gauss-Seidel.</li>
+                <li data-i18n="aboutNumericsNS3"><b>Acoplamiento Presión-Velocidad:</b> Método de proyección de Chorin (descomposición Helmholtz-Hodge). Ecuación de Poisson resuelta iterativamente mediante Gauss-Seidel / SOR con diferencias finitas centrales.</li>
+                <li data-i18n="aboutNumericsNS4"><b>Turbulencia y Submalla:</b> Confinamiento de Vorticidad (Fedkiw, Stam, Jensen) para contrarrestar la disipación numérica, generador de turbulencia estocástica en la entrada (cascada de Kolmogorov) y perturbación calibrada con el número de Strouhal (St ≈ 0.22) en la estela de cuerpos romos.</li>
+              </ul>
+            </div>
+            <div>
+              <div style="color: #e9d5ff; font-weight: 700; margin-bottom: 0.2rem;" data-i18n="aboutNumericsLBMHeader">2. Motor Lattice-Boltzmann (LBM D2Q9)</div>
+              <ul style="padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                <li data-i18n="aboutNumericsLBM1"><b>Cinética y Colisión:</b> Retícula bidimensional D2Q9 con aproximación BGK de tiempo de relajación simple acoplado a la viscosidad cinemática (τ = 3ν + 0.5).</li>
+                <li data-i18n="aboutNumericsLBM2"><b>Streaming y Fronteras:</b> Propagación discreta libre de difusión numérica, rebote bounce-back en sólidos no-slip y condiciones de equilibrio en entrada/salida de túnel.</li>
+                <li data-i18n="aboutNumericsLBM3"><b>Dinámica Turbulenta:</b> Captura de forma natural inestabilidades, capas de cizalladura y desprendimiento de vórtices de Von Kármán a nivel mesoscópico sin requerir modelos empíricos de viscosidad turbulenta.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Source y Licencia -->
+        <div style="background: rgba(34, 197, 94, 0.07); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
+          <h5 style="color: #4ade80; margin-bottom: 0.35rem;" data-i18n="aboutFreeTitle">✨ Proyecto 100% Open Source y Gratuito</h5>
+          <p style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 0.5rem;" data-i18n="aboutFreeDesc">
+            Software libre distribuido bajo la licencia MIT. Todo el código fuente está abierto a la comunidad para investigación, educación o contribuciones.
+          </p>
+          <a href="https://github.com/ambystomatechnologies/wind-tunnel-simulator" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.45rem; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.5); color: #86efac; padding: 0.38rem 0.8rem; border-radius: 6px; font-size: 0.82rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            <span data-i18n="aboutGithubLink">Repositorio en GitHub</span>
+          </a>
         </div>
 
         <!-- Bibliografía y Créditos Científicos LBM -->
