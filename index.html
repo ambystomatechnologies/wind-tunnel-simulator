@@ -100,7 +100,7 @@
 
       <!-- Botón Translúcido de Donar con Ícono de Corazón Blanco (Reemplaza la publicidad superior) -->
       <div class="header-donate-zone">
-        <button type="button" class="btn-donate-header" id="btn-open-donate" title="Donar / Support Open Source" aria-label="Donar">
+        <button type="button" class="btn-donate-header" id="btn-open-donate" onclick="openDonateModal()" title="Donar / Support Open Source" aria-label="Donar">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="1.2">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
           </svg>
@@ -519,27 +519,27 @@
 
   </div>
 
-  <!-- Modal de Donaciones y Apoyo Open Source -->
-  <div class="modal-overlay" id="donate-modal" style="display: none;">
+    <!-- Modal de Donaciones y Apoyo Open Source (Idéntico a Portal Ambystoma) -->
+  <div id="donate-modal" class="modal-overlay" style="display: none;" onclick="closeDonateModalOnBackdrop(event)">
     <div class="modal-card donate-modal-card">
       <div class="modal-header">
         <div class="modal-header-info">
-          <div class="donate-logo-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="1">
+          <div class="modal-app-logo donate-logo-badge">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="1">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </div>
           <div>
-            <span class="badge-donate-tag" data-i18n="donateModalBadge">COMMUNITY &amp; OPEN SOURCE</span>
-            <h3 class="modal-title-custom" data-i18n="donateModalTitle">Support Ambystoma Technologies</h3>
-            <p class="modal-subtitle-custom" data-i18n="donateModalSubtitle">Empowering open science, free tools, and tailored deep-tech solutions</p>
+            <span class="badge-license free-app" style="margin-bottom: 0.25rem; display: inline-block;" data-i18n="donateModalBadge">COMMUNITY &amp; OPEN SOURCE</span>
+            <h3 class="modal-title" data-i18n="donateModalTitle">Support Ambystoma Technologies</h3>
+            <p class="modal-subtitle" data-i18n="donateModalSubtitle">Empowering open science, free tools, and tailored deep-tech solutions</p>
           </div>
         </div>
-        <button type="button" class="btn-close-modal" id="btn-close-donate" aria-label="Close modal">✕</button>
+        <button type="button" class="btn-close-modal" id="btn-close-donate" onclick="closeDonateModal()" aria-label="Close modal">✕</button>
       </div>
 
       <div class="modal-body">
-        <div class="donate-intro-box">
+        <div class="modal-intro-box donate-intro-box">
           <p data-i18n="donateModalIntro">
             En <strong>Ambystoma Technologies</strong>, además de desarrollar soluciones tecnológicas y científicas a medida, creemos firmemente en democratizar el acceso al conocimiento y la computación. Por ello, dedicamos gran parte de nuestro esfuerzo a crear y mantener <strong>herramientas 100% gratuitas y de código abierto (Open Source)</strong> para estudiantes, investigadores y laboratorios de todo el mundo.<br><br>
             Las donaciones nos permiten costear servidores, acelerar nuevas utilidades públicas y mantener vivas y actualizadas las herramientas disponibles. ¡Tu aporte voluntario hace una gran diferencia en la comunidad!
@@ -567,7 +567,7 @@
             </div>
 
             <div class="donate-actions">
-              <button type="button" class="btn-donate-action" id="btn-copy-paypal" onclick="copyDonateToClipboard('antoniovangritte@gmail.com', this, '¡Copiado! ✓', 'Copiar Correo')">
+              <button type="button" class="btn-donate-action" id="btn-copy-paypal" onclick="copyToClipboard('antoniovangritte@gmail.com', this, '¡Copiado! ✓', 'Copiar Correo')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -599,11 +599,11 @@
               <span class="donate-info-label" data-i18n="donateArgAliasLabel">Alias Mercado Pago:</span>
               <span class="donate-info-val">micro.cosmonauta</span>
               <span class="donate-info-label" style="margin-top: 0.35rem;" data-i18n="donateArgOwnerLabel">Titular de la cuenta:</span>
-              <span class="donate-info-val" style="font-family: inherit; font-size: 0.88rem;">Brandon Antonio Segura Torres</span>
+              <span class="donate-info-val" style="font-family: inherit; font-size: 0.9rem;">Brandon Antonio Segura Torres</span>
             </div>
 
             <div class="donate-actions">
-              <button type="button" class="btn-donate-action" id="btn-copy-mp" onclick="copyDonateToClipboard('micro.cosmonauta', this, '¡Alias copiado! ✓', 'Copiar Alias')">
+              <button type="button" class="btn-donate-action" id="btn-copy-mp" onclick="copyToClipboard('micro.cosmonauta', this, '¡Alias copiado! ✓', 'Copiar Alias')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -646,7 +646,7 @@
 
             <!-- Panel BTC -->
             <div class="donate-crypto-panel active" data-crypto-panel="btc">
-              <div class="donate-info-box" style="cursor: pointer;" onclick="copyDonateToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', document.getElementById('btn-copy-btc'), '¡Dirección copiada! ✓', 'Copiar Dirección BTC')" title="Clic para copiar dirección">
+              <div class="donate-info-box" style="cursor: pointer;" onclick="copyToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', document.getElementById('btn-copy-btc'), '¡Dirección copiada! ✓', 'Copiar Dirección BTC')" title="Clic para copiar dirección">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span class="donate-info-label" data-i18n="donateCryptoBtcLabel">Dirección BTC (Native SegWit · BIP-84):</span>
                   <span style="font-size: 0.72rem; color: #f7931a; font-weight: 700; letter-spacing: 0.05em;">BIP-84</span>
@@ -655,7 +655,7 @@
               </div>
 
               <div class="donate-actions">
-                <button type="button" class="btn-donate-action btn-donate-crypto-btc" id="btn-copy-btc" onclick="copyDonateToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', this, '¡Dirección copiada! ✓', 'Copiar Dirección BTC')">
+                <button type="button" class="btn-donate-action btn-donate-crypto-btc" id="btn-copy-btc" onclick="copyToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', this, '¡Dirección copiada! ✓', 'Copiar Dirección BTC')">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -671,7 +671,7 @@
 
             <!-- Panel ETH -->
             <div class="donate-crypto-panel" data-crypto-panel="eth">
-              <div class="donate-info-box" style="cursor: pointer;" onclick="copyDonateToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', document.getElementById('btn-copy-eth'), '¡Dirección copiada! ✓', 'Copiar Dirección ETH')" title="Clic para copiar dirección">
+              <div class="donate-info-box" style="cursor: pointer;" onclick="copyToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', document.getElementById('btn-copy-eth'), '¡Dirección copiada! ✓', 'Copiar Dirección ETH')" title="Clic para copiar dirección">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span class="donate-info-label" data-i18n="donateCryptoEthLabel">Dirección ETH (Red Ethereum · ERC-20):</span>
                   <span style="font-size: 0.72rem; color: #a5b4fc; font-weight: 700; letter-spacing: 0.05em;">ERC-20</span>
@@ -680,7 +680,7 @@
               </div>
 
               <div class="donate-actions">
-                <button type="button" class="btn-donate-action btn-donate-crypto-eth" id="btn-copy-eth" onclick="copyDonateToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', this, '¡Dirección copiada! ✓', 'Copiar Dirección ETH')">
+                <button type="button" class="btn-donate-action btn-donate-crypto-eth" id="btn-copy-eth" onclick="copyToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', this, '¡Dirección copiada! ✓', 'Copiar Dirección ETH')">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -696,7 +696,7 @@
           </div>
         </div>
 
-        <p style="margin-top: 0.4rem; font-size: 0.82rem; color: #94a3b8; text-align: center;" data-i18n="donateFooterNote">
+        <p class="modal-outro" style="margin-top: 0.4rem; font-size: 0.88rem; color: #94a3b8;" data-i18n="donateFooterNote">
           💡 Muchas gracias por apoyar la investigación científica independiente y el desarrollo tecnológico latinoamericano.
         </p>
       </div>

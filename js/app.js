@@ -1112,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (e.key === 'Escape') {
       if (aboutModal) aboutModal.style.display = 'none';
-      if (donateModal) donateModal.style.display = 'none';
+      closeDonateModal();
     }
 
     if (e.code === 'Space') {
@@ -1151,15 +1151,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Modal Donaciones y Apoyo Open Source
-  if (btnOpenDonate && donateModal) btnOpenDonate.addEventListener('click', () => donateModal.style.display = 'flex');
-  if (btnCloseDonate && donateModal) btnCloseDonate.addEventListener('click', () => donateModal.style.display = 'none');
-
-  if (donateModal) {
-    donateModal.addEventListener('click', (e) => {
-      if (e.target === donateModal) donateModal.style.display = 'none';
-    });
+  // Control del Modal de Donaciones (Idéntico a Portal Ambystoma)
+  function openDonateModal() {
+    const modal = document.getElementById('donate-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
   }
+
+  function closeDonateModal() {
+    const modal = document.getElementById('donate-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  function closeDonateModalOnBackdrop(event) {
+    if (event.target.id === 'donate-modal') {
+      closeDonateModal();
+    }
+  }
+
+  window.openDonateModal = openDonateModal;
+  window.closeDonateModal = closeDonateModal;
+  window.closeDonateModalOnBackdrop = closeDonateModalOnBackdrop;
+
+  if (btnOpenDonate) btnOpenDonate.addEventListener('click', openDonateModal);
+  if (btnCloseDonate) btnCloseDonate.addEventListener('click', closeDonateModal);
 
   function switchCryptoTab(crypto) {
     const modal = document.getElementById('donate-modal');
@@ -1173,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.switchCryptoTab = switchCryptoTab;
 
-  function copyDonateToClipboard(text, btnElement, successMsg, originalMsg) {
+  function copyToClipboard(text, btnElement, successMsg, originalMsg) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(showSuccess).catch(fallback);
     } else {
@@ -1215,7 +1235,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 2200);
     }
   }
-  window.copyDonateToClipboard = copyDonateToClipboard;
+  window.copyToClipboard = copyToClipboard;
+  window.copyDonateToClipboard = copyToClipboard;
 
   // --- DETECCIÓN DE DISPOSITIVO MÓVIL ---
   function isMobileOrTabletDevice() {
