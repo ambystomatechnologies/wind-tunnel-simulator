@@ -212,7 +212,17 @@ const FLUID_I18N = {
     donateArgAliasLabel: "Alias MP:",
     donateArgOwnerLabel: "Account Holder:",
     donateCopyAlias: "Copy Alias",
-    donateFooterNote: "💡 Thank you for empowering Latin American deep tech and open scientific research."
+    donateFooterNote: "💡 Thank you for empowering Latin American deep tech and open scientific research.",
+    donateCryptoRegion: "Decentralized / Web3",
+    donateCryptoTitle: "Cryptocurrency",
+    donateCryptoTabBtc: "Bitcoin (BTC)",
+    donateCryptoTabEth: "Ethereum (ETH)",
+    donateCryptoBtcLabel: "BTC Address (Native SegWit · BIP-84):",
+    donateCryptoEthLabel: "ETH Address (Ethereum Network · ERC-20):",
+    donateCopyBtc: "Copy BTC Address",
+    donateCopyEth: "Copy ETH Address",
+    donateCryptoBtcWarn: "<strong>SECURITY WARNING:</strong> Send only Bitcoin (BTC) to this address (Native SegWit BIP-84 format). Sending any other assets will result in permanent loss of your funds.",
+    donateCryptoEthWarn: "<strong>SECURITY WARNING:</strong> Send only Ethereum (ETH) to this address (Ethereum ERC-20 network). Sending any other assets will result in permanent loss of your funds."
   },
 
   es: {
@@ -423,7 +433,17 @@ const FLUID_I18N = {
     donateArgAliasLabel: "Alias MP:",
     donateArgOwnerLabel: "Titular de la cuenta:",
     donateCopyAlias: "Copiar Alias",
-    donateFooterNote: "💡 Muchas gracias por apoyar la investigación científica independiente y el desarrollo tecnológico latinoamericano."
+    donateFooterNote: "💡 Muchas gracias por apoyar la investigación científica independiente y el desarrollo tecnológico latinoamericano.",
+    donateCryptoRegion: "Descentralizado / Web3",
+    donateCryptoTitle: "Criptomonedas",
+    donateCryptoTabBtc: "Bitcoin (BTC)",
+    donateCryptoTabEth: "Ethereum (ETH)",
+    donateCryptoBtcLabel: "Dirección BTC (Native SegWit · BIP-84):",
+    donateCryptoEthLabel: "Dirección ETH (Red Ethereum · ERC-20):",
+    donateCopyBtc: "Copiar Dirección BTC",
+    donateCopyEth: "Copiar Dirección ETH",
+    donateCryptoBtcWarn: "<strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Bitcoin (BTC) a esta dirección (formato Native SegWit BIP-84). Enviar otros activos resultará en la pérdida definitiva de tus fondos.",
+    donateCryptoEthWarn: "<strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Ethereum (ETH) a esta dirección (red Ethereum ERC-20). Enviar otros activos resultará en la pérdida definitiva de tus fondos."
   }
 };
 

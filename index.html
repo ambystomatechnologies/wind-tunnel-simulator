@@ -612,6 +612,88 @@
               </button>
             </div>
           </div>
+
+          <!-- 3. Criptomonedas (BTC / ETH) -->
+          <div class="donate-card donate-card-crypto">
+            <div class="donate-card-header">
+              <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <div class="donate-card-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9 8h4.5a2 2 0 0 1 0 4H9m0 0h5a2.5 2.5 0 0 1 0 5H9m0-9v10m3-12v2m0 8v2m-3-12v2m0 8v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <span class="donate-card-region" data-i18n="donateCryptoRegion">Descentralizado / Web3</span>
+                  <h4 class="donate-card-title" data-i18n="donateCryptoTitle">Criptomonedas</h4>
+                </div>
+              </div>
+              <div class="donate-crypto-tabs">
+                <button type="button" class="donate-crypto-tab-btn active" data-crypto="btc" onclick="switchCryptoTab('btc')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 14.09c-.3.07-.63.11-.97.11v1.3h-1.08v-1.28c-.28 0-.57-.02-.85-.05v1.33H9.43v-1.36c-.22-.03-.43-.07-.62-.12l-1.39.55-.42-1.04.88-.35c.16-.06.27-.22.25-.39L7.3 11.2c-.01-.08-.06-.15-.13-.18L6.2 10.6l.42-1.05 1.34.54c.2-.07.41-.13.64-.17V8.65h1.08v1.23c.27.02.53.05.79.09V8.65h1.08v1.34c1.66.19 2.76.99 2.65 2.45-.07.96-.64 1.58-1.49 1.87.98.37 1.45 1.15 1.3 2.28-.18 1.44-1.39 2.06-2.65 2.15v1.35zm-.33-4.73c.73 0 1.25-.26 1.3-1.02.06-.77-.45-1.05-1.22-1.08l-.83-.03-.26 2.13h1.01zm.26 3.19c.89 0 1.48-.3 1.54-1.18.06-.9-.55-1.22-1.46-1.24l-1.15-.04-.32 2.46h1.39z"/>
+                  </svg>
+                  <span data-i18n="donateCryptoTabBtc">Bitcoin (BTC)</span>
+                </button>
+                <button type="button" class="donate-crypto-tab-btn" data-crypto="eth" onclick="switchCryptoTab('eth')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.944 17.97L4.5 13.658 11.944 24l7.444-10.342-7.444 4.312zm.056-17.97L4.556 12.37l7.444 4.398 7.444-4.398L12 0zm0 14.81L6.208 11.39 12 2.873l5.792 8.517L12 14.81z"/>
+                  </svg>
+                  <span data-i18n="donateCryptoTabEth">Ethereum (ETH)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel BTC -->
+            <div class="donate-crypto-panel active" data-crypto-panel="btc">
+              <div class="donate-info-box" style="cursor: pointer;" onclick="copyDonateToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', document.getElementById('btn-copy-btc'), '¡Dirección copiada! ✓', 'Copiar Dirección BTC')" title="Clic para copiar dirección">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="donate-info-label" data-i18n="donateCryptoBtcLabel">Dirección BTC (Native SegWit · BIP-84):</span>
+                  <span style="font-size: 0.72rem; color: #f7931a; font-weight: 700; letter-spacing: 0.05em;">BIP-84</span>
+                </div>
+                <span class="donate-info-val donate-crypto-address">bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl</span>
+              </div>
+
+              <div class="donate-actions">
+                <button type="button" class="btn-donate-action btn-donate-crypto-btc" id="btn-copy-btc" onclick="copyDonateToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', this, '¡Dirección copiada! ✓', 'Copiar Dirección BTC')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span data-i18n="donateCopyBtc">Copiar Dirección BTC</span>
+                </button>
+              </div>
+
+              <div class="donate-crypto-warning">
+                <span data-i18n="donateCryptoBtcWarn"><strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Bitcoin (BTC) a esta dirección (formato Native SegWit BIP-84). Enviar otros activos resultará en la pérdida definitiva de tus fondos.</span>
+              </div>
+            </div>
+
+            <!-- Panel ETH -->
+            <div class="donate-crypto-panel" data-crypto-panel="eth">
+              <div class="donate-info-box" style="cursor: pointer;" onclick="copyDonateToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', document.getElementById('btn-copy-eth'), '¡Dirección copiada! ✓', 'Copiar Dirección ETH')" title="Clic para copiar dirección">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="donate-info-label" data-i18n="donateCryptoEthLabel">Dirección ETH (Red Ethereum · ERC-20):</span>
+                  <span style="font-size: 0.72rem; color: #a5b4fc; font-weight: 700; letter-spacing: 0.05em;">ERC-20</span>
+                </div>
+                <span class="donate-info-val donate-crypto-address">0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e</span>
+              </div>
+
+              <div class="donate-actions">
+                <button type="button" class="btn-donate-action btn-donate-crypto-eth" id="btn-copy-eth" onclick="copyDonateToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', this, '¡Dirección copiada! ✓', 'Copiar Dirección ETH')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span data-i18n="donateCopyEth">Copiar Dirección ETH</span>
+                </button>
+              </div>
+
+              <div class="donate-crypto-warning">
+                <span data-i18n="donateCryptoEthWarn"><strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Ethereum (ETH) a esta dirección (red Ethereum ERC-20). Enviar otros activos resultará en la pérdida definitiva de tus fondos.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <p style="margin-top: 0.4rem; font-size: 0.82rem; color: #94a3b8; text-align: center;" data-i18n="donateFooterNote">

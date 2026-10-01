@@ -1161,6 +1161,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function switchCryptoTab(crypto) {
+    const modal = document.getElementById('donate-modal');
+    if (!modal) return;
+    modal.querySelectorAll('.donate-crypto-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-crypto') === crypto);
+    });
+    modal.querySelectorAll('.donate-crypto-panel').forEach(panel => {
+      panel.classList.toggle('active', panel.getAttribute('data-crypto-panel') === crypto);
+    });
+  }
+  window.switchCryptoTab = switchCryptoTab;
+
   function copyDonateToClipboard(text, btnElement, successMsg, originalMsg) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(showSuccess).catch(fallback);
@@ -1187,10 +1199,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function showSuccess() {
       btnElement.classList.add('copied');
       const textSpan = btnElement.querySelector('span');
-      if (textSpan) textSpan.textContent = successMsg;
+      const lang = localStorage.getItem('fluid_sim_lang') || 'es';
+      const okMsg = (typeof t === 'function' ? t('donateCopied') : null) || (lang === 'en' ? 'Copied! ✓' : '¡Copiado! ✓');
+      if (textSpan) textSpan.textContent = successMsg || okMsg;
       setTimeout(() => {
         btnElement.classList.remove('copied');
-        if (textSpan) textSpan.textContent = originalMsg;
+        if (textSpan) {
+          const key = textSpan.getAttribute('data-i18n');
+          if (key && typeof t === 'function' && t(key)) {
+            textSpan.innerHTML = t(key);
+          } else {
+            textSpan.textContent = originalMsg;
+          }
+        }
       }, 2200);
     }
   }

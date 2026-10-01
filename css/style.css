@@ -375,6 +375,139 @@ html, body {
   box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
 }
 
+/* Estilos Criptomonedas (BTC / ETH) */
+.donate-card-crypto {
+  grid-column: 1 / -1;
+  border-top: 3px solid #f7931a;
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.donate-card-crypto .donate-card-icon {
+  background: rgba(247, 147, 26, 0.16);
+  color: #f7931a;
+  border: 1px solid rgba(247, 147, 26, 0.35);
+}
+
+.donate-card-crypto .donate-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.donate-crypto-tabs {
+  display: flex;
+  gap: 0.4rem;
+  background: rgba(2, 6, 23, 0.65);
+  padding: 0.25rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.donate-crypto-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.donate-crypto-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.donate-crypto-tab-btn.active[data-crypto="btc"] {
+  background: rgba(247, 147, 26, 0.18);
+  color: #fba93b;
+  border-color: rgba(247, 147, 26, 0.45);
+  box-shadow: 0 2px 8px rgba(247, 147, 26, 0.18);
+}
+
+.donate-crypto-tab-btn.active[data-crypto="eth"] {
+  background: rgba(98, 126, 234, 0.2);
+  color: #a5b4fc;
+  border-color: rgba(98, 126, 234, 0.5);
+  box-shadow: 0 2px 8px rgba(98, 126, 234, 0.18);
+}
+
+.donate-crypto-panel {
+  display: none;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.donate-crypto-panel.active {
+  display: flex;
+  animation: cryptoFadeIn 0.22s ease-out;
+}
+
+@keyframes cryptoFadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.donate-crypto-address {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88rem;
+  word-break: break-all;
+  user-select: all;
+  background: rgba(2, 6, 23, 0.7);
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.45rem;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  letter-spacing: 0.02em;
+}
+
+.btn-donate-crypto-btc:hover {
+  border-color: rgba(247, 147, 26, 0.5);
+  background: rgba(247, 147, 26, 0.12);
+}
+
+.btn-donate-crypto-eth:hover {
+  border-color: rgba(98, 126, 234, 0.5);
+  background: rgba(98, 126, 234, 0.12);
+}
+
+/* Recuadro de Aviso de Seguridad de Criptomonedas */
+.donate-crypto-warning {
+  border: 1px solid rgba(220, 38, 38, 0.7);
+  background: rgba(45, 10, 10, 0.65);
+  color: #fb923c;
+  padding: 0.75rem 0.95rem;
+  border-radius: 6px;
+  font-size: 0.81rem;
+  line-height: 1.48;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 0 14px rgba(220, 38, 38, 0.12);
+}
+
+.donate-crypto-warning strong {
+  color: #f87171;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 580px) {
+  .donate-card-crypto .donate-crypto-tabs {
+    width: 100%;
+  }
+  .donate-crypto-tab-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 .nav-right-actions {
   display: flex;
   align-items: center;
