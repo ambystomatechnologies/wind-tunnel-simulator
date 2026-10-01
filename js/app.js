@@ -159,6 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCloseAbout = document.getElementById('btn-close-about');
   const btnAcceptAbout = document.getElementById('btn-accept-about');
 
+  const donateModal = document.getElementById('donate-modal');
+  const btnOpenDonate = document.getElementById('btn-open-donate');
+  const btnCloseDonate = document.getElementById('btn-close-donate');
+
   // Notificaciones Toast
   function showToast(message, type = 'info', duration = 3200) {
     const container = document.getElementById('toast-container');
@@ -1106,6 +1110,11 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+    if (e.key === 'Escape') {
+      if (aboutModal) aboutModal.style.display = 'none';
+      if (donateModal) donateModal.style.display = 'none';
+    }
+
     if (e.code === 'Space') {
       e.preventDefault();
       sim.isPaused = !sim.isPaused;
@@ -1141,6 +1150,51 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.target === aboutModal) aboutModal.style.display = 'none';
     });
   }
+
+  // Modal Donaciones y Apoyo Open Source
+  if (btnOpenDonate && donateModal) btnOpenDonate.addEventListener('click', () => donateModal.style.display = 'flex');
+  if (btnCloseDonate && donateModal) btnCloseDonate.addEventListener('click', () => donateModal.style.display = 'none');
+
+  if (donateModal) {
+    donateModal.addEventListener('click', (e) => {
+      if (e.target === donateModal) donateModal.style.display = 'none';
+    });
+  }
+
+  function copyDonateToClipboard(text, btnElement, successMsg, originalMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showSuccess).catch(fallback);
+    } else {
+      fallback();
+    }
+
+    function fallback() {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showSuccess();
+      } catch (err) {
+        alert('Error: ' + text);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function showSuccess() {
+      btnElement.classList.add('copied');
+      const textSpan = btnElement.querySelector('span');
+      if (textSpan) textSpan.textContent = successMsg;
+      setTimeout(() => {
+        btnElement.classList.remove('copied');
+        if (textSpan) textSpan.textContent = originalMsg;
+      }, 2200);
+    }
+  }
+  window.copyDonateToClipboard = copyDonateToClipboard;
 
   // --- DETECCIÓN DE DISPOSITIVO MÓVIL ---
   function isMobileOrTabletDevice() {

@@ -195,7 +195,24 @@ const FLUID_I18N = {
     btnMobileScene: "Tunnel",
     btnMobileProps: "Fluid",
     btnCloseDrawer: "✕ Close",
-    adLabel: "ADVERTISEMENT"
+    adLabel: "ADVERTISEMENT",
+    btnDonate: "Donate",
+    donateModalBadge: "COMMUNITY & OPEN SOURCE",
+    donateModalTitle: "Support Ambystoma Technologies",
+    donateModalSubtitle: "Empowering open science, free tools, and tailored deep-tech solutions",
+    donateModalIntro: "At <strong>Ambystoma Technologies</strong>, alongside developing custom hardware and software solutions, we believe in democratizing access to science and computing. That is why we actively build and maintain <strong>100% free and Open Source tools</strong> for researchers, students, and lab professionals worldwide.<br><br>Donations directly fund infrastructure, ensure continuous maintenance, and empower us to keep creating public tools for everyone. Every contribution drives open science forward!",
+    donateGlobalRegion: "Anywhere in the world",
+    donateGlobalTitle: "PayPal International",
+    donateGlobalLabel: "PayPal Account / Email:",
+    donateCopyEmail: "Copy Email",
+    donateCopied: "Copied! ✓",
+    donateOpenPaypal: "Open PayPal ↗",
+    donateArgRegion: "From Argentina",
+    donateArgTitle: "Mercado Pago",
+    donateArgAliasLabel: "Alias MP:",
+    donateArgOwnerLabel: "Account Holder:",
+    donateCopyAlias: "Copy Alias",
+    donateFooterNote: "💡 Thank you for empowering Latin American deep tech and open scientific research."
   },
 
   es: {
@@ -389,7 +406,24 @@ const FLUID_I18N = {
     btnMobileScene: "Túnel",
     btnMobileProps: "Fluido",
     btnCloseDrawer: "✕ Cerrar",
-    adLabel: "PUBLICIDAD"
+    adLabel: "PUBLICIDAD",
+    btnDonate: "Donar",
+    donateModalBadge: "COMUNIDAD Y OPEN SOURCE",
+    donateModalTitle: "Apoyar a Ambystoma Technologies",
+    donateModalSubtitle: "Impulsando la ciencia abierta, herramientas gratuitas y tecnología de vanguardia",
+    donateModalIntro: "En <strong>Ambystoma Technologies</strong>, además de desarrollar soluciones tecnológicas y científicas a medida, creemos firmemente en democratizar el acceso al conocimiento y la computación. Por ello, dedicamos gran parte de nuestro esfuerzo a crear y mantener <strong>herramientas 100% gratuitas y de código abierto (Open Source)</strong> para estudiantes, investigadores y laboratorios de todo el mundo.<br><br>Las donaciones nos permiten costear servidores, acelerar nuevas utilidades públicas y mantener vivas y actualizadas las herramientas disponibles. ¡Tu aporte voluntario hace una gran diferencia en la comunidad!",
+    donateGlobalRegion: "De cualquier parte del mundo",
+    donateGlobalTitle: "PayPal Internacional",
+    donateGlobalLabel: "Cuenta / Correo de PayPal:",
+    donateCopyEmail: "Copiar Correo",
+    donateCopied: "¡Copiado! ✓",
+    donateOpenPaypal: "Ir a PayPal ↗",
+    donateArgRegion: "Desde Argentina",
+    donateArgTitle: "Mercado Pago",
+    donateArgAliasLabel: "Alias MP:",
+    donateArgOwnerLabel: "Titular de la cuenta:",
+    donateCopyAlias: "Copiar Alias",
+    donateFooterNote: "💡 Muchas gracias por apoyar la investigación científica independiente y el desarrollo tecnológico latinoamericano."
   }
 };
 

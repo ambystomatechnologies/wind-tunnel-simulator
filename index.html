@@ -98,20 +98,14 @@
         </div>
       </a>
 
-      <!-- Espacio Publicitario Central en el Header -->
-      <div class="header-ad-zone" id="header-ad-zone">
-        <span class="ad-tag-header" data-i18n="adLabel">PUBLICIDAD</span>
-        <div class="ad-slot-box-header" id="ad-header-slot">
-          <ins class="adsbygoogle"
-               style="display:inline-block;min-width:280px;max-width:468px;width:100%;height:44px;"
-               data-ad-client="ca-pub-5786595894984320"
-               data-ad-slot="3294264167"
-               data-ad-format="horizontal"
-               data-full-width-responsive="false"></ins>
-          <script>
-               (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-        </div>
+      <!-- Botón Translúcido de Donar con Ícono de Corazón Blanco (Reemplaza la publicidad superior) -->
+      <div class="header-donate-zone">
+        <button type="button" class="btn-donate-header" id="btn-open-donate" title="Donar / Support Open Source" aria-label="Donar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="1.2">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span data-i18n="btnDonate">Donar</span>
+        </button>
       </div>
 
       <div class="nav-right-actions">
@@ -523,6 +517,108 @@
       </aside>
     </div>
 
+  </div>
+
+  <!-- Modal de Donaciones y Apoyo Open Source -->
+  <div class="modal-overlay" id="donate-modal" style="display: none;">
+    <div class="modal-card donate-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="donate-logo-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="1">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="badge-donate-tag" data-i18n="donateModalBadge">COMMUNITY &amp; OPEN SOURCE</span>
+            <h3 class="modal-title-custom" data-i18n="donateModalTitle">Support Ambystoma Technologies</h3>
+            <p class="modal-subtitle-custom" data-i18n="donateModalSubtitle">Empowering open science, free tools, and tailored deep-tech solutions</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-close-donate" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="donate-intro-box">
+          <p data-i18n="donateModalIntro">
+            En <strong>Ambystoma Technologies</strong>, además de desarrollar soluciones tecnológicas y científicas a medida, creemos firmemente en democratizar el acceso al conocimiento y la computación. Por ello, dedicamos gran parte de nuestro esfuerzo a crear y mantener <strong>herramientas 100% gratuitas y de código abierto (Open Source)</strong> para estudiantes, investigadores y laboratorios de todo el mundo.<br><br>
+            Las donaciones nos permiten costear servidores, acelerar nuevas utilidades públicas y mantener vivas y actualizadas las herramientas disponibles. ¡Tu aporte voluntario hace una gran diferencia en la comunidad!
+          </p>
+        </div>
+
+        <div class="donate-grid">
+          <!-- 1. De cualquier parte del mundo (PayPal) -->
+          <div class="donate-card donate-card-paypal">
+            <div class="donate-card-header">
+              <div class="donate-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.79.79 0 0 1 .78-.667h6.638c3.27 0 5.688 1.48 5.474 4.885-.187 2.977-2.023 5.097-4.887 5.097H9.722l-1.09 5.86a.642.642 0 0 1-.633.542h-.923v1.899zM19.86 7.64c-.314-1.99-1.92-3.14-4.52-3.14H8.7a.79.79 0 0 0-.78.667L4.814 20.597a.641.641 0 0 0 .633.74h4.606a.641.641 0 0 0 .633-.542l1.09-5.86h3.227c2.864 0 4.7-2.12 4.887-5.097.04-.64.01-1.25-.03-1.8z"/>
+                </svg>
+              </div>
+              <div>
+                <span class="donate-card-region" data-i18n="donateGlobalRegion">De cualquier parte del mundo</span>
+                <h4 class="donate-card-title" data-i18n="donateGlobalTitle">PayPal Internacional</h4>
+              </div>
+            </div>
+
+            <div class="donate-info-box">
+              <span class="donate-info-label" data-i18n="donateGlobalLabel">Cuenta / Correo de PayPal:</span>
+              <span class="donate-info-val">antoniovangritte@gmail.com</span>
+            </div>
+
+            <div class="donate-actions">
+              <button type="button" class="btn-donate-action" id="btn-copy-paypal" onclick="copyDonateToClipboard('antoniovangritte@gmail.com', this, '¡Copiado! ✓', 'Copiar Correo')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span data-i18n="donateCopyEmail">Copiar Correo</span>
+              </button>
+              <a href="https://www.paypal.com/signin" target="_blank" rel="noopener noreferrer" class="btn-donate-action btn-donate-primary-link" data-i18n="donateOpenPaypal">
+                Ir a PayPal ↗
+              </a>
+            </div>
+          </div>
+
+          <!-- 2. Desde Argentina (Mercado Pago) -->
+          <div class="donate-card donate-card-mp">
+            <div class="donate-card-header">
+              <div class="donate-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                  <line x1="2" y1="10" x2="22" y2="10"></line>
+                </svg>
+              </div>
+              <div>
+                <span class="donate-card-region" data-i18n="donateArgRegion">Desde Argentina</span>
+                <h4 class="donate-card-title" data-i18n="donateArgTitle">Mercado Pago</h4>
+              </div>
+            </div>
+
+            <div class="donate-info-box">
+              <span class="donate-info-label" data-i18n="donateArgAliasLabel">Alias Mercado Pago:</span>
+              <span class="donate-info-val">micro.cosmonauta</span>
+              <span class="donate-info-label" style="margin-top: 0.35rem;" data-i18n="donateArgOwnerLabel">Titular de la cuenta:</span>
+              <span class="donate-info-val" style="font-family: inherit; font-size: 0.88rem;">Brandon Antonio Segura Torres</span>
+            </div>
+
+            <div class="donate-actions">
+              <button type="button" class="btn-donate-action" id="btn-copy-mp" onclick="copyDonateToClipboard('micro.cosmonauta', this, '¡Alias copiado! ✓', 'Copiar Alias')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span data-i18n="donateCopyAlias">Copiar Alias</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: 0.4rem; font-size: 0.82rem; color: #94a3b8; text-align: center;" data-i18n="donateFooterNote">
+          💡 Muchas gracias por apoyar la investigación científica independiente y el desarrollo tecnológico latinoamericano.
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Acerca de -->
