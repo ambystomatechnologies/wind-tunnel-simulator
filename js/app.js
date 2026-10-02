@@ -659,6 +659,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (now - lastHudUpdate < 60) return; // 16 FPS para evitar parpadeos y jitter
     lastHudUpdate = now;
 
+    if (element instanceof FlowProbe) {
+      if (hudElemName) hudElemName.textContent = element.name;
+      if (hudDragVal) hudDragVal.textContent = "---";
+      if (hudLiftVal) hudLiftVal.textContent = "---";
+      if (hudCdVal) hudCdVal.textContent = "---";
+      if (hudClVal) hudClVal.textContent = "---";
+      if (hudEffVal) hudEffVal.textContent = "---";
+      if (hudAoaVal) hudAoaVal.textContent = "---";
+      if (hudReVal) hudReVal.textContent = "---";
+      if (hudRegimeVal) {
+        hudRegimeVal.textContent = `${element.measuredSpeed.toFixed(2)} m/s`;
+        hudRegimeVal.className = "hud-val hud-regime-badge regime-laminar";
+      }
+      if (hudPmaxVal) hudPmaxVal.textContent = `${element.measuredP.toFixed(1)} Pa`;
+      if (hudPminVal) hudPminVal.textContent = `ω: ${element.measuredVorticity.toFixed(1)} s⁻¹`;
+      return;
+    }
+
     if (!element || !(element instanceof HydrodynamicObstacle)) {
       if (hudElemName) hudElemName.textContent = "Sin selección";
       if (hudDragVal) hudDragVal.textContent = "---";

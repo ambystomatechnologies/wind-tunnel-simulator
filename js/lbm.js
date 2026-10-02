@@ -507,7 +507,7 @@ class LatticeBoltzmannEngine {
     if (!elements || elements.length === 0) return;
 
     for (let elem of elements) {
-      if (!elem.isActive) continue;
+      if (!elem.isActive || elem.isProbe || elem.isSolid === false) continue;
 
       if (elem.loops && elem.loops.length > 0) {
         for (let loop of elem.loops) {

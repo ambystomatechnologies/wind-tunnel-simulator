@@ -751,13 +751,14 @@ class FluidField {
     this.obstacleIndex.fill(-1);
 
     this.activeObstacles = obstacles || [];
-    this.lastObstacleAABB = (obstacles && obstacles.length > 0 && obstacles[0].isActive) ? obstacles[0].getAABB() : null;
+    const solidObstacles = (obstacles || []).filter(o => o && o.isActive && !o.isProbe && o.isSolid !== false);
+    this.lastObstacleAABB = (solidObstacles.length > 0) ? solidObstacles[0].getAABB() : null;
 
     if (!obstacles || obstacles.length === 0) return;
 
     for (let obsIdx = 0; obsIdx < obstacles.length; obsIdx++) {
       const obs = obstacles[obsIdx];
-      if (!obs.isActive) continue;
+      if (!obs.isActive || obs.isProbe || obs.isSolid === false) continue;
 
       const aabb = obs.getAABB();
       const minI = Math.max(1, Math.floor(aabb[0] / dx));
@@ -796,7 +797,7 @@ class FluidField {
 
   // --- CÁLCULO DE FUERZAS HIDRODINÁMICAS (DRAG & LIFT) ---
   calculateHydrodynamicForces(obstacle, obsIdx) {
-    if (!obstacle || !obstacle.isActive) {
+    if (!obstacle || !obstacle.isActive || obstacle.isProbe || obstacle.isSolid === false) {
       return {
         dragForce: 0,
         liftForce: 0,

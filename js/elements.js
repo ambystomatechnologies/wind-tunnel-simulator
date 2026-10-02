@@ -62,6 +62,8 @@ class FluidElement {
     this.name = name;
     this.isActive = true;
     this.isSelected = false;
+    this.isSolid = true;
+    this.isProbe = false;
   }
 
   getAABB() {
@@ -494,6 +496,8 @@ class FlowProbe extends FluidElement {
     this.measuredV = 0.0;
     this.measuredP = 0.0;
     this.measuredVorticity = 0.0;
+    this.isSolid = false;
+    this.isProbe = true;
   }
 
   getAABB() {

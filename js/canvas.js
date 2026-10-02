@@ -1517,16 +1517,32 @@ class FluidCanvasController {
 
   drawFlowProbe(ctx, probe) {
     const sp = this.worldToScreen(probe.x, probe.y);
-    const gx = probe.x / this.fluid.dx;
-    const gy = probe.y / this.fluid.dy;
+    let uVal = 0, vVal = 0, pVal = 0, vortVal = 0, speed = 0;
 
-    const uVal = this.fluid.sampleBilinear(this.fluid.u, gx, gy);
-    const vVal = this.fluid.sampleBilinear(this.fluid.v, gx, gy);
-    const pVal = this.fluid.sampleBilinear(this.fluid.p, gx, gy);
-    const vortVal = this.fluid.sampleBilinear(this.fluid.vorticity, gx, gy);
-    const speed = Math.hypot(uVal, vVal);
+    if (this.isLBMMode) {
+      const lx = Math.max(1, Math.min(this.lbm.nx - 2, (probe.x / this.fluid.domainWidth) * this.lbm.nx));
+      const ly = Math.max(1, Math.min(this.lbm.ny - 2, (probe.y / this.fluid.domainHeight) * this.lbm.ny));
+      const idx = Math.floor(lx) + Math.floor(ly) * this.lbm.nx;
+      const scaleToMs = this.fluid.inflowVelocity / Math.max(0.01, this.lbm.speed);
+      uVal = this.lbm.ux[idx] * scaleToMs;
+      vVal = this.lbm.uy[idx] * scaleToMs;
+      speed = Math.hypot(uVal, vVal);
+      pVal = (this.lbm.rho[idx] - 1.0) * (1.0 / 3.0) * this.fluid.density * (scaleToMs * scaleToMs);
+      vortVal = this.lbm.curl[idx] * scaleToMs * (this.lbm.nx / this.fluid.domainWidth);
+    } else {
+      const gx = probe.x / this.fluid.dx;
+      const gy = probe.y / this.fluid.dy;
+
+      uVal = this.fluid.sampleBilinear(this.fluid.u, gx, gy);
+      vVal = this.fluid.sampleBilinear(this.fluid.v, gx, gy);
+      pVal = this.fluid.sampleBilinear(this.fluid.p, gx, gy);
+      vortVal = this.fluid.sampleBilinear(this.fluid.vorticity, gx, gy);
+      speed = Math.hypot(uVal, vVal);
+    }
 
     probe.measuredSpeed = speed;
+    probe.measuredU = uVal;
+    probe.measuredV = vVal;
     probe.measuredP = pVal;
     probe.measuredVorticity = vortVal;
 
