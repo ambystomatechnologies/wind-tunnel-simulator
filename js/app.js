@@ -1238,6 +1238,16 @@ document.addEventListener('DOMContentLoaded', () => {
   window.copyToClipboard = copyToClipboard;
   window.copyDonateToClipboard = copyToClipboard;
 
+  function copyCitationToClipboard(btn) {
+    const textEl = document.getElementById('citation-box-text');
+    const text = textEl ? textEl.innerText.trim() : 'Segura Torres, B. A. (2025). 2D Fluid Dynamics & Wind Tunnel Simulator [Software]. Ambystoma Technologies. https://ambystomatechnologies.github.io/';
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    const successMsg = isEn ? 'Citation copied! ✓' : '¡Cita copiada! ✓';
+    const origMsg = isEn ? 'Copy Citation' : 'Copiar Cita';
+    copyToClipboard(text, btn, successMsg, origMsg);
+  }
+  window.copyCitationToClipboard = copyCitationToClipboard;
+
   // --- DETECCIÓN DE DISPOSITIVO MÓVIL ---
   function isMobileOrTabletDevice() {
     const uaCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

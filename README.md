@@ -94,4 +94,16 @@ The **Schroeder LBM (Vorticity/Curl, Flowlines, and Speed Magnitude)** visualiza
 
 ---
 
+## 🖋️ Author & Academic Citation
+
+This interactive 2D fluid dynamics and wind tunnel simulation suite was conceived, designed, and developed by **Brandon Antonio Segura Torres** for **Ambystoma Technologies**.
+
+If you use this tool in academic research, scientific papers, engineering theses, or educational presentations, please cite it as:
+
+```text
+Segura Torres, B. A. (2025). 2D Fluid Dynamics & Wind Tunnel Simulator [Software]. Ambystoma Technologies. https://ambystomatechnologies.github.io/
+```
+
+---
+
 © 2026 **[Ambystoma Technologies](https://ambystomatechnologies.github.io/)** · Developing open science and technology accessible to everyone.

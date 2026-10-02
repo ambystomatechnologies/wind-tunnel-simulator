@@ -720,7 +720,38 @@
           <p data-i18n="aboutDevDesc" style="color: var(--text-dim); font-size: 0.82rem;">Suite interactiva de mecánica de fluidos y túnel de viento en tiempo real.</p>
         </div>
 
-        <div style="background: rgba(0, 255, 204, 0.06); border: 1px solid rgba(0, 255, 204, 0.3); border-radius: 8px; padding: 0.85rem;">
+        <!-- Autoría y Citación de la Herramienta -->
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.45rem;">
+            <h5 style="color: #fbbf24; margin: 0; display: flex; align-items: center; gap: 0.4rem; font-size: 0.92rem;" data-i18n="aboutAuthorCitationTitle">
+              <span>🖋️</span> Autoría y Citación de la Herramienta
+            </h5>
+            <span style="font-size: 0.72rem; background: rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 9999px; padding: 0.15rem 0.55rem; font-weight: 600;" data-i18n="aboutAuthorRoleBadge">
+              Autor y Desarrollador
+            </span>
+          </div>
+
+          <p style="font-size: 0.82rem; color: #fef3c7; margin: 0 0 0.45rem 0; line-height: 1.5;" data-i18n="aboutAuthorText">
+            Esta herramienta interactiva de dinámica de fluidos y túnel de viento ha sido concebida, desarrollada y mantenida por <strong>Brandon Antonio Segura Torres</strong> para <strong>Ambystoma Technologies</strong>.
+          </p>
+
+          <p style="font-size: 0.78rem; color: #cbd5e1; margin: 0 0 0.35rem 0;" data-i18n="aboutCitationPrompt">
+            Si utilizas este simulador para investigaciones académicas, publicaciones científicas, proyectos de ingeniería o divulgación técnica, por favor cita la herramienta de la siguiente manera:
+          </p>
+
+          <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 0.55rem 0.75rem; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.76rem; color: #fde68a; line-height: 1.45; word-break: break-word; user-select: all;" id="citation-box-text" data-i18n="aboutCitationText">
+            Segura Torres, B. A. (2025). Simulador 2D de Fluidos y Túnel de Viento Interactivo [Software computacional]. Ambystoma Technologies. https://ambystomatechnologies.github.io/
+          </div>
+
+          <div style="margin-top: 0.5rem;">
+            <button type="button" class="btn-donate-action" id="btn-copy-citation" style="padding: 0.32rem 0.75rem; font-size: 0.76rem; border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.14); color: #fef08a;" onclick="copyCitationToClipboard(this)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 0.25rem;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span data-i18n="aboutBtnCopyCitation">Copiar Cita</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="background: rgba(0, 255, 204, 0.06); border: 1px solid rgba(0, 255, 204, 0.3); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
           <h5 style="color: var(--accent); margin-bottom: 0.4rem;" data-i18n="aboutPhysicsTitle">🔬 Aspectos Técnicos del Motor Físico</h5>
           <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.35rem;">
             <li data-i18n="aboutPhysics1">Resolución bidimensional completa de Navier-Stokes incompresible con proyección de presión.</li>
