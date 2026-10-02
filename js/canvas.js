@@ -1283,7 +1283,24 @@ class FluidCanvasController {
 
   drawHydrodynamicBody(ctx, obs, obsIdx) {
     const pts = obs.boundaryPoints;
-    if (pts.length < 3) return;
+    if (!pts || pts.length < 2) return;
+
+    if (pts.length === 2) {
+      ctx.save();
+      const p0 = this.worldToScreen(pts[0][0], pts[0][1]);
+      const p1 = this.worldToScreen(pts[1][0], pts[1][1]);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.strokeStyle = obs.isSelected ? '#00ffcc' : '#38bdf8';
+      ctx.lineWidth = obs.isSelected ? 5 : 4;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = obs.isSelected ? 'rgba(0, 255, 204, 0.6)' : 'rgba(56, 189, 248, 0.4)';
+      ctx.shadowBlur = obs.isSelected ? 14 : 6;
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
 
     ctx.save();
 
@@ -1431,7 +1448,20 @@ class FluidCanvasController {
       const ringRadius = refLen * 0.7 + 26;
       const isMobile = this.isMobileDevice();
 
-      ctx.strokeStyle = isMobile ? 'rgba(0, 255, 204, 0.65)' : 'rgba(0, 255, 204, 0.35)';
+      const useBlackRing = (
+        this.visMode === VisMode.SMOKE ||
+        this.visMode === VisMode.PRESSURE ||
+        this.visMode === VisMode.VELOCITY ||
+        this.visMode === VisMode.SCHROEDER_CURL ||
+        this.visMode === VisMode.SCHROEDER_SPEED ||
+        this.visMode === VisMode.SCHROEDER_FLOWLINES
+      );
+
+      const ringStroke = useBlackRing
+        ? (isMobile ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.70)')
+        : (isMobile ? 'rgba(0, 255, 204, 0.65)' : 'rgba(0, 255, 204, 0.35)');
+
+      ctx.strokeStyle = ringStroke;
       ctx.lineWidth = isMobile ? 2.0 : 1.5;
       ctx.setLineDash([5, 4]);
       ctx.beginPath();
@@ -1446,14 +1476,14 @@ class FluidCanvasController {
 
       // En pantallas táctiles móviles: halo resplandeciente para fácil ubicación táctil
       if (isMobile) {
-        ctx.fillStyle = 'rgba(0, 255, 204, 0.25)';
+        ctx.fillStyle = useBlackRing ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 255, 204, 0.25)';
         ctx.beginPath();
         ctx.arc(hx, hy, 15, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      ctx.fillStyle = '#00ffcc';
-      ctx.strokeStyle = '#021024';
+      ctx.fillStyle = useBlackRing ? '#000000' : '#00ffcc';
+      ctx.strokeStyle = useBlackRing ? '#ffffff' : '#021024';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(hx, hy, isMobile ? 9 : 6, 0, Math.PI * 2);
@@ -1461,9 +1491,17 @@ class FluidCanvasController {
       ctx.stroke();
 
       // Etiqueta del ángulo
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = isMobile ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
+      ctx.save();
+      if (useBlackRing) {
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+        ctx.shadowBlur = 3;
+        ctx.fillStyle = '#000000';
+      } else {
+        ctx.fillStyle = '#e2e8f0';
+      }
+      ctx.font = isMobile ? 'bold 11px Inter, sans-serif' : 'bold 10px Inter, sans-serif';
       ctx.fillText(`${Math.round(obs.currentRotationDeg)}°`, hx + (isMobile ? 14 : 10), hy - 4);
+      ctx.restore();
     }
 
     ctx.restore();

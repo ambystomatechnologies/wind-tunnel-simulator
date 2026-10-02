@@ -23,7 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Estilos Principales con versionado para invalidar caché -->
-  <link rel="stylesheet" href="css/style.css?v=20261001_v8_numerics">
+  <link rel="stylesheet" href="css/style.css?v=20261002_v12_clean">
 
   <!-- Estilos Selector de Idioma (Portal Ambystoma Oficial) -->
   <style>
@@ -119,11 +119,6 @@
           <span>ℹ️</span>
           <span data-i18n="btnAbout">Acerca de</span>
         </button>
-
-        <div class="badge-security" data-i18n-title="securityBadgeTitle">
-          <span>⚡</span>
-          <span data-i18n="securityBadgeText">100% en Navegador</span>
-        </div>
       </div>
     </header>
 
@@ -172,14 +167,14 @@
               <span data-i18n="lblVisMode" style="font-size: 0.8rem; font-weight: 600; color: #8bb4e8;">Modo de Vista CFD / Físico:</span>
             </div>
             <select id="cb-vis-mode-left" class="select-cfd select-vis-mode-highlight" style="width: 100%;">
-              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Réplica Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
-              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
-              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
               <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
               <option value="pressure" data-i18n="visPressure">📊 CFD: Mapa de Presión Estática (Pa)</option>
               <option value="velocity" data-i18n="visVelocity">⚡ CFD: Magnitud de Velocidad (m/s)</option>
               <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad y Remolinos (s⁻¹)</option>
               <option value="particles" data-i18n="visParticles">✨ CFD: Trazadores de Partículas</option>
+              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
+              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
+              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
             </select>
           </div>
 
@@ -281,21 +276,19 @@
             <span class="tools-group-title" data-i18n="groupVisDemos">Visualización y Demos</span>
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;" data-i18n="lblVisMode">Visor CFD / LBM:</div>
             <select id="cb-vis-mode-toolbar" class="select-cfd select-vis-mode-highlight" style="width: 100%; margin-bottom: 0.5rem;">
-              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Réplica Schroeder (LBM · Vorticidad)</option>
-              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo</option>
-              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Rapidez de Flujo</option>
               <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
               <option value="pressure" data-i18n="visPressure">📊 CFD: Presión Estática (Pa)</option>
               <option value="velocity" data-i18n="visVelocity">⚡ CFD: Velocidad (m/s)</option>
               <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad (s⁻¹)</option>
               <option value="particles" data-i18n="visParticles">✨ CFD: Partículas Trazadoras</option>
+              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM · Vorticidad)</option>
+              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo</option>
+              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Rapidez de Flujo</option>
             </select>
 
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;" data-i18n="lblDemos">Demos Didácticas:</div>
             <select id="cb-demos" class="select-cfd" style="width: 100%;">
               <option value="" selected data-i18n="optDemos">Demos de Física...</option>
-              <option value="13" data-i18n="optDemo13">13. [LBM] Placa / Línea de Schroeder (Vórtices Físicos)</option>
-              <option value="14" data-i18n="optDemo14">14. [LBM] Cuña Aerodinámica con Turbulencia Real</option>
               <option value="1" data-i18n="optDemo1">1. Perfil NACA 0012 (Sustentación)</option>
               <option value="2" data-i18n="optDemo2">2. Calle de Vórtices de Von Kármán</option>
               <option value="3" data-i18n="optDemo3">3. Gota vs. Placa Plana (Arrastre)</option>
@@ -308,6 +301,8 @@
               <option value="10" data-i18n="optDemo10">10. Tobera Convergente-Divergente</option>
               <option value="11" data-i18n="optDemo11">11. Hidroala con Efecto Suelo</option>
               <option value="12" data-i18n="optDemo12">12. Figura Esculpida a Mano</option>
+              <option value="13" data-i18n="optDemo13">13. [LBM] Placa / Línea de Schroeder (Vórtices Físicos)</option>
+              <option value="14" data-i18n="optDemo14">14. [LBM] Cuña Aerodinámica con Turbulencia Real</option>
             </select>
           </div>
 
@@ -404,21 +399,25 @@
               <span data-i18n="lblViscosity">Viscosidad Cinemática (ν):</span>
               <span class="ctrl-value" id="lbl-viscosity-value">0.00015 m²/s</span>
             </div>
-            <input type="range" id="slider-viscosity" class="slider-custom" min="1" max="100" value="15">
+            <input type="range" id="slider-viscosity" class="slider-custom" min="1" max="100" value="39" title="Ajusta la resistencia interna del fluido (desde superfluido hasta miel espesa)">
           </div>
 
           <div class="ctrl-row">
             <div class="ctrl-label-row">
-              <span data-i18n="lblDensity">Densidad del Fluido (ρ, kg/m³):</span>
+              <span data-i18n="lblDensity">Densidad del Fluido (ρ):</span>
+              <span class="ctrl-value" id="lbl-density-value">1.225 kg/m³</span>
             </div>
-            <input type="number" id="spin-density" class="input-num" min="0.1" max="2000.0" step="0.1" value="1.225">
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="range" id="slider-density" class="slider-custom" min="0.1" max="2000.0" step="0.5" value="1.2" style="flex: 1;" title="Control deslizante de densidad (Máximo: 2000 kg/m³)">
+              <input type="number" id="spin-density" class="input-num" min="0.1" max="2000.0" step="0.1" value="1.225" style="width: 82px; text-align: right;" title="Valor numérico de densidad (0.1 a 2000 kg/m³)">
+            </div>
           </div>
 
           <div class="preset-buttons-grid">
             <button type="button" class="btn-mat-preset active" data-mat="air" data-i18n="btnPresetAir">Aire</button>
             <button type="button" class="btn-mat-preset" data-mat="water" data-i18n="btnPresetWater">Agua</button>
             <button type="button" class="btn-mat-preset" data-mat="oil" data-i18n="btnPresetOil">Aceite</button>
-            <button type="button" class="btn-mat-preset" data-mat="glycerin" data-i18n="btnPresetHoney">Glicerina</button>
+            <button type="button" class="btn-mat-preset" data-mat="honey" data-i18n="btnPresetHoney">🍯 Miel</button>
             <button type="button" class="btn-mat-preset" data-mat="superfluid" data-i18n="btnPresetSuper">Superfluido</button>
           </div>
 
@@ -461,14 +460,14 @@
               <span data-i18n="lblVisMode">Modo de Vista CFD / Físico:</span>
             </div>
             <select id="cb-vis-mode" class="select-cfd" style="width: 100%; margin-top: 0.35rem;">
-              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Réplica Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
-              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
-              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
               <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
               <option value="pressure" data-i18n="visPressure">📊 CFD: Mapa de Presión Estática (Pa)</option>
               <option value="velocity" data-i18n="visVelocity">⚡ CFD: Magnitud de Velocidad (m/s)</option>
               <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad y Remolinos (s⁻¹)</option>
               <option value="particles" data-i18n="visParticles">✨ CFD: Trazadores de Partículas</option>
+              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
+              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
+              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
             </select>
           </div>
 
@@ -801,7 +800,7 @@
         <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 0.85rem; margin-top: 0.6rem;">
           <h5 style="color: #38bdf8; margin-bottom: 0.4rem;" data-i18n="aboutBiblioTitle">📚 Bibliografía y Créditos Científicos (Visores Schroeder LBM)</h5>
           <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.45rem;" data-i18n="aboutBiblioDesc">
-            Los modos de visualización Réplica Schroeder (LBM · Vorticidad/Curl, Líneas de Flujo y Rapidez) están basados en el algoritmo y trabajo de investigación de:
+            Los modos de visualización Schroeder (LBM · Vorticidad/Curl, Líneas de Flujo y Rapidez) están basados en el algoritmo y trabajo de investigación de:
           </p>
           <ul style="padding-left: 1.25rem; font-size: 0.8rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.35rem;">
             <li>
@@ -904,12 +903,12 @@
   <!-- Contenedor de Toasts -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- Scripts en orden de dependencia -->
-  <script src="js/i18n.js?v=20261001_v9_mobile_en"></script>
-  <script src="js/physics.js?v=20261001_v9_mobile_en"></script>
-  <script src="js/lbm.js?v=20261001_v9_mobile_en"></script>
-  <script src="js/elements.js?v=20261001_v9_mobile_en"></script>
-  <script src="js/canvas.js?v=20261001_v9_mobile_en"></script>
-  <script src="js/app.js?v=20261001_v9_mobile_en"></script>
+  <!-- Scripts en orden de dependencia con versionado anticaché -->
+  <script src="js/i18n.js?v=20261002_v15_black_ring"></script>
+  <script src="js/physics.js?v=20261002_v15_black_ring"></script>
+  <script src="js/lbm.js?v=20261002_v15_black_ring"></script>
+  <script src="js/elements.js?v=20261002_v15_black_ring"></script>
+  <script src="js/canvas.js?v=20261002_v15_black_ring"></script>
+  <script src="js/app.js?v=20261002_v15_black_ring"></script>
 </body>
 </html>

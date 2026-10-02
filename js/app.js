@@ -445,20 +445,89 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4. Viscosidad del fluido (con escala logarítmica para abarcar aire, agua, aceite)
+  // 4. Viscosidad y Densidad del fluido (con escala continua desde superfluido hasta miel espesa)
+  const sliderDensity = document.getElementById('slider-density');
+  const lblDensityValue = document.getElementById('lbl-density-value');
+
+  function updateViscosityDisplay() {
+    const nu = sim.fluid.viscosity;
+    const rho = sim.fluid.density;
+    const mu = rho * nu; // Viscosidad dinámica en Pa·s
+    let muStr = '';
+    if (mu < 0.001) {
+      muStr = `μ: ${(mu * 1000).toFixed(2)} mPa·s`;
+    } else if (mu < 0.1) {
+      muStr = `μ: ${(mu * 1000).toFixed(1)} mPa·s`;
+    } else {
+      muStr = `μ: ${mu.toFixed(2)} Pa·s`;
+    }
+
+    let matTag = '';
+    if (nu >= 0.004) matTag = ' (Miel)';
+    else if (nu >= 0.0008) matTag = ' (Aceite)';
+    else if (nu >= 0.0001) matTag = ' (Aire)';
+    else if (nu >= 0.00003) matTag = ' (Agua)';
+    else matTag = ' (Superfluido)';
+
+    if (lblViscosityValue) {
+      lblViscosityValue.textContent = `${nu.toFixed(5)} m²/s · ${muStr}${matTag}`;
+    }
+  }
+
+  function setFluidDensity(val) {
+    const clamped = Math.max(0.1, Math.min(2000.0, parseFloat(val) || 1.225));
+    sim.fluid.density = clamped;
+    if (sliderDensity && Math.abs(parseFloat(sliderDensity.value) - clamped) > 0.01) {
+      sliderDensity.value = clamped;
+    }
+    if (spinDensity && Math.abs(parseFloat(spinDensity.value) - clamped) > 0.01) {
+      spinDensity.value = clamped.toFixed(clamped < 10 ? 2 : 1);
+    }
+    if (lblDensityValue) {
+      lblDensityValue.textContent = `${clamped.toFixed(clamped < 10 ? 2 : 1)} kg/m³`;
+    }
+    updateViscosityDisplay();
+  }
+
   if (sliderViscosity) {
     sliderViscosity.min = 1;
     sliderViscosity.max = 100;
-    sliderViscosity.value = 15;
-    if (lblViscosityValue) lblViscosityValue.textContent = "0.00015 m²/s (Aire)";
+    sliderViscosity.value = 46;
 
     sliderViscosity.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
-      // Rango de 0.00001 a 0.005 m²/s
-      const nu = (val * val) * 0.0000008;
+      // Rango logarítmico desde 0.000005 m²/s (superfluido) hasta 0.0080 m²/s (miel espesa)
+      const nu = 0.000005 * Math.pow(1600, (val - 1) / 99.0);
       sim.fluid.viscosity = nu;
-      if (sim.lbm) sim.lbm.viscosity = 0.018 + (val / 100.0) * 0.042;
-      if (lblViscosityValue) lblViscosityValue.textContent = `${nu.toFixed(5)} m²/s`;
+      if (sim.lbm) {
+        sim.lbm.viscosity = 0.018 + (val / 100.0) * 0.052;
+        sim.lbm.contrast = val > 75 ? 0.6 : 1.0;
+      }
+      updateViscosityDisplay();
+    });
+  }
+
+  // Densidad del Fluido ρ (Slider + Input numérico sincronizados con tope físico de 2000 kg/m³)
+  if (sliderDensity) {
+    sliderDensity.min = 0.1;
+    sliderDensity.max = 2000.0;
+    sliderDensity.step = 0.5;
+    sliderDensity.value = sim.fluid.density;
+    sliderDensity.addEventListener('input', (e) => {
+      setFluidDensity(e.target.value);
+    });
+  }
+
+  if (spinDensity) {
+    spinDensity.min = 0.1;
+    spinDensity.max = 2000.0;
+    spinDensity.step = 0.1;
+    spinDensity.value = sim.fluid.density;
+    spinDensity.addEventListener('input', (e) => {
+      setFluidDensity(e.target.value);
+    });
+    spinDensity.addEventListener('change', (e) => {
+      setFluidDensity(e.target.value);
     });
   }
 
@@ -472,58 +541,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (mat === 'air' || mat === 'btnPresetAir') {
         sim.fluid.viscosity = 0.00015;
-        sim.fluid.density = 1.225;
-        if (sliderViscosity) sliderViscosity.value = 15;
-        if (lblViscosityValue) lblViscosityValue.textContent = "0.00015 m²/s";
-        if (spinDensity) spinDensity.value = 1.225;
-        if (sim.lbm) sim.lbm.viscosity = 0.018 + (15 / 100.0) * 0.042;
-        showToast("Medio configurado: Aire (ρ = 1.225 kg/m³, ν = 1.5e-4)", "info");
+        setFluidDensity(1.225);
+        if (sliderViscosity) sliderViscosity.value = 46;
+        if (sim.lbm) sim.lbm.viscosity = 0.018 + (46 / 100.0) * 0.052;
+        updateViscosityDisplay();
+        showToast("Medio configurado: Aire (ρ = 1.225 kg/m³, ν = 1.5e-4 m²/s)", "info");
       } else if (mat === 'water' || mat === 'btnPresetWater') {
         sim.fluid.viscosity = 0.00005;
-        sim.fluid.density = 1000.0;
-        if (sliderViscosity) sliderViscosity.value = 8;
-        if (lblViscosityValue) lblViscosityValue.textContent = "0.00005 m²/s";
-        if (spinDensity) spinDensity.value = 1000.0;
-        if (sim.lbm) sim.lbm.viscosity = 0.018 + (8 / 100.0) * 0.042;
-        showToast("Medio configurado: Agua líquida (ρ = 1000 kg/m³, ν = 5.0e-5)", "info");
+        setFluidDensity(1000.0);
+        if (sliderViscosity) sliderViscosity.value = 26;
+        if (sim.lbm) sim.lbm.viscosity = 0.018 + (26 / 100.0) * 0.052;
+        updateViscosityDisplay();
+        showToast("Medio configurado: Agua líquida (ρ = 1000 kg/m³, ν = 5.0e-5 m²/s)", "info");
       } else if (mat === 'oil' || mat === 'btnPresetOil') {
         sim.fluid.viscosity = 0.0012;
-        sim.fluid.density = 880.0;
-        if (sliderViscosity) sliderViscosity.value = 40;
-        if (lblViscosityValue) lblViscosityValue.textContent = "0.00120 m²/s";
-        if (spinDensity) spinDensity.value = 880.0;
-        if (sim.lbm) sim.lbm.viscosity = 0.018 + (40 / 100.0) * 0.042;
-        showToast("Medio configurado: Aceite lubricante (ρ = 880 kg/m³, ν = 1.2e-3)", "info");
-      } else if (mat === 'glycerin' || mat === 'btnPresetHoney') {
-        sim.fluid.viscosity = 0.0045;
-        sim.fluid.density = 1260.0;
-        if (sliderViscosity) sliderViscosity.value = 75;
-        if (lblViscosityValue) lblViscosityValue.textContent = "0.00450 m²/s";
-        if (spinDensity) spinDensity.value = 1260.0;
-        if (sim.lbm) sim.lbm.viscosity = 0.018 + (75 / 100.0) * 0.042;
-        showToast("Medio configurado: Glicerina viscosa (ρ = 1260 kg/m³, ν = 4.5e-3)", "info");
+        setFluidDensity(880.0);
+        if (sliderViscosity) sliderViscosity.value = 74;
+        if (sim.lbm) sim.lbm.viscosity = 0.018 + (74 / 100.0) * 0.052;
+        updateViscosityDisplay();
+        showToast("Medio configurado: Aceite lubricante (ρ = 880 kg/m³, ν = 1.2e-3 m²/s)", "info");
+      } else if (mat === 'honey' || mat === 'btnPresetHoney' || mat === 'glycerin') {
+        sim.fluid.viscosity = 0.0060;
+        setFluidDensity(1420.0);
+        if (sliderViscosity) sliderViscosity.value = 95;
+        if (sim.lbm) {
+          sim.lbm.viscosity = 0.070;
+          sim.lbm.contrast = 0.6;
+        }
+        updateViscosityDisplay();
+        showToast("Medio configurado: 🍯 Miel espesa (ρ = 1420 kg/m³, ν = 6.0e-3 m²/s, μ = 8.52 Pa·s)", "info");
       } else if (mat === 'superfluid' || mat === 'btnPresetSuper') {
         sim.fluid.viscosity = 0.000005;
-        sim.fluid.density = 1.0;
-        if (sliderViscosity) sliderViscosity.value = 2;
-        if (lblViscosityValue) lblViscosityValue.textContent = "0.000005 m²/s";
-        if (spinDensity) spinDensity.value = 1.0;
-        if (sim.lbm) sim.lbm.viscosity = 0.018 + (2 / 100.0) * 0.042;
+        setFluidDensity(1.0);
+        if (sliderViscosity) sliderViscosity.value = 1;
+        if (sim.lbm) sim.lbm.viscosity = 0.018;
+        updateViscosityDisplay();
         showToast("Medio configurado: Superfluido cuasi-ideal (ν ≈ 0)", "info");
       }
     });
   });
 
-  // 4. Densidad del Fluido ρ
-  if (spinDensity) {
-    spinDensity.min = 0.1;
-    spinDensity.max = 2000.0;
-    spinDensity.step = 0.1;
-    spinDensity.value = sim.fluid.density;
-    spinDensity.addEventListener('change', (e) => {
-      sim.fluid.density = Math.max(0.01, parseFloat(e.target.value) || 1.225);
-    });
-  }
+  // Inicialización de etiquetas de viscosidad y densidad
+  updateViscosityDisplay();
+  setFluidDensity(sim.fluid.density);
 
   // 5. Rotación del Elemento Seleccionado
   if (sliderRotation) {
@@ -1081,7 +1141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sliderContrast) sliderContrast.value = 0;
         if (lblContrastValue) lblContrastValue.textContent = "1.0x";
         if (rowLbmContrast) rowLbmContrast.style.display = 'block';
-        showToast("Demo 13: Réplica Schroeder HD · Desprendimiento continuo de vórtices de Von Kármán.", "success", 3000);
+        showToast("Demo 13: Schroeder LBM HD · Desprendimiento continuo de vórtices de Von Kármán.", "success", 3000);
         break;
       }
       case '14': {

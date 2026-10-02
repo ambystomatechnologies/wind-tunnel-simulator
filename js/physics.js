@@ -228,6 +228,11 @@ class FluidField {
     const St = 0.22; // Número de Strouhal universal para cuerpos romos
     const isTurb = (this.flowRegime === 'turbulent' || this.turbulenceIntensity > 0.005);
 
+    // En fluidos muy viscosos (como miel o glicerina con Re < 47), la física no produce desprendimiento oscilante
+    const refVisc = Math.max(1e-7, this.viscosity);
+    const estRe = (U * 1.0) / refVisc;
+    if (estRe < 47) return; // Límite crítico de desprendimiento de vórtices de Von Kármán
+
     for (let obs of this.activeObstacles) {
       if (!obs.isActive) continue;
       const aabb = obs.getAABB();
@@ -399,7 +404,9 @@ class FluidField {
     this.u0.set(this.u);
     this.v0.set(this.v);
 
-    for (let it = 0; it < 4; it++) {
+    // Más iteraciones para fluidos hiperviscosos aseguran una difusión suave y estable
+    const itCount = this.viscosity > 0.001 ? 12 : 4;
+    for (let it = 0; it < itCount; it++) {
       for (let j = 1; j < ny - 1; j++) {
         const row = j * nx;
         for (let i = 1; i < nx - 1; i++) {
@@ -548,6 +555,7 @@ class FluidField {
     // Dependencia física del régimen y viscosidad:
     const isTurb = (this.flowRegime === 'turbulent' || this.turbulenceIntensity > 0.005);
     const viscRatio = 0.00015 / Math.max(1e-6, this.viscosity);
+    if (viscRatio < 0.15) return; // En fluidos hiperviscosos como miel, la cizalladura disipa naturalmente los vórtices
     const baseEps = isTurb ? 3.6 : 2.4;
     const eps = baseEps * Math.min(1.5, Math.max(0.2, Math.sqrt(viscRatio)));
 

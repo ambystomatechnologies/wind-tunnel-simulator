@@ -454,14 +454,49 @@ class LatticeBoltzmannEngine {
     const curl = this.curl;
     const ux = this.ux;
     const uy = this.uy;
+    const barrier = this.barrier;
 
     for (let y = 1; y < ny - 1; y++) {
       const row = y * nx;
       const rowPlus = (y + 1) * nx;
       const rowMinus = (y - 1) * nx;
       for (let x = 1; x < nx - 1; x++) {
-        curl[x + row] = uy[x + 1 + row] - uy[x - 1 + row] -
-                        ux[x + rowPlus] + ux[x + rowMinus];
+        const id = x + row;
+        if (barrier[id]) {
+          curl[id] = 0.0;
+          continue;
+        }
+
+        // Derivada horizontal: ∂v/∂x
+        let duydx;
+        const eastBarrier = barrier[x + 1 + row];
+        const westBarrier = barrier[x - 1 + row];
+        if (eastBarrier && !westBarrier) {
+          duydx = uy[id] - uy[x - 1 + row];
+        } else if (westBarrier && !eastBarrier) {
+          duydx = uy[x + 1 + row] - uy[id];
+        } else if (!eastBarrier && !westBarrier) {
+          duydx = (uy[x + 1 + row] - uy[x - 1 + row]) * 0.5;
+        } else {
+          duydx = 0.0;
+        }
+
+        // Derivada vertical: ∂u/∂y
+        let duxdy;
+        const northBarrier = barrier[x + rowPlus];
+        const southBarrier = barrier[x + rowMinus];
+        if (northBarrier && !southBarrier) {
+          duxdy = ux[id] - ux[x + rowMinus];
+        } else if (southBarrier && !northBarrier) {
+          duxdy = ux[x + rowPlus] - ux[id];
+        } else if (!northBarrier && !southBarrier) {
+          duxdy = (ux[x + rowPlus] - ux[x + rowMinus]) * 0.5;
+        } else {
+          duxdy = 0.0;
+        }
+
+        // Factor de escala 2.0 idéntico a la definición de Schroeder en campo libre
+        curl[id] = (duydx - duxdy) * 2.0;
       }
     }
   }
@@ -510,14 +545,6 @@ class LatticeBoltzmannEngine {
       if (!elem.isActive || elem.isProbe || elem.isSolid === false) continue;
 
       if (elem.loops && elem.loops.length > 0) {
-        for (let loop of elem.loops) {
-          const lPts = loop.map(p => [ (p[0] / domainWidth) * nx, (p[1] / domainHeight) * ny ]);
-          for (let i = 0; i < lPts.length; i++) {
-            const p1 = lPts[i];
-            const p2 = lPts[(i + 1) % lPts.length];
-            this.rasterizeLine(p1[0], p1[1], p2[0], p2[1], 1);
-          }
-        }
         const aabb = elem.getAABB();
         const startX = Math.max(1, Math.floor((aabb[0] / domainWidth) * nx));
         const endX = Math.min(nx - 2, Math.ceil((aabb[2] / domainWidth) * nx));
@@ -551,14 +578,7 @@ class LatticeBoltzmannEngine {
         continue;
       }
 
-      // 1. Rasterizar los segmentos del perímetro del obstáculo con grosor 1 para sellar paredes
-      for (let i = 0; i < latticePts.length; i++) {
-        const p1 = latticePts[i];
-        const p2 = latticePts[(i + 1) % latticePts.length];
-        this.rasterizeLine(p1[0], p1[1], p2[0], p2[1], 1);
-      }
-
-      // 2. Cálculo del AABB en retícula
+      // Cálculo del AABB en retícula
       let minX = nx, maxX = 0, minY = ny, maxY = 0;
       for (let p of latticePts) {
         if (p[0] < minX) minX = p[0];
@@ -669,6 +689,56 @@ class LatticeBoltzmannEngine {
   }
 
   /**
+   * Extrapola suavemente los valores del fluido dentro de las celdas de barrera adyacentes.
+   * Esto elimina por completo el pixelado en el borde del obstáculo, permitiendo que el contorno
+   * vectorial continuo y el filtro bilineal HD se fusionen con total nitidez sin alterar la física.
+   */
+  _extrapolateBoundary(srcField, outField) {
+    const nx = this.nx;
+    const ny = this.ny;
+    const total = nx * ny;
+    const barrier = this.barrier;
+
+    if (!this._extrapVisited || this._extrapVisited.length !== total) {
+      this._extrapVisited = new Uint8Array(total);
+    }
+    const visited = this._extrapVisited;
+
+    for (let i = 0; i < total; i++) {
+      if (!barrier[i]) {
+        outField[i] = srcField[i];
+        visited[i] = 1;
+      } else {
+        outField[i] = 0.0;
+        visited[i] = 0;
+      }
+    }
+
+    // Propagar 3 capas hacia el interior del obstáculo sólido
+    for (let pass = 0; pass < 3; pass++) {
+      for (let y = 1; y < ny - 1; y++) {
+        const row = y * nx;
+        for (let x = 1; x < nx - 1; x++) {
+          const id = x + row;
+          if (visited[id]) continue;
+
+          let sum = 0.0;
+          let count = 0;
+          if (visited[id - 1])  { sum += outField[id - 1]; count++; }
+          if (visited[id + 1])  { sum += outField[id + 1]; count++; }
+          if (visited[id - nx]) { sum += outField[id - nx]; count++; }
+          if (visited[id + nx]) { sum += outField[id + nx]; count++; }
+
+          if (count > 0) {
+            outField[id] = sum / count;
+            visited[id] = 1;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Renderiza el campo LBM al ImageData del canvas con la paleta Jet exacta de Schroeder
    * @param {ImageData} imageData 
    * @param {string} plotType 'curl', 'speed', 'density', 'ux', 'uy'
@@ -685,23 +755,20 @@ class LatticeBoltzmannEngine {
     const greenList = this.greenList;
     const blueList = this.blueList;
 
+    if (!this._visField || this._visField.length !== total) {
+      this._visField = new Float32Array(total);
+    }
+    const visField = this._visField;
+
     if (plotType === 'curl') {
       this.computeCurl();
-      const curl = this.curl;
+      this._extrapolateBoundary(this.curl, visField);
       const factor = 7.5 * contrast * nColors;
       const halfN = (nColors * 0.5) | 0;
 
       for (let i = 0; i < total; i++) {
         const pIdx = i * 4;
-        if (barrier[i]) {
-          data[pIdx]     = 15;
-          data[pIdx + 1] = 23;
-          data[pIdx + 2] = 42;
-          data[pIdx + 3] = 255;
-          continue;
-        }
-
-        let cIndex = ((curl[i] * factor) | 0) + halfN;
+        let cIndex = ((visField[i] * factor) | 0) + halfN;
         if (cIndex < 0) cIndex = 0;
         else if (cIndex > nColors) cIndex = nColors;
 
@@ -716,20 +783,19 @@ class LatticeBoltzmannEngine {
     if (plotType === 'speed') {
       const ux = this.ux;
       const uy = this.uy;
+      if (!this._spdField || this._spdField.length !== total) {
+        this._spdField = new Float32Array(total);
+      }
+      const spdField = this._spdField;
+      for (let i = 0; i < total; i++) {
+        spdField[i] = Math.hypot(ux[i], uy[i]);
+      }
+      this._extrapolateBoundary(spdField, visField);
       const factor = 4.5 * contrast * nColors;
 
       for (let i = 0; i < total; i++) {
         const pIdx = i * 4;
-        if (barrier[i]) {
-          data[pIdx]     = 15;
-          data[pIdx + 1] = 23;
-          data[pIdx + 2] = 42;
-          data[pIdx + 3] = 255;
-          continue;
-        }
-
-        const spd = Math.hypot(ux[i], uy[i]);
-        let cIndex = (spd * factor) | 0;
+        let cIndex = (visField[i] * factor) | 0;
         if (cIndex < 0) cIndex = 0;
         else if (cIndex > nColors) cIndex = nColors;
 
@@ -743,20 +809,13 @@ class LatticeBoltzmannEngine {
 
     if (plotType === 'density') {
       const rho = this.rho;
+      this._extrapolateBoundary(rho, visField);
       const factor = 6.0 * contrast * nColors;
       const halfN = (nColors * 0.5) | 0;
 
       for (let i = 0; i < total; i++) {
         const pIdx = i * 4;
-        if (barrier[i]) {
-          data[pIdx]     = 15;
-          data[pIdx + 1] = 23;
-          data[pIdx + 2] = 42;
-          data[pIdx + 3] = 255;
-          continue;
-        }
-
-        let cIndex = (((rho[i] - 1.0) * factor) | 0) + halfN;
+        let cIndex = (((visField[i] - 1.0) * factor) | 0) + halfN;
         if (cIndex < 0) cIndex = 0;
         else if (cIndex > nColors) cIndex = nColors;
 
