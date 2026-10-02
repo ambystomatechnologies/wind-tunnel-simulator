@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function copyCitationToClipboard(btn) {
     const textEl = document.getElementById('citation-box-text');
-    const text = textEl ? textEl.innerText.trim() : 'Segura Torres, B. A. (2025). 2D Fluid Dynamics & Wind Tunnel Simulator [Software]. Ambystoma Technologies. https://ambystomatechnologies.github.io/';
+    const text = textEl ? textEl.innerText.trim() : 'Segura Torres, B. A. (2026). 2D Fluid Dynamics & Wind Tunnel Simulator [Software]. Ambystoma Technologies. https://ambystomatechnologies.github.io/';
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     const successMsg = isEn ? 'Citation copied! ✓' : '¡Cita copiada! ✓';
     const origMsg = isEn ? 'Copy Citation' : 'Copiar Cita';

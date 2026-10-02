@@ -101,7 +101,7 @@ This interactive 2D fluid dynamics and wind tunnel simulation suite was conceive
 If you use this tool in academic research, scientific papers, engineering theses, or educational presentations, please cite it as:
 
 ```text
-Segura Torres, B. A. (2025). 2D Fluid Dynamics & Wind Tunnel Simulator [Software]. Ambystoma Technologies. https://ambystomatechnologies.github.io/
+Segura Torres, B. A. (2026). 2D Fluid Dynamics & Wind Tunnel Simulator [Software]. Ambystoma Technologies. https://ambystomatechnologies.github.io/
 ```
 
 ---
