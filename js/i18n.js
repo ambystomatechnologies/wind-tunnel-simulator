@@ -111,7 +111,7 @@ const FLUID_I18N = {
     btnPresetAir: "Air",
     btnPresetWater: "Water",
     btnPresetOil: "Oil",
-    btnPresetHoney: "🍯 Honey",
+    btnPresetGlycerin: "Glycerin",
     btnPresetSuper: "Superfluid",
     chkShowParticles: "Particles",
 
@@ -338,7 +338,7 @@ const FLUID_I18N = {
     btnPresetAir: "Aire",
     btnPresetWater: "Agua",
     btnPresetOil: "Aceite",
-    btnPresetHoney: "🍯 Miel",
+    btnPresetGlycerin: "Glicerina",
     btnPresetSuper: "Superfluido",
     chkShowParticles: "Partículas",
 

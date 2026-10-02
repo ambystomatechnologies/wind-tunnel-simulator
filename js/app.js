@@ -463,10 +463,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let matTag = '';
-    if (nu >= 0.004) matTag = ' (Miel)';
-    else if (nu >= 0.0008) matTag = ' (Aceite)';
-    else if (nu >= 0.0001) matTag = ' (Aire)';
-    else if (nu >= 0.00003) matTag = ' (Agua)';
+    if (nu >= 0.003) matTag = ' (Miel / Melaza)';
+    else if (nu >= 0.0007) matTag = ' (Glicerina)';
+    else if (nu >= 0.00018) matTag = ' (Aceite)';
+    else if (nu >= 0.00008) matTag = ' (Aire)';
+    else if (nu >= 0.00002) matTag = ' (Agua)';
     else matTag = ' (Superfluido)';
 
     if (lblViscosityValue) {
@@ -554,22 +555,22 @@ document.addEventListener('DOMContentLoaded', () => {
         updateViscosityDisplay();
         showToast("Medio configurado: Agua líquida (ρ = 1000 kg/m³, ν = 5.0e-5 m²/s)", "info");
       } else if (mat === 'oil' || mat === 'btnPresetOil') {
-        sim.fluid.viscosity = 0.0012;
+        sim.fluid.viscosity = 0.00030;
         setFluidDensity(880.0);
-        if (sliderViscosity) sliderViscosity.value = 74;
-        if (sim.lbm) sim.lbm.viscosity = 0.018 + (74 / 100.0) * 0.052;
+        if (sliderViscosity) sliderViscosity.value = 56;
+        if (sim.lbm) sim.lbm.viscosity = 0.018 + (56 / 100.0) * 0.052;
         updateViscosityDisplay();
-        showToast("Medio configurado: Aceite lubricante (ρ = 880 kg/m³, ν = 1.2e-3 m²/s)", "info");
-      } else if (mat === 'honey' || mat === 'btnPresetHoney' || mat === 'glycerin') {
-        sim.fluid.viscosity = 0.0060;
-        setFluidDensity(1420.0);
-        if (sliderViscosity) sliderViscosity.value = 95;
+        showToast("Medio configurado: Aceite lubricante (ρ = 880 kg/m³, ν = 3.0e-4 m²/s, μ = 0.26 Pa·s)", "info");
+      } else if (mat === 'glycerin' || mat === 'btnPresetGlycerin' || mat === 'honey' || mat === 'btnPresetHoney') {
+        sim.fluid.viscosity = 0.00118;
+        setFluidDensity(1260.0);
+        if (sliderViscosity) sliderViscosity.value = 74;
         if (sim.lbm) {
-          sim.lbm.viscosity = 0.070;
-          sim.lbm.contrast = 0.6;
+          sim.lbm.viscosity = 0.055;
+          sim.lbm.contrast = 0.8;
         }
         updateViscosityDisplay();
-        showToast("Medio configurado: 🍯 Miel espesa (ρ = 1420 kg/m³, ν = 6.0e-3 m²/s, μ = 8.52 Pa·s)", "info");
+        showToast("Medio configurado: Glicerina líquida (ρ = 1260 kg/m³, ν = 1.18e-3 m²/s, μ = 1.49 Pa·s)", "info");
       } else if (mat === 'superfluid' || mat === 'btnPresetSuper') {
         sim.fluid.viscosity = 0.000005;
         setFluidDensity(1.0);
