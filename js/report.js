@@ -96,6 +96,8 @@
         return isSpanish ? "Vorticidad y Remolinos (s⁻¹)" : "Vorticity & Eddies (s⁻¹)";
       case 'particles':
         return isSpanish ? "Trazadores de Partículas" : "Particle Tracers";
+      case 'vectors':
+        return isSpanish ? "Vectores de Velocidad" : "Velocity Vectors";
       case 'schroeder_curl':
         return isSpanish ? "LBM Schroeder: Vorticidad" : "LBM Schroeder: Vorticity";
       case 'schroeder_flowlines':
@@ -209,7 +211,8 @@
         sim.render();
       }
 
-      const isSpanish = (window.currentLang === 'es' || (!window.currentLang && navigator.language.startsWith('es')));
+      const activeLang = window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null) || 'es';
+      const isSpanish = (activeLang === 'es' || (!window.currentLang && !localStorage.getItem('fluid_sim_lang') && (navigator.language || '').startsWith('es')));
 
       // 2. Determinar objeto de prueba y métricas aerodinámicas
       let targetElement = sim.selectedElement;
@@ -303,57 +306,24 @@
       ctx.restore();
 
       // =========================================================================
-      // --- 1. BARRA SUPERIOR DE CITACIÓN CIENTÍFICA (APA 7th) ---
-      // =========================================================================
-      const citX = 40;
-      const citY = 22;
-      const citW = 2480;
-      const citH = 42;
-
-      drawRoundedRect(ctx, citX, citY, citW, citH, 8, 'rgba(15, 23, 42, 0.95)', 'rgba(0, 255, 204, 0.35)', 1.2);
-
-      // Badge de citación académica
-      const citBadgeText = isSpanish ? "CITACIÓN (APA 7ª ed.):" : "CITATION (APA 7th):";
-      const citBadgeW = drawBadge(ctx, `📖  ${citBadgeText}`, citX + 12, citY + citH / 2, 'rgba(0, 255, 204, 0.12)', '#00ffcc', 'rgba(0, 255, 204, 0.4)', 13, true);
-
-      // Texto de citación exacto solicitado por el usuario
-      const citFullText = "Segura Torres, B. A. (2026). Simulador 2D de Fluidos y Túnel de Viento Interactivo [Software computacional]. Ambystoma Technologies. ";
-      const citUrl = "https://ambystomatechnologies.github.io/wind-tunnel-simulator/";
-
-      ctx.save();
-      ctx.textBaseline = 'middle';
-      ctx.textAlign = 'left';
-      const citTextX = citX + 12 + citBadgeW + 14;
-
-      ctx.font = '600 14px "Inter", system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(citFullText, citTextX, citY + citH / 2 + 1);
-
-      const prefixW = ctx.measureText(citFullText).width;
-      ctx.font = '700 14px "Inter", monospace, system-ui, sans-serif';
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText(citUrl, citTextX + prefixW, citY + citH / 2 + 1);
-      ctx.restore();
-
-      // =========================================================================
-      // --- 2. ENCABEZADO INSTITUCIONAL PRINCIPAL (LOGO CORREGIDO + BADGES) ---
+      // --- 1. ENCABEZADO INSTITUCIONAL PRINCIPAL (LOGO + IDENTIFICACIÓN + BADGES) ---
       // =========================================================================
       const headerX = 40;
-      const headerY = 74;
+      const headerY = 30;
       const headerW = 2480;
-      const headerH = 92;
+      const headerH = 100;
 
       drawRoundedRect(ctx, headerX, headerY, headerW, headerH, 10, 'rgba(19, 23, 38, 0.94)', 'rgba(0, 255, 204, 0.35)', 1.5);
 
       // Logo de Ambystoma Technologies con proporción de aspecto real preservada
       const navLogo = document.querySelector('.navbar-logo-img');
-      const targetLogoH = 58;
+      const targetLogoH = 62;
       // Proporción original de logo.png (2163 x 403 = ~5.367)
       const logoAspect = (navLogo && navLogo.naturalWidth && navLogo.naturalHeight)
         ? (navLogo.naturalWidth / navLogo.naturalHeight)
         : (2163 / 403);
       const targetLogoW = Math.round(targetLogoH * logoAspect);
-      const logoX = headerX + 22;
+      const logoX = headerX + 24;
       const logoY = headerY + Math.round((headerH - targetLogoH) / 2);
 
       if (navLogo && navLogo.complete && navLogo.naturalWidth > 0) {
@@ -391,21 +361,21 @@
 
       ctx.fillStyle = '#00ffcc';
       ctx.font = 'bold 14px monospace';
-      ctx.fillText('AERODYNAMICS & FLUID DYNAMICS RESEARCH LAB', titleX, headerY + 28);
+      ctx.fillText('AERODYNAMICS & FLUID DYNAMICS RESEARCH LAB', titleX, headerY + 30);
 
       ctx.fillStyle = '#ffffff';
       ctx.font = '800 24px "Inter", system-ui, -apple-system, sans-serif';
       const mainTitle = isSpanish
         ? "INFORME TÉCNICO DE SIMULACIÓN Y TELEMETRÍA AERODINÁMICA"
         : "AERODYNAMIC SIMULATION & TELEMETRY TECHNICAL REPORT";
-      ctx.fillText(mainTitle, titleX, headerY + 56);
+      ctx.fillText(mainTitle, titleX, headerY + 60);
 
       ctx.fillStyle = '#8b949e';
       ctx.font = '500 13px "Inter", system-ui, -apple-system, sans-serif';
       const subTitle = isSpanish
         ? "Solucionador Navier-Stokes 2D & Lattice-Boltzmann (LBM D2Q9) • Captura Instantánea de Flujo"
         : "2D Navier-Stokes & Lattice-Boltzmann (LBM D2Q9) Solver • Instantaneous Flow Telemetry";
-      ctx.fillText(subTitle, titleX, headerY + 77);
+      ctx.fillText(subTitle, titleX, headerY + 83);
       ctx.restore();
 
       // Badges a la derecha del Header
@@ -432,10 +402,10 @@
       drawBadge(ctx, `🕒 ${timeStr}`, curBadgeX, headerY + headerH / 2, 'rgba(255, 255, 255, 0.06)', '#e2e8f0', 'rgba(255, 255, 255, 0.18)', 13);
 
       // =========================================================================
-      // --- 3. PANELES PRINCIPALES: IZQUIERDA (SIMULACIÓN) Y DERECHA (TABLAS) ---
+      // --- 2. PANELES PRINCIPALES: IZQUIERDA (SIMULACIÓN) Y DERECHA (TABLAS) ---
       // =========================================================================
-      const panelsY = 176;
-      const panelsH = 1205;
+      const panelsY = 150;
+      const panelsH = 1226;
 
       // Dimensiones equilibradas
       const leftX = 40;
@@ -551,35 +521,107 @@
 
       const colorGrad = ctx.createLinearGradient(gradBarX, 0, gradBarX + gradBarW, 0);
       let leftLegend = "";
+      let centerLegend = "";
       let rightLegend = "";
 
       if (sim.visMode === 'pressure') {
-        colorGrad.addColorStop(0, '#0044ff');
-        colorGrad.addColorStop(0.3, '#00ffff');
-        colorGrad.addColorStop(0.5, '#222233');
-        colorGrad.addColorStop(0.7, '#ffff00');
-        colorGrad.addColorStop(1, '#ff1100');
+        // Presión Estática (Navier-Stokes): Succión (-P) azul -> Ambiente (0 Pa) neutro -> Estancamiento (+P) rojo
+        colorGrad.addColorStop(0, '#0e44ff');
+        colorGrad.addColorStop(0.28, '#00e5ff');
+        colorGrad.addColorStop(0.50, '#101826');
+        colorGrad.addColorStop(0.72, '#ffaa00');
+        colorGrad.addColorStop(1, '#ff2200');
         leftLegend = isSpanish ? "Succión (-P)" : "Suction (-P)";
+        centerLegend = "P = 0 Pa";
         rightLegend = isSpanish ? "Estancamiento (+P)" : "Stagnation (+P)";
+
       } else if (sim.visMode === 'velocity') {
+        // Magnitud de Velocidad (Navier-Stokes): 0 m/s oscuro -> cian -> verde -> amarillo -> rojo máx
         colorGrad.addColorStop(0, '#0a0d24');
-        colorGrad.addColorStop(0.35, '#00c8ff');
-        colorGrad.addColorStop(0.7, '#00ff88');
-        colorGrad.addColorStop(1, '#ff3b30');
+        colorGrad.addColorStop(0.25, '#0077ff');
+        colorGrad.addColorStop(0.50, '#00e5ff');
+        colorGrad.addColorStop(0.70, '#00ff66');
+        colorGrad.addColorStop(0.85, '#ffff00');
+        colorGrad.addColorStop(1, '#ff3311');
         leftLegend = "0 m/s";
+        centerLegend = isSpanish ? "Vel. Media" : "Mean Speed";
         rightLegend = isSpanish ? "Velocidad Máx" : "Max Velocity";
-      } else if (sim.visMode === 'vorticity' || sim.visMode === 'schroeder_curl') {
-        colorGrad.addColorStop(0, '#0066ff');
-        colorGrad.addColorStop(0.5, '#000000');
-        colorGrad.addColorStop(1, '#ff4400');
-        leftLegend = isSpanish ? "Giro Horario (-ω)" : "Clockwise (-ω)";
+
+      } else if (sim.visMode === 'vorticity') {
+        // Vorticidad Navier-Stokes: Giro horario rojo carmesí (-ω) -> 0 s⁻¹ oscuro -> Antihorario azul cian (+ω)
+        colorGrad.addColorStop(0, '#fc3228');
+        colorGrad.addColorStop(0.35, '#c82020');
+        colorGrad.addColorStop(0.50, '#0e121c');
+        colorGrad.addColorStop(0.65, '#0088cc');
+        colorGrad.addColorStop(1, '#19afff');
+        leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
+        centerLegend = "ω = 0 s⁻¹";
         rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
-      } else {
-        colorGrad.addColorStop(0, '#090b10');
-        colorGrad.addColorStop(0.5, '#4a6b8c');
+
+      } else if (sim.visMode === 'schroeder_speed') {
+        // LBM Schroeder: Rapidez (Paleta Jet perceptual exacta: azul 0 m/s -> cian -> verde U∞ -> amarillo -> rojo máx)
+        colorGrad.addColorStop(0, '#000088');
+        colorGrad.addColorStop(0.18, '#0000ff');
+        colorGrad.addColorStop(0.38, '#00ffff');
+        colorGrad.addColorStop(0.58, '#00ff00');
+        colorGrad.addColorStop(0.78, '#ffff00');
+        colorGrad.addColorStop(0.92, '#ff0000');
+        colorGrad.addColorStop(1, '#880000');
+        leftLegend = isSpanish ? "0 m/s (Reposo)" : "0 m/s (Rest)";
+        centerLegend = isSpanish ? "U∞ Nominal" : "Nominal U∞";
+        rightLegend = isSpanish ? "Rapidez Máx" : "Max Speed";
+
+      } else if (sim.visMode === 'schroeder_curl') {
+        // LBM Schroeder: Vorticidad (Paleta Jet: azul giro horario -> verde curl = 0 -> rojo antihorario)
+        colorGrad.addColorStop(0, '#0000ff');
+        colorGrad.addColorStop(0.25, '#00ffff');
+        colorGrad.addColorStop(0.50, '#00ff00');
+        colorGrad.addColorStop(0.75, '#ffff00');
+        colorGrad.addColorStop(1, '#ff0000');
+        leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
+        centerLegend = isSpanish ? "ω = 0 (Irrotacional)" : "ω = 0 (Irrotational)";
+        rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
+
+      } else if (sim.visMode === 'schroeder_flowlines') {
+        // LBM Schroeder: Líneas de Flujo (Paleta Jet de vorticidad con filamentos oscuros)
+        colorGrad.addColorStop(0, '#0000ff');
+        colorGrad.addColorStop(0.25, '#00ffff');
+        colorGrad.addColorStop(0.50, '#00ff00');
+        colorGrad.addColorStop(0.75, '#ffff00');
+        colorGrad.addColorStop(1, '#ff0000');
+        leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
+        centerLegend = isSpanish ? "Líneas de Flujo" : "LBM Streamlines";
+        rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
+
+      } else if (sim.visMode === 'particles') {
+        // Trazadores de partículas
+        colorGrad.addColorStop(0, '#070a14');
+        colorGrad.addColorStop(0.40, '#0b253a');
+        colorGrad.addColorStop(0.80, '#00e5cc');
         colorGrad.addColorStop(1, '#ffffff');
-        leftLegend = isSpanish ? "Flujo Libre" : "Free Stream";
-        rightLegend = isSpanish ? "Alta Densidad / Humo" : "Dense Smoke";
+        leftLegend = isSpanish ? "Dominio Libre" : "Clear Domain";
+        centerLegend = isSpanish ? "Trazas Fluidas" : "Fluid Particles";
+        rightLegend = isSpanish ? "Partículas Activas" : "Active Tracers";
+
+      } else if (sim.visMode === 'vectors') {
+        // Vectores de velocidad
+        colorGrad.addColorStop(0, '#081220');
+        colorGrad.addColorStop(0.35, '#00ffcc');
+        colorGrad.addColorStop(0.70, '#38bdf8');
+        colorGrad.addColorStop(1, '#fbbf24');
+        leftLegend = isSpanish ? "0 m/s (Estático)" : "0 m/s (Static)";
+        centerLegend = isSpanish ? "Vectores Velocidad" : "Velocity Vectors";
+        rightLegend = isSpanish ? "Velocidad Alta" : "High Speed";
+
+      } else {
+        // Modo Humo aerodinámico (smoke por defecto)
+        colorGrad.addColorStop(0, '#0c152a');
+        colorGrad.addColorStop(0.30, '#153358');
+        colorGrad.addColorStop(0.70, '#3b82c4');
+        colorGrad.addColorStop(1, '#e0f7ff');
+        leftLegend = isSpanish ? "Flujo Transparente" : "Clear Stream";
+        centerLegend = isSpanish ? "Filamentos de Humo" : "Smoke Rake";
+        rightLegend = isSpanish ? "Humo Denso" : "Dense Smoke";
       }
 
       ctx.save();
@@ -590,6 +632,10 @@
       ctx.fillStyle = '#94a3b8';
       ctx.textAlign = 'left';
       ctx.fillText(leftLegend, gradBarX, gradBarY + gradBarH + 11);
+      if (centerLegend) {
+        ctx.textAlign = 'center';
+        ctx.fillText(centerLegend, gradBarX + gradBarW / 2, gradBarY + gradBarH + 11);
+      }
       ctx.textAlign = 'right';
       ctx.fillText(rightLegend, gradBarX + gradBarW, gradBarY + gradBarH + 11);
 
@@ -788,7 +834,7 @@
         }
       }
 
-      drawHomogeneousTable(ctx, {
+      const h4 = drawHomogeneousTable(ctx, {
         x: tableInnerX,
         y: curTableY,
         width: tableInnerW,
@@ -800,6 +846,146 @@
         accentColor: "#f1f5f9",
         rows: t4Rows
       });
+      curTableY += h4 + tableGap;
+
+      // =========================================================================
+      // --- CITACIÓN CIENTÍFICA INSTITUCIONAL (APA 7ª ed.) EN PANEL DERECHO ---
+      // =========================================================================
+      const citBoxX = tableInnerX;
+      const citBoxW = tableInnerW;
+      const citBoxY = curTableY;
+      const maxPanelBottom = panelsY + panelsH - 16;
+      const citBoxH = Math.max(126, maxPanelBottom - citBoxY);
+
+      // Contenedor principal de la tarjeta de citación
+      drawRoundedRect(ctx, citBoxX, citBoxY, citBoxW, citBoxH, 10, 'rgba(18, 22, 38, 0.96)', 'rgba(0, 255, 204, 0.35)', 1.2);
+
+      // Cabecera de la tarjeta
+      const citHeaderH = 40;
+      drawRoundedRect(ctx, citBoxX, citBoxY, citBoxW, citHeaderH, [10, 10, 0, 0], 'rgba(24, 29, 50, 0.98)', 'rgba(54, 59, 88, 0.75)', 1);
+
+      // Título de la cabecera
+      ctx.save();
+      ctx.fillStyle = '#00ffcc';
+      ctx.font = '700 14.5px "Inter", system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const citHeaderTitle = isSpanish
+        ? "📖  REFERENCIA Y CITACIÓN CIENTÍFICA (NORMA APA 7ª ED.)"
+        : "📖  SCIENTIFIC REFERENCE & CITATION (APA 7th ED. FORMAT)";
+      ctx.fillText(citHeaderTitle, citBoxX + 16, citBoxY + citHeaderH / 2);
+
+      // Badge a la derecha de la cabecera (alineado a la derecha con margen uniforme de 16px)
+      const citBadgeText = isSpanish ? "SOFTWARE CIENTÍFICO" : "COMPUTATIONAL SOFTWARE";
+      drawBadge(ctx, citBadgeText, citBoxX + citBoxW - 16, citBoxY + citHeaderH / 2, 'rgba(0, 255, 204, 0.12)', '#00ffcc', 'rgba(0, 255, 204, 0.4)', 12, true, 'right');
+      ctx.restore();
+
+      // Textos dinámicos en el idioma seleccionado
+      const citAuthorAndTitle = isSpanish
+        ? "Segura Torres, B. A. (2026). Simulador 2D de Fluidos y Túnel de Viento Interactivo [Software computacional]. Ambystoma Technologies."
+        : "Segura Torres, B. A. (2026). Interactive 2D Fluid & Wind Tunnel Simulator [Computational software]. Ambystoma Technologies.";
+      const citUrl = "https://ambystomatechnologies.github.io/wind-tunnel-simulator/";
+      const citPrompt = isSpanish
+        ? "Para citar este simulador en tesis, artículos científicos, informes técnicos o proyectos de investigación:"
+        : "To cite this software in theses, scientific papers, technical reports, or research projects:";
+      const citMeta = isSpanish
+        ? "Acceso Abierto (Open Access) • Licencia MIT • Repositorio Oficial"
+        : "Open Access • MIT License • Official GitHub Repository";
+
+      // Renderizado del contenido interno según el espacio disponible
+      const hasAmpleRoom = citBoxH >= 165;
+      const calloutX = citBoxX + 16;
+      const calloutW = citBoxW - 32;
+
+      if (hasAmpleRoom) {
+        // 1. Línea de instrucción / prompt
+        ctx.save();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 13px "Inter", system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(citPrompt, calloutX + 2, citBoxY + citHeaderH + 12);
+        ctx.restore();
+
+        // 2. Caja Callout resaltada con la cita APA
+        const calloutY = citBoxY + citHeaderH + 34;
+        const calloutH = 48;
+        drawRoundedRect(ctx, calloutX, calloutY, calloutW, calloutH, 6, 'rgba(10, 14, 26, 0.85)', 'rgba(0, 255, 204, 0.25)', 1);
+
+        // Barra vertical izquierda de acento
+        ctx.fillStyle = '#00ffcc';
+        ctx.fillRect(calloutX, calloutY + 2, 4, calloutH - 4);
+
+        // Texto de la cita con ajuste de fuente automático
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#f8fafc';
+        let fSize = 14.5;
+        ctx.font = `700 ${fSize}px "Inter", system-ui, sans-serif`;
+        while (ctx.measureText(citAuthorAndTitle).width > (calloutW - 28) && fSize > 11) {
+          fSize -= 0.5;
+          ctx.font = `700 ${fSize}px "Inter", system-ui, sans-serif`;
+        }
+        ctx.fillText(citAuthorAndTitle, calloutX + 16, calloutY + calloutH / 2);
+        ctx.restore();
+
+        // 3. Fila inferior de Enlace URL y Metadatos
+        const metaY = calloutY + calloutH + 18;
+        ctx.save();
+        ctx.textBaseline = 'middle';
+
+        // URL (izquierda)
+        ctx.textAlign = 'left';
+        ctx.font = '700 13.5px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`🔗 ${citUrl}`, calloutX + 2, metaY);
+
+        // Metadatos (derecha)
+        ctx.textAlign = 'right';
+        ctx.font = '500 12.5px "Inter", system-ui, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(citMeta, citBoxX + citBoxW - 18, metaY);
+        ctx.restore();
+      } else {
+        // Formato compacto (cuando hay 3 o más cuerpos en el túnel)
+        const calloutY = citBoxY + citHeaderH + 10;
+        const calloutH = 42;
+        drawRoundedRect(ctx, calloutX, calloutY, calloutW, calloutH, 6, 'rgba(10, 14, 26, 0.85)', 'rgba(0, 255, 204, 0.25)', 1);
+
+        // Barra vertical izquierda de acento
+        ctx.fillStyle = '#00ffcc';
+        ctx.fillRect(calloutX, calloutY + 2, 4, calloutH - 4);
+
+        // Texto de la cita
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#f8fafc';
+        let fSize = 14;
+        ctx.font = `700 ${fSize}px "Inter", system-ui, sans-serif`;
+        while (ctx.measureText(citAuthorAndTitle).width > (calloutW - 28) && fSize > 11) {
+          fSize -= 0.5;
+          ctx.font = `700 ${fSize}px "Inter", system-ui, sans-serif`;
+        }
+        ctx.fillText(citAuthorAndTitle, calloutX + 16, calloutY + calloutH / 2);
+        ctx.restore();
+
+        // URL y Metadatos
+        const metaY = calloutY + calloutH + 15;
+        ctx.save();
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.font = '700 13px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`🔗 ${citUrl}`, calloutX + 2, metaY);
+
+        ctx.textAlign = 'right';
+        ctx.font = '500 12px "Inter", system-ui, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(citMeta, citBoxX + citBoxW - 18, metaY);
+        ctx.restore();
+      }
 
       // =========================================================================
       // --- 4. PIE DE PÁGINA INSTITUCIONAL ---
