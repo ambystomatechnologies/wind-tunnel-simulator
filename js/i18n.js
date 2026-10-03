@@ -92,6 +92,9 @@ const FLUID_I18N = {
     btnDeleteElement: "Delete Obstacle",
     btnSaveScene: "💾 Save Scene",
     btnSaveSceneTitle: "Save current tunnel obstacle configuration to a JSON file",
+    btnSaveReport: "Save Report",
+    btnSaveReportTitle: "Save HD simulation capture with aerodynamic telemetry and configuration data",
+    reportSavedSuccess: "Aerodynamic report generated and saved in HD!",
     btnOpenScene: "📂 Open Scene",
     btnOpenSceneTitle: "Load a previously saved tunnel layout",
     btnImportImage: "🖼️ Open SVG / PNG Shape",
@@ -228,7 +231,15 @@ const FLUID_I18N = {
     donateCopyBtc: "Copy BTC Address",
     donateCopyEth: "Copy ETH Address",
     donateCryptoBtcWarn: "<strong>SECURITY WARNING:</strong> Send only Bitcoin (BTC) to this address (Native SegWit BIP-84 format). Sending any other assets will result in permanent loss of your funds.",
-    donateCryptoEthWarn: "<strong>SECURITY WARNING:</strong> Send only Ethereum (ETH) to this address (Ethereum ERC-20 network). Sending any other assets will result in permanent loss of your funds."
+    donateCryptoEthWarn: "<strong>SECURITY WARNING:</strong> Send only Ethereum (ETH) to this address (Ethereum ERC-20 network). Sending any other assets will result in permanent loss of your funds.",
+    reportDonateModalBadge: "REPORT READY • OPTIONAL SUPPORT",
+    reportDonateModalTitle: "Your report is ready! Buy us a coffee? ☕",
+    reportDonateModalSubtitle: "Free download • Voluntary support for open aerodynamic science",
+    reportDonateModalIntro: "🎉 <strong>Your High-Definition capture and CFD telemetry have been generated!</strong><br><br>At <strong>Ambystoma Technologies</strong>, we build and maintain this interactive simulator and its technical reporting tools as <strong>100% free and Open Source software</strong> for students, teachers, and researchers across the globe.<br><br>If this tool saved you time or aided your studies and research, <strong>would you consider buying us a coffee? ☕</strong> Every bit counts and goes directly toward server costs, physics engine R&amp;D, and keeping these public scientific tools accessible to everyone.<br><br><em>If you cannot donate right now, don't worry!</em> You can download your report completely free at any time.",
+    reportReadyTag: "Ultra HD Capture (2560×1440) Ready",
+    reportDownloadDesc: "Download high-resolution technical capture with full telemetry",
+    btnDownloadReportOnly: "Just Download Report",
+    btnCloseModal: "Close"
   },
 
   es: {
@@ -319,6 +330,9 @@ const FLUID_I18N = {
     btnDeleteElement: "Eliminar Obstáculo",
     btnSaveScene: "💾 Guardar Escena",
     btnSaveSceneTitle: "Guarda la configuración del túnel en un archivo JSON",
+    btnSaveReport: "Guardar informe",
+    btnSaveReportTitle: "Guarda una captura en HD de la simulación con datos de telemetría y configuración",
+    reportSavedSuccess: "¡Informe aerodinámico guardado en HD con éxito!",
     btnOpenScene: "📂 Abrir Escena",
     btnOpenSceneTitle: "Carga un túnel guardado previamente",
     btnImportImage: "🖼️ Abrir figura SVG / PNG",
@@ -455,7 +469,15 @@ const FLUID_I18N = {
     donateCopyBtc: "Copiar Dirección BTC",
     donateCopyEth: "Copiar Dirección ETH",
     donateCryptoBtcWarn: "<strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Bitcoin (BTC) a esta dirección (formato Native SegWit BIP-84). Enviar otros activos resultará en la pérdida definitiva de tus fondos.",
-    donateCryptoEthWarn: "<strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Ethereum (ETH) a esta dirección (red Ethereum ERC-20). Enviar otros activos resultará en la pérdida definitiva de tus fondos."
+    donateCryptoEthWarn: "<strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Ethereum (ETH) a esta dirección (red Ethereum ERC-20). Enviar otros activos resultará en la pérdida definitiva de tus fondos.",
+    reportDonateModalBadge: "INFORME LISTO • APOYO OPCIONAL",
+    reportDonateModalTitle: "¡Tu informe está listo! ¿Nos invitas a un café? ☕",
+    reportDonateModalSubtitle: "Descarga libre y gratuita • Apoyo voluntario para el desarrollo científico independiente",
+    reportDonateModalIntro: "🎉 <strong>¡Tu captura en Alta Definición y telemetría CFD ya fueron procesadas!</strong><br><br>En <strong>Ambystoma Technologies</strong> desarrollamos este simulador interactivo y sus herramientas de análisis de forma <strong>100% gratuita y de código abierto (Open Source)</strong> para estudiantes, docentes e investigadores de todo el mundo.<br><br>Si esta herramienta te ha sido útil o te ha ahorrado tiempo en tus proyectos o estudios, <strong>¿considerarías invitarnos a un café? ☕</strong> Todo aporte, por pequeño que sea, cuenta y nos ayuda enormemente a costear servidores, acelerar nuevos módulos físicos y mantener vivas y libres estas utilidades.<br><br><em>¡Si no puedes donar en este momento no pasa nada!</em> Puedes descargar tu informe sin coste alguno cuando desees.",
+    reportReadyTag: "Captura Ultra HD (2560×1440) Lista",
+    reportDownloadDesc: "Obtén la imagen técnica en alta resolución con telemetría completa",
+    btnDownloadReportOnly: "Solo descargar informe",
+    btnCloseModal: "Cerrar"
   }
 };
 
@@ -478,6 +500,7 @@ function t(key, params = {}) {
 function setLanguage(lang) {
   if (!FLUID_I18N[lang]) return;
   currentLang = lang;
+  window.currentLang = lang;
   localStorage.setItem('fluid_sim_lang', lang);
 
   // Actualizar clases de botones de idioma

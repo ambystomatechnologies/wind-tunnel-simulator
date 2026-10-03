@@ -24,6 +24,18 @@ const VisMode = {
   SCHROEDER_FLOWLINES: 'schroeder_flowlines'
 };
 
+// =========================================================================
+// CONFIGURACIÓN DE GUÍA VISUAL DE ROTACIÓN DE OBSTÁCULOS:
+// - mode: 'arc' -> Muestra un arco sutil y elegante centrado en el tirador para no sobrecargar el visor.
+// - mode: 'full' -> Muestra el círculo punteado completo de 360° (configuración anterior guardada por si se desea volver).
+// =========================================================================
+const RotationGuideConfig = {
+  mode: 'arc',             // 'arc' (nuevo arco sutil) | 'full' (círculo 360° previo)
+  arcSpanDeg: 35,          // Amplitud del arco en grados centrado en el tirador (±17.5° - mitad del anterior)
+  showArrowheads: true     // Flechas sutiles en los extremos del arco que clarifican que es para rotar
+};
+window.RotationGuideConfig = RotationGuideConfig;
+
 class FluidCanvasController {
   constructor(canvasElement) {
     this.canvas = canvasElement;
@@ -331,14 +343,26 @@ class FluidCanvasController {
       return true;
     }
 
-    // 2. Anillo circular de rotación
+    // 2. Anillo / arco circular de rotación
     // Si el toque/clic cae directamente dentro del cuerpo físico del obstáculo, se prioriza mover/arrastrar,
     // a menos que se haya presionado el knob de rotación.
     const isInsideBody = worldPos && this.selectedElement.containsPoint(worldPos[0], worldPos[1]);
     if (!isInsideBody) {
       const ringTolerance = isMobile ? 26 : 14;
       if (Math.abs(dToCentroid - ringRadius) <= ringTolerance) {
-        return true;
+        // En modo 'arc', solo responde si el toque está dentro del arco visible con margen de tolerancia
+        if (RotationGuideConfig.mode === 'arc') {
+          const clickAngle = Math.atan2(screenY - sCentroid.y, screenX - sCentroid.x);
+          let angleDiff = Math.abs(clickAngle - angleRad);
+          while (angleDiff > Math.PI) angleDiff = Math.abs(angleDiff - 2 * Math.PI);
+          const halfSpanRad = ((RotationGuideConfig.arcSpanDeg / 2) + 12) * (Math.PI / 180.0);
+          if (angleDiff <= halfSpanRad) {
+            return true;
+          }
+        } else {
+          // En modo 'full' previo, responde en cualquier punto del círculo completo 360°
+          return true;
+        }
       }
     }
 
@@ -1463,14 +1487,93 @@ class FluidCanvasController {
 
       ctx.strokeStyle = ringStroke;
       ctx.lineWidth = isMobile ? 2.0 : 1.5;
-      ctx.setLineDash([5, 4]);
-      ctx.beginPath();
-      ctx.arc(sCentroid.x, sCentroid.y, ringRadius, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
+
+      const angleRad = (obs.currentRotationDeg * Math.PI) / 180.0;
+      const isArcMode = (RotationGuideConfig.mode === 'arc');
+
+      if (isArcMode) {
+        // --- NUEVA GUÍA: ARCO PARCIAL CENTRADO EN EL TIRADOR ---
+        const arcSpanRad = (RotationGuideConfig.arcSpanDeg * Math.PI) / 180.0;
+        const startAngle = angleRad - arcSpanRad / 2;
+        const endAngle = angleRad + arcSpanRad / 2;
+
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.arc(sCentroid.x, sCentroid.y, ringRadius, startAngle, endAngle);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Flechas sutiles en los extremos del arco que clarifican que es para girar
+        if (RotationGuideConfig.showArrowheads) {
+          const arrowColor = useBlackRing
+            ? (isMobile ? 'rgba(0, 0, 0, 0.90)' : 'rgba(0, 0, 0, 0.75)')
+            : (isMobile ? 'rgba(0, 255, 204, 0.85)' : 'rgba(0, 255, 204, 0.60)');
+
+          const arrowLen = isMobile ? 8 : 6.5;
+          const wingAngle = 0.52; // ~30 grados
+
+          // Flecha en extremo de ángulo positivo (endAngle)
+          const pEnd = {
+            x: sCentroid.x + ringRadius * Math.cos(endAngle),
+            y: sCentroid.y + ringRadius * Math.sin(endAngle)
+          };
+          const tangEnd = endAngle + Math.PI / 2;
+          ctx.save();
+          ctx.fillStyle = arrowColor;
+          ctx.strokeStyle = arrowColor;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(pEnd.x, pEnd.y);
+          ctx.lineTo(
+            pEnd.x - arrowLen * Math.cos(tangEnd - wingAngle),
+            pEnd.y - arrowLen * Math.sin(tangEnd - wingAngle)
+          );
+          ctx.lineTo(
+            pEnd.x - (arrowLen * 0.65) * Math.cos(tangEnd),
+            pEnd.y - (arrowLen * 0.65) * Math.sin(tangEnd)
+          );
+          ctx.lineTo(
+            pEnd.x - arrowLen * Math.cos(tangEnd + wingAngle),
+            pEnd.y - arrowLen * Math.sin(tangEnd + wingAngle)
+          );
+          ctx.closePath();
+          ctx.fill();
+
+          // Flecha en extremo de ángulo opuesto (startAngle)
+          const pStart = {
+            x: sCentroid.x + ringRadius * Math.cos(startAngle),
+            y: sCentroid.y + ringRadius * Math.sin(startAngle)
+          };
+          const tangStart = startAngle - Math.PI / 2;
+          ctx.beginPath();
+          ctx.moveTo(pStart.x, pStart.y);
+          ctx.lineTo(
+            pStart.x - arrowLen * Math.cos(tangStart - wingAngle),
+            pStart.y - arrowLen * Math.sin(tangStart - wingAngle)
+          );
+          ctx.lineTo(
+            pStart.x - (arrowLen * 0.65) * Math.cos(tangStart),
+            pStart.y - (arrowLen * 0.65) * Math.sin(tangStart)
+          );
+          ctx.lineTo(
+            pStart.x - arrowLen * Math.cos(tangStart + wingAngle),
+            pStart.y - arrowLen * Math.sin(tangStart + wingAngle)
+          );
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      } else {
+        // --- CONFIGURACIÓN ANTERIOR GUARDADA: CÍRCULO COMPLETO DE 360° ---
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.arc(sCentroid.x, sCentroid.y, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
       // Tirador de rotación
-      const angleRad = (obs.currentRotationDeg * Math.PI) / 180.0;
       const hx = sCentroid.x + ringRadius * Math.cos(angleRad);
       const hy = sCentroid.y + ringRadius * Math.sin(angleRad);
 

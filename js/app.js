@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const listSceneElements = document.getElementById('list-scene-elements');
   const btnDeleteElement = document.getElementById('btn-delete-element');
   const btnSaveScene = document.getElementById('btn-save-scene');
+  const btnSaveReport = document.getElementById('btn-save-report');
   const btnOpenScene = document.getElementById('btn-open-scene');
   const fileInputScene = document.getElementById('file-input-scene');
   const btnImportVectorImage = document.getElementById('btn-import-vector-image');
@@ -850,6 +851,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // --- GUARDAR INFORME AERODINÁMICO HD ---
+  if (btnSaveReport) {
+    btnSaveReport.addEventListener('click', () => {
+      openReportDonateModal();
+    });
+  }
+
   // --- GUARDAR Y ABRIR ESCENA JSON ---
   if (btnSaveScene) {
     btnSaveScene.addEventListener('click', () => {
@@ -1192,6 +1200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       if (aboutModal) aboutModal.style.display = 'none';
       closeDonateModal();
+      closeReportDonateModal();
     }
 
     if (e.code === 'Space') {
@@ -1260,8 +1269,57 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnOpenDonate) btnOpenDonate.addEventListener('click', openDonateModal);
   if (btnCloseDonate) btnCloseDonate.addEventListener('click', closeDonateModal);
 
-  function switchCryptoTab(crypto) {
-    const modal = document.getElementById('donate-modal');
+  // Control del Modal de Invitación a Donar al Generar Informe
+  function openReportDonateModal() {
+    const modal = document.getElementById('report-donate-modal');
+    if (modal) {
+      const activeLang = window.currentLang || localStorage.getItem('fluid_sim_lang') || 'es';
+      if (typeof setLanguage === 'function') {
+        setLanguage(activeLang);
+      }
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeReportDonateModal() {
+    const modal = document.getElementById('report-donate-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  function closeReportDonateModalOnBackdrop(event) {
+    if (event.target.id === 'report-donate-modal') {
+      closeReportDonateModal();
+    }
+  }
+
+  function downloadReportFromModal() {
+    closeReportDonateModal();
+    if (typeof window.generateAerodynamicReport === 'function') {
+      window.generateAerodynamicReport(sim);
+    }
+  }
+
+  window.openReportDonateModal = openReportDonateModal;
+  window.closeReportDonateModal = closeReportDonateModal;
+  window.closeReportDonateModalOnBackdrop = closeReportDonateModalOnBackdrop;
+  window.downloadReportFromModal = downloadReportFromModal;
+
+  function switchCryptoTab(crypto, modalId) {
+    let modal = null;
+    if (modalId) {
+      modal = document.getElementById(modalId);
+    } else {
+      const reportModal = document.getElementById('report-donate-modal');
+      if (reportModal && reportModal.style.display !== 'none') {
+        modal = reportModal;
+      } else {
+        modal = document.getElementById('donate-modal');
+      }
+    }
     if (!modal) return;
     modal.querySelectorAll('.donate-crypto-tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.getAttribute('data-crypto') === crypto);

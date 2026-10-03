@@ -23,7 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Estilos Principales con versionado para invalidar caché -->
-  <link rel="stylesheet" href="css/style.css?v=20261002_v12_clean">
+  <link rel="stylesheet" href="css/style.css?v=20261003_v20_report_donate">
 
   <!-- Estilos Selector de Idioma (Portal Ambystoma Oficial) -->
   <style>
@@ -99,7 +99,18 @@
       </a>
 
       <!-- Botón Translúcido de Donar con Ícono de Corazón Blanco (Reemplaza la publicidad superior) -->
+      <!-- Botones de Acción Superior: Guardar Informe y Donar -->
       <div class="header-donate-zone">
+        <button type="button" class="btn-report-header" id="btn-save-report" title="Guardar informe aerodinámico en HD" data-i18n-title="btnSaveReportTitle" aria-label="Guardar informe">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span data-i18n="btnSaveReport">Guardar informe</span>
+        </button>
         <button type="button" class="btn-donate-header" id="btn-open-donate" onclick="openDonateModal()" title="Donar / Support Open Source" aria-label="Donar">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="1.2">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -702,6 +713,226 @@
     </div>
   </div>
 
+  <!-- Modal de Invitación a Donar ("Invítame a un café") al Generar Informe -->
+  <div id="report-donate-modal" class="modal-overlay" style="display: none;" onclick="closeReportDonateModalOnBackdrop(event)">
+    <div class="modal-card donate-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="modal-app-logo donate-logo-badge" style="background: linear-gradient(135deg, rgba(0,255,204,0.2), rgba(56,189,248,0.2)); border-color: rgba(0,255,204,0.4);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffcc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+              <line x1="6" y1="1" x2="6" y2="4"></line>
+              <line x1="10" y1="1" x2="10" y2="4"></line>
+              <line x1="14" y1="1" x2="14" y2="4"></line>
+            </svg>
+          </div>
+          <div>
+            <span class="badge-license free-app" style="margin-bottom: 0.25rem; display: inline-block; background: rgba(0, 255, 204, 0.15); color: #00ffcc; border-color: rgba(0, 255, 204, 0.35);" data-i18n="reportDonateModalBadge">INFORME LISTO • APOYO OPCIONAL</span>
+            <h3 class="modal-title" data-i18n="reportDonateModalTitle">¡Tu informe está listo! ¿Nos invitas a un café? ☕</h3>
+            <p class="modal-subtitle" data-i18n="reportDonateModalSubtitle">Descarga libre y gratuita • Apoyo voluntario para el desarrollo científico independiente</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-close-report-donate" onclick="closeReportDonateModal()" aria-label="Cerrar modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-intro-box donate-intro-box">
+          <p data-i18n="reportDonateModalIntro">
+            🎉 <strong>¡Tu captura en Alta Definición y telemetría CFD ya fueron procesadas!</strong><br><br>
+            En <strong>Ambystoma Technologies</strong> desarrollamos este simulador interactivo y sus herramientas de análisis de forma <strong>100% gratuita y de código abierto (Open Source)</strong> para estudiantes, docentes e investigadores de todo el mundo.<br><br>
+            Si esta herramienta te ha sido útil o te ha ahorrado tiempo en tus proyectos o estudios, <strong>¿considerarías invitarnos a un café? ☕</strong> Todo aporte, por pequeño que sea, cuenta y nos ayuda enormemente a costear servidores, acelerar nuevos módulos físicos y mantener vivas y libres estas utilidades.<br><br>
+            <em>¡Si no puedes donar en este momento no pasa nada!</em> Puedes descargar tu informe sin coste alguno cuando desees.
+          </p>
+        </div>
+
+        <!-- Zona Destacada de Descarga Directa del Informe -->
+        <div class="report-download-hero">
+          <div class="report-download-info">
+            <div class="report-ready-tag">
+              <span class="pulse-dot"></span>
+              <span data-i18n="reportReadyTag">Captura Ultra HD (2560×1440) Lista</span>
+            </div>
+            <p class="report-download-desc" data-i18n="reportDownloadDesc">Obtén la imagen técnica en alta resolución con telemetría completa</p>
+          </div>
+          <button type="button" class="btn-download-report-now" id="btn-download-report-now" onclick="downloadReportFromModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span data-i18n="btnDownloadReportOnly">Solo descargar informe</span>
+          </button>
+        </div>
+
+        <div class="donate-grid">
+          <!-- 1. De cualquier parte del mundo (PayPal) -->
+          <div class="donate-card donate-card-paypal">
+            <div class="donate-card-header">
+              <div class="donate-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.79.79 0 0 1 .78-.667h6.638c3.27 0 5.688 1.48 5.474 4.885-.187 2.977-2.023 5.097-4.887 5.097H9.722l-1.09 5.86a.642.642 0 0 1-.633.542h-.923v1.899zM19.86 7.64c-.314-1.99-1.92-3.14-4.52-3.14H8.7a.79.79 0 0 0-.78.667L4.814 20.597a.641.641 0 0 0 .633.74h4.606a.641.641 0 0 0 .633-.542l1.09-5.86h3.227c2.864 0 4.7-2.12 4.887-5.097.04-.64.01-1.25-.03-1.8z"/>
+                </svg>
+              </div>
+              <div>
+                <span class="donate-card-region" data-i18n="donateGlobalRegion">De cualquier parte del mundo</span>
+                <h4 class="donate-card-title" data-i18n="donateGlobalTitle">PayPal Internacional</h4>
+              </div>
+            </div>
+
+            <div class="donate-info-box">
+              <span class="donate-info-label" data-i18n="donateGlobalLabel">Cuenta / Correo de PayPal:</span>
+              <span class="donate-info-val">antoniovangritte@gmail.com</span>
+            </div>
+
+            <div class="donate-actions">
+              <button type="button" class="btn-donate-action" onclick="copyToClipboard('antoniovangritte@gmail.com', this, '¡Copiado! ✓', 'Copiar Correo')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span data-i18n="donateCopyEmail">Copiar Correo</span>
+              </button>
+              <a href="https://www.paypal.com/signin" target="_blank" rel="noopener noreferrer" class="btn-donate-action btn-donate-primary-link" data-i18n="donateOpenPaypal">
+                Ir a PayPal ↗
+              </a>
+            </div>
+          </div>
+
+          <!-- 2. Desde Argentina (Mercado Pago) -->
+          <div class="donate-card donate-card-mp">
+            <div class="donate-card-header">
+              <div class="donate-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                  <line x1="2" y1="10" x2="22" y2="10"></line>
+                </svg>
+              </div>
+              <div>
+                <span class="donate-card-region" data-i18n="donateArgRegion">Desde Argentina</span>
+                <h4 class="donate-card-title" data-i18n="donateArgTitle">Mercado Pago</h4>
+              </div>
+            </div>
+
+            <div class="donate-info-box">
+              <span class="donate-info-label" data-i18n="donateArgAliasLabel">Alias Mercado Pago:</span>
+              <span class="donate-info-val">micro.cosmonauta</span>
+              <span class="donate-info-label" style="margin-top: 0.35rem;" data-i18n="donateArgOwnerLabel">Titular de la cuenta:</span>
+              <span class="donate-info-val" style="font-family: inherit; font-size: 0.9rem;">Brandon Antonio Segura Torres</span>
+            </div>
+
+            <div class="donate-actions">
+              <button type="button" class="btn-donate-action" onclick="copyToClipboard('micro.cosmonauta', this, '¡Alias copiado! ✓', 'Copiar Alias')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span data-i18n="donateCopyAlias">Copiar Alias</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. Criptomonedas (BTC / ETH) -->
+          <div class="donate-card donate-card-crypto">
+            <div class="donate-card-header">
+              <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <div class="donate-card-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9 8h4.5a2 2 0 0 1 0 4H9m0 0h5a2.5 2.5 0 0 1 0 5H9m0-9v10m3-12v2m0 8v2m-3-12v2m0 8v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <span class="donate-card-region" data-i18n="donateCryptoRegion">Descentralizado / Web3</span>
+                  <h4 class="donate-card-title" data-i18n="donateCryptoTitle">Criptomonedas</h4>
+                </div>
+              </div>
+              <div class="donate-crypto-tabs">
+                <button type="button" class="donate-crypto-tab-btn active" data-crypto="btc" onclick="switchCryptoTab('btc', 'report-donate-modal')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 14.09c-.3.07-.63.11-.97.11v1.3h-1.08v-1.28c-.28 0-.57-.02-.85-.05v1.33H9.43v-1.36c-.22-.03-.43-.07-.62-.12l-1.39.55-.42-1.04.88-.35c.16-.06.27-.22.25-.39L7.3 11.2c-.01-.08-.06-.15-.13-.18L6.2 10.6l.42-1.05 1.34.54c.2-.07.41-.13.64-.17V8.65h1.08v1.23c.27.02.53.05.79.09V8.65h1.08v1.34c1.66.19 2.76.99 2.65 2.45-.07.96-.64 1.58-1.49 1.87.98.37 1.45 1.15 1.3 2.28-.18 1.44-1.39 2.06-2.65 2.15v1.35zm-.33-4.73c.73 0 1.25-.26 1.3-1.02.06-.77-.45-1.05-1.22-1.08l-.83-.03-.26 2.13h1.01zm.26 3.19c.89 0 1.48-.3 1.54-1.18.06-.9-.55-1.22-1.46-1.24l-1.15-.04-.32 2.46h1.39z"/>
+                  </svg>
+                  <span data-i18n="donateCryptoTabBtc">Bitcoin (BTC)</span>
+                </button>
+                <button type="button" class="donate-crypto-tab-btn" data-crypto="eth" onclick="switchCryptoTab('eth', 'report-donate-modal')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.944 17.97L4.5 13.658 11.944 24l7.444-10.342-7.444 4.312zm.056-17.97L4.556 12.37l7.444 4.398 7.444-4.398L12 0zm0 14.81L6.208 11.39 12 2.873l5.792 8.517L12 14.81z"/>
+                  </svg>
+                  <span data-i18n="donateCryptoTabEth">Ethereum (ETH)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel BTC -->
+            <div class="donate-crypto-panel active" data-crypto-panel="btc">
+              <div class="donate-info-box" style="cursor: pointer;" onclick="copyToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', this.querySelector('.btn-donate-action') || this, '¡Dirección copiada! ✓', 'Copiar Dirección BTC')" title="Clic para copiar dirección">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="donate-info-label" data-i18n="donateCryptoBtcLabel">Dirección BTC (Native SegWit · BIP-84):</span>
+                  <span style="font-size: 0.72rem; color: #f7931a; font-weight: 700; letter-spacing: 0.05em;">BIP-84</span>
+                </div>
+                <span class="donate-info-val donate-crypto-address">bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl</span>
+              </div>
+
+              <div class="donate-actions">
+                <button type="button" class="btn-donate-action btn-donate-crypto-btc" onclick="copyToClipboard('bc1qrng39d9zcc2wyh32rts324jq62qrgp3l4kygxl', this, '¡Dirección copiada! ✓', 'Copiar Dirección BTC')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span data-i18n="donateCopyBtc">Copiar Dirección BTC</span>
+                </button>
+              </div>
+
+              <div class="donate-crypto-warning">
+                <span data-i18n="donateCryptoBtcWarn"><strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Bitcoin (BTC) a esta dirección (formato Native SegWit BIP-84). Enviar otros activos resultará en la pérdida definitiva de tus fondos.</span>
+              </div>
+            </div>
+
+            <!-- Panel ETH -->
+            <div class="donate-crypto-panel" data-crypto-panel="eth">
+              <div class="donate-info-box" style="cursor: pointer;" onclick="copyToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', this.querySelector('.btn-donate-action') || this, '¡Dirección copiada! ✓', 'Copiar Dirección ETH')" title="Clic para copiar dirección">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="donate-info-label" data-i18n="donateCryptoEthLabel">Dirección ETH (Red Ethereum · ERC-20):</span>
+                  <span style="font-size: 0.72rem; color: #a5b4fc; font-weight: 700; letter-spacing: 0.05em;">ERC-20</span>
+                </div>
+                <span class="donate-info-val donate-crypto-address">0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e</span>
+              </div>
+
+              <div class="donate-actions">
+                <button type="button" class="btn-donate-action btn-donate-crypto-eth" onclick="copyToClipboard('0x201b9A96A7Bd5EE68312655C2d0b56D8CeFED36e', this, '¡Dirección copiada! ✓', 'Copiar Dirección ETH')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span data-i18n="donateCopyEth">Copiar Dirección ETH</span>
+                </button>
+              </div>
+
+              <div class="donate-crypto-warning">
+                <span data-i18n="donateCryptoEthWarn"><strong>AVISO DE SEGURIDAD:</strong> Envía únicamente Ethereum (ETH) a esta dirección (red Ethereum ERC-20). Enviar otros activos resultará en la pérdida definitiva de tus fondos.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones Inferiores -->
+        <div class="report-bottom-actions">
+          <button type="button" class="btn-download-report-bottom" onclick="downloadReportFromModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span data-i18n="btnDownloadReportOnly">Solo descargar informe</span>
+          </button>
+          <button type="button" class="btn-close-report-modal" onclick="closeReportDonateModal()">
+            <span data-i18n="btnCloseModal">Cerrar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Acerca de -->
   <div class="modal-overlay" id="about-modal" style="display: none;">
     <div class="modal-card">
@@ -904,11 +1135,12 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts en orden de dependencia con versionado anticaché -->
-  <script src="js/i18n.js?v=20261002_v16_glycerin"></script>
+  <script src="js/i18n.js?v=20261003_v22_bilingual"></script>
   <script src="js/physics.js?v=20261002_v16_glycerin"></script>
   <script src="js/lbm.js?v=20261002_v16_glycerin"></script>
   <script src="js/elements.js?v=20261002_v16_glycerin"></script>
-  <script src="js/canvas.js?v=20261002_v16_glycerin"></script>
-  <script src="js/app.js?v=20261002_v16_glycerin"></script>
+  <script src="js/canvas.js?v=20261003_v18_arc_half"></script>
+  <script src="js/report.js?v=20261003_v2_report_layout"></script>
+  <script src="js/app.js?v=20261003_v22_bilingual"></script>
 </body>
 </html>
