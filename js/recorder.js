@@ -18,7 +18,7 @@
   let isRendering = false;
   let recordingMode = 'render'; // 'render' o 'live'
   let recordingDuration = 15; // Segundos (5s a 120s)
-  let videoLayout = 'with_meta'; // 'with_meta' o 'no_meta'
+  let videoLayout = 'no_meta'; // 'no_meta' (por defecto) o 'with_meta'
   let lastVideoBlob = null;
   let lastVideoExt = 'mp4';
   let cancelRequested = false;
@@ -363,12 +363,6 @@
     const totalFrames = Math.max(150, Math.round(durationSec * fps));
     const frameDt = 1.0 / fps;
 
-    // Canvas del informe Full HD (1920 x 1080)
-    const recCanvas = document.createElement('canvas');
-    recCanvas.width = 1920;
-    recCanvas.height = 1080;
-    const recCtx = recCanvas.getContext('2d');
-
     // Canvas offscreen para procesar y renderizar los fotogramas físicos sin alterar el lienzo visible
     // Aplicar devicePixelRatio para que el renderizado coincida exactamente con la resolución física del lienzo
     const dpr = window.devicePixelRatio || 1;
@@ -378,7 +372,31 @@
     const offlineSimCtx = offlineSimCanvas.getContext('2d');
     offlineSimCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const encoderConfig = await chooseSupportedVideoEncoder(1920, 1080, fps);
+    const recW = 1920;
+    let recH = 1080;
+    if (videoLayout === 'no_meta') {
+      const crop = (typeof window.getFluidDomainCrop === 'function')
+        ? window.getFluidDomainCrop(sim, offlineSimCanvas)
+        : null;
+      const domainAspect = (crop && crop.aspect) ? crop.aspect : ((sim.width && sim.height) ? (sim.width / sim.height) : (16 / 9));
+      const headerH = 90;
+      let animH = Math.round(recW / domainAspect);
+      recH = headerH + animH;
+      if (recH % 2 !== 0) recH++;
+    }
+
+    // Canvas del informe Full HD (o ajustado sin franja inferior)
+    const recCanvas = document.createElement('canvas');
+    recCanvas.width = recW;
+    recCanvas.height = recH;
+    const recCtx = recCanvas.getContext('2d');
+
+    let encoderConfig = await chooseSupportedVideoEncoder(recW, recH, fps);
+    if (!encoderConfig && recH !== 1080) {
+      recH = 1080;
+      recCanvas.height = recH;
+      encoderConfig = await chooseSupportedVideoEncoder(recW, recH, fps);
+    }
 
     if (!encoderConfig) {
       isRendering = false;
@@ -405,8 +423,8 @@
           target: new encoderConfig.muxerClass.ArrayBufferTarget(),
           video: {
             codec: encoderConfig.muxCodec, // 'avc'
-            width: 1920,
-            height: 1080
+            width: recW,
+            height: recH
           },
           fastStart: 'in-memory' // Moov atom at beginning: 100% compatible with MPC-HC, WMP, VLC, QuickTime
         });
@@ -415,8 +433,8 @@
           target: new encoderConfig.muxerClass.ArrayBufferTarget(),
           video: {
             codec: encoderConfig.muxCodec,
-            width: 1920,
-            height: 1080,
+            width: recW,
+            height: recH,
             frameRate: fps
           }
         });
@@ -429,8 +447,8 @@
 
       videoEncoder.configure({
         codec: encoderConfig.codecStr,
-        width: 1920,
-        height: 1080,
+        width: recW,
+        height: recH,
         bitrate: 6_000_000,
         framerate: fps
       });
@@ -486,23 +504,26 @@
 
         // Resetear transformación y limpiar canvas de grabación por completo antes de componer el frame
         recCtx.setTransform(1, 0, 0, 1, 0, 0);
-        recCtx.clearRect(0, 0, 1920, 1080);
+        recCtx.clearRect(0, 0, recW, recH);
 
         // Componer según la opción elegida por el usuario: con metadatos completos o diseño limpio sin metadatos
         const renderOpts = {
           badgeTag: isEs ? "SIMULACIÓN RENDERIZADA (30 FPS)" : "RENDERED CFD (30 FPS)",
           timestamp: new Date(),
           customSimCanvas: offlineSimCanvas,
-          visMode: sim.visMode
+          visMode: sim.visMode,
+          isVideo: true
         };
 
         if (videoLayout === 'no_meta') {
-          if (typeof window.drawCleanReportLayout === 'function') {
-            window.drawCleanReportLayout(recCtx, sim, 1920, 1080, renderOpts);
+          if (typeof window.drawCleanVideoLayout === 'function') {
+            window.drawCleanVideoLayout(recCtx, sim, recW, recH, renderOpts);
+          } else if (typeof window.drawCleanReportLayout === 'function') {
+            window.drawCleanReportLayout(recCtx, sim, recW, recH, renderOpts);
           }
         } else {
           if (typeof window.drawReportLayout === 'function') {
-            window.drawReportLayout(recCtx, sim, 1920, 1080, renderOpts);
+            window.drawReportLayout(recCtx, sim, recW, recH, renderOpts);
           }
         }
 
@@ -579,12 +600,34 @@
 
     const fps = 30;
     const frameIntervalMs = 1000 / fps;
+
+    const recW = 1920;
+    let recH = 1080;
+    if (videoLayout === 'no_meta') {
+      const sourceCanvas = sim.canvas;
+      const crop = (typeof window.getFluidDomainCrop === 'function')
+        ? window.getFluidDomainCrop(sim, sourceCanvas)
+        : null;
+      const domainAspect = (crop && crop.aspect)
+        ? crop.aspect
+        : (sourceCanvas && sourceCanvas.width && sourceCanvas.height ? (sourceCanvas.width / sourceCanvas.height) : (16 / 9));
+      const headerH = 90;
+      let animH = Math.round(recW / domainAspect);
+      recH = headerH + animH;
+      if (recH % 2 !== 0) recH++;
+    }
+
     const recCanvas = document.createElement('canvas');
-    recCanvas.width = 1920;
-    recCanvas.height = 1080;
+    recCanvas.width = recW;
+    recCanvas.height = recH;
     const recCtx = recCanvas.getContext('2d');
 
-    const encoderConfig = await chooseSupportedVideoEncoder(1920, 1080, fps);
+    let encoderConfig = await chooseSupportedVideoEncoder(recW, recH, fps);
+    if (!encoderConfig && recH !== 1080) {
+      recH = 1080;
+      recCanvas.height = recH;
+      encoderConfig = await chooseSupportedVideoEncoder(recW, recH, fps);
+    }
     const isEs = (window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null)) === 'es';
 
     // CASO A: Codificación WebCodecs + Muxer en tiempo real (Salida MP4 estándar de máxima compatibilidad)
@@ -598,8 +641,8 @@
             target: new encoderConfig.muxerClass.ArrayBufferTarget(),
             video: {
               codec: encoderConfig.muxCodec,
-              width: 1920,
-              height: 1080
+              width: recW,
+              height: recH
             },
             fastStart: 'in-memory'
           });
@@ -608,8 +651,8 @@
             target: new encoderConfig.muxerClass.ArrayBufferTarget(),
             video: {
               codec: encoderConfig.muxCodec,
-              width: 1920,
-              height: 1080,
+              width: recW,
+              height: recH,
               frameRate: fps
             }
           });
@@ -622,8 +665,8 @@
 
         videoEncoder.configure({
           codec: encoderConfig.codecStr,
-          width: 1920,
-          height: 1080,
+          width: recW,
+          height: recH,
           bitrate: 6_000_000,
           framerate: fps
         });
@@ -682,7 +725,7 @@
 
             // Resetear transformación y limpiar canvas de grabación
             recCtx.setTransform(1, 0, 0, 1, 0, 0);
-            recCtx.clearRect(0, 0, 1920, 1080);
+            recCtx.clearRect(0, 0, recW, recH);
 
             const liveOpts = {
               badgeTag: isEs ? "GRABACIÓN EN VIVO (30 FPS)" : "LIVE RECORDING (30 FPS)",
@@ -694,12 +737,14 @@
 
             // Dibuja la maqueta según la opción elegida por el usuario: con metadatos completos o diseño limpio sin metadatos
             if (videoLayout === 'no_meta') {
-              if (typeof window.drawCleanReportLayout === 'function') {
-                window.drawCleanReportLayout(recCtx, sim, 1920, 1080, liveOpts);
+              if (typeof window.drawCleanVideoLayout === 'function') {
+                window.drawCleanVideoLayout(recCtx, sim, recW, recH, liveOpts);
+              } else if (typeof window.drawCleanReportLayout === 'function') {
+                window.drawCleanReportLayout(recCtx, sim, recW, recH, liveOpts);
               }
             } else {
               if (typeof window.drawReportLayout === 'function') {
-                window.drawReportLayout(recCtx, sim, 1920, 1080, liveOpts);
+                window.drawReportLayout(recCtx, sim, recW, recH, liveOpts);
               }
             }
 
@@ -770,22 +815,26 @@
 
       // Resetear transformación y limpiar canvas de grabación
       recCtx.setTransform(1, 0, 0, 1, 0, 0);
-      recCtx.clearRect(0, 0, 1920, 1080);
+      recCtx.clearRect(0, 0, recW, recH);
 
       const liveOpts = {
         badgeTag: isEs ? "GRABACIÓN EN VIVO (30 FPS)" : "LIVE RECORDING (30 FPS)",
         timestamp: new Date(),
-        visMode: sim.visMode
+        visMode: sim.visMode,
+        isLive: true,
+        isVideo: true
       };
 
       // Dibuja la maqueta según la opción elegida por el usuario: con metadatos completos o diseño limpio sin metadatos
       if (videoLayout === 'no_meta') {
-        if (typeof window.drawCleanReportLayout === 'function') {
-          window.drawCleanReportLayout(recCtx, sim, 1920, 1080, liveOpts);
+        if (typeof window.drawCleanVideoLayout === 'function') {
+          window.drawCleanVideoLayout(recCtx, sim, recW, recH, liveOpts);
+        } else if (typeof window.drawCleanReportLayout === 'function') {
+          window.drawCleanReportLayout(recCtx, sim, recW, recH, liveOpts);
         }
       } else {
         if (typeof window.drawReportLayout === 'function') {
-          window.drawReportLayout(recCtx, sim, 1920, 1080, liveOpts);
+          window.drawReportLayout(recCtx, sim, recW, recH, liveOpts);
         }
       }
 

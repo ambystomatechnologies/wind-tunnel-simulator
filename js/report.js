@@ -489,23 +489,26 @@
       const pad = (n) => String(n).padStart(2, '0');
       const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-      let curBadgeX = headerX + headerW - 20;
+      // Badges a la derecha del Header alineados dinámicamente de derecha a izquierda para evitar desbordamiento
+      let curBadgeRight = headerX + headerW - 24;
+      const badgeSpacing = 16;
 
-      // Status Badge (Live / Paused)
+      // Status Badge (Live / Paused / Recording / Render)
       const statusText = (options && options.badgeTag) ? options.badgeTag : (sim.isPaused ? (isSpanish ? "PAUSADO" : "PAUSED") : (isSpanish ? "EN VIVO (60 FPS)" : "LIVE (60 FPS)"));
-      const statusBg = sim.isPaused ? 'rgba(255, 184, 108, 0.15)' : 'rgba(0, 255, 204, 0.15)';
-      const statusColor = sim.isPaused ? '#ffb86c' : '#00ffcc';
-      curBadgeX -= 150;
-      drawBadge(ctx, `● ${statusText}`, curBadgeX, headerY + headerH / 2, statusBg, statusColor, statusColor, 13);
+      const isRecordTag = !!(options && options.badgeTag);
+      const statusBg = isRecordTag ? 'rgba(0, 255, 204, 0.15)' : (sim.isPaused ? 'rgba(255, 184, 108, 0.15)' : 'rgba(0, 255, 204, 0.15)');
+      const statusColor = isRecordTag ? '#00ffcc' : (sim.isPaused ? '#ffb86c' : '#00ffcc');
+      const statusW = drawBadge(ctx, `● ${statusText}`, curBadgeRight, headerY + headerH / 2, statusBg, statusColor, statusColor, 13, true, 'right');
+      curBadgeRight -= (statusW + badgeSpacing);
 
       // Engine badge
       const engineText = sim.isLBMMode ? "LBM D2Q9 (200x100)" : "CFD NAVIER-STOKES (160x90)";
-      curBadgeX -= 255;
-      drawBadge(ctx, `⚙ ${engineText}`, curBadgeX, headerY + headerH / 2, 'rgba(56, 189, 248, 0.12)', '#38bdf8', 'rgba(56, 189, 248, 0.4)', 13);
+      const engineW = drawBadge(ctx, `⚙ ${engineText}`, curBadgeRight, headerY + headerH / 2, 'rgba(56, 189, 248, 0.12)', '#38bdf8', 'rgba(56, 189, 248, 0.4)', 13, true, 'right');
+      curBadgeRight -= (engineW + badgeSpacing);
 
       // Timestamp badge
-      curBadgeX -= 245;
-      drawBadge(ctx, `🕒 ${timeStr}`, curBadgeX, headerY + headerH / 2, 'rgba(255, 255, 255, 0.06)', '#e2e8f0', 'rgba(255, 255, 255, 0.18)', 13);
+      const timeW = drawBadge(ctx, `🕒 ${timeStr}`, curBadgeRight, headerY + headerH / 2, 'rgba(255, 255, 255, 0.06)', '#e2e8f0', 'rgba(255, 255, 255, 0.18)', 13, true, 'right');
+      curBadgeRight -= (timeW + badgeSpacing);
 
       // =========================================================================
       // --- 2. PANELES PRINCIPALES: IZQUIERDA (SIMULACIÓN) Y DERECHA (TABLAS) ---
@@ -552,6 +555,9 @@
 
       drawRoundedRect(ctx, innerX, innerY, innerW, innerH, 8, '#090b10', 'rgba(0, 255, 204, 0.25)', 1);
 
+      // Origen del canvas de la simulación
+      const sourceCanvas = (options && options.customSimCanvas) ? options.customSimCanvas : sim.canvas;
+
       // Cálculo de encuadre proporcional perfecto (aspect-fit)
       const simAspect = (sourceCanvas && sourceCanvas.width && sourceCanvas.height) ? (sourceCanvas.width / sourceCanvas.height) : ((sim.canvas.width || 16) / (sim.canvas.height || 9));
       let drawW = innerW;
@@ -567,8 +573,13 @@
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      const sourceCanvas = (options && options.customSimCanvas) ? options.customSimCanvas : sim.canvas;
-      ctx.drawImage(sourceCanvas, drawX, drawY, drawW, drawH);
+      if (sourceCanvas && sourceCanvas.width > 0 && sourceCanvas.height > 0) {
+        try {
+          ctx.drawImage(sourceCanvas, drawX, drawY, drawW, drawH);
+        } catch (drawErr) {
+          console.warn("[Report] Error drawing source canvas:", drawErr);
+        }
+      }
 
       // Borde de encuadre fino
       ctx.strokeStyle = 'rgba(0, 255, 204, 0.4)';
@@ -1033,10 +1044,193 @@
   }
 
   /**
-   * Renderiza el diseño limpio (Sin metadatos) maximizando la simulación y ajustando la escala de colores abajo
+   * Obtiene el rectángulo exacto de recorte del dominio físico de la simulación,
+   * descartando cualquier margen o franja negra exterior añadida por el canvas.
+   */
+  function getFluidDomainCrop(sim, sourceCanvas) {
+    if (!sim || !sourceCanvas) return null;
+
+    const sourceW = sourceCanvas.width;
+    const sourceH = sourceCanvas.height;
+    const simW = sim.width || (sourceW / (window.devicePixelRatio || 1));
+    const simH = sim.height || (sourceH / (window.devicePixelRatio || 1));
+    const dprX = sourceW / simW;
+    const dprY = sourceH / simH;
+
+    if (typeof sim.worldToScreen === 'function' && sim.fluid) {
+      const origin = sim.worldToScreen(0, 0);
+      const domainW = (sim.fluid.domainWidth || 16.0) * (sim.zoomLevel || 1.0);
+      const domainH = (sim.fluid.domainHeight || 9.0) * (sim.zoomLevel || 1.0);
+
+      let sx = Math.round(origin.x * dprX);
+      let sy = Math.round(origin.y * dprY);
+      let sw = Math.round(domainW * dprX);
+      let sh = Math.round(domainH * dprY);
+
+      if (sx >= -10 && sy >= -10 && sw > 50 && sh > 50) {
+        const clampSx = Math.max(0, sx);
+        const clampSy = Math.max(0, sy);
+        const clampSw = Math.min(sourceW - clampSx, sw - (clampSx - sx));
+        const clampSh = Math.min(sourceH - clampSy, sh - (clampSy - sy));
+        if (clampSw > 50 && clampSh > 50) {
+          return {
+            sx: clampSx,
+            sy: clampSy,
+            sw: clampSw,
+            sh: clampSh,
+            aspect: clampSw / clampSh
+          };
+        }
+      }
+    }
+
+    return {
+      sx: 0,
+      sy: 0,
+      sw: sourceW,
+      sh: sourceH,
+      aspect: sourceW / sourceH
+    };
+  }
+
+  /**
+   * Renderiza el diseño visual limpio sin metadatos (tanto para video como para capturas JPG/PNG):
+   * - Sin marcos de ningún tipo (ni en logo, ni en referencia, ni en la animación).
+   * - Logotipo y referencia bajados, ubicados inmediatamente arriba del borde de la simulación.
+   * - La simulación se recorta exactamente en su dominio físico: cero franjas negras arriba o abajo.
+   */
+  function drawCleanVideoLayout(ctx, sim, targetW = 1920, targetH = 1080, options = {}) {
+    if (!ctx || !sim || !sim.canvas) return;
+
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+      const activeLang = options.lang || window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null);
+      const isSpanish = (options.isSpanish !== undefined) ? options.isSpanish : (activeLang === 'es' || (!window.currentLang && !localStorage.getItem('fluid_sim_lang') && (navigator.language || '').startsWith('es')));
+
+      // 1. Fondo continuo sin marcos
+      ctx.fillStyle = '#090b10';
+      ctx.fillRect(0, 0, targetW, targetH);
+
+      // Factor de escala relativo a 1920
+      const scale = targetW / 1920;
+
+      // 2. Encabezado superior ajustado: logo y referencia bajados, pegados al borde de la simulación
+      const headerH = Math.round(90 * scale);
+
+      let navLogo = document.querySelector('.navbar-logo-img');
+      if (!navLogo || !navLogo.complete || !navLogo.naturalWidth) {
+        if (!window._cachedReportLogo) {
+          window._cachedReportLogo = new Image();
+          window._cachedReportLogo.src = 'logo.png';
+        }
+        navLogo = window._cachedReportLogo;
+      }
+
+      // Logotipo grande manteniendo las proporciones destacadas
+      const targetLogoH = Math.round(68 * scale);
+      const logoAspect = (navLogo && navLogo.naturalWidth && navLogo.naturalHeight)
+        ? (navLogo.naturalWidth / navLogo.naturalHeight)
+        : (2163 / 403);
+      const targetLogoW = Math.round(targetLogoH * logoAspect);
+
+      const logoX = Math.round(36 * scale);
+      // Bajado para quedar a solo 10px del borde superior de la simulación
+      const logoY = headerH - targetLogoH - Math.round(8 * scale);
+
+      let logoDrawn = false;
+      if (navLogo && navLogo.complete && navLogo.naturalWidth > 0) {
+        try {
+          ctx.drawImage(navLogo, logoX, logoY, targetLogoW, targetLogoH);
+          logoDrawn = true;
+        } catch (e) {
+          logoDrawn = false;
+        }
+      }
+      if (!logoDrawn) {
+        ctx.save();
+        ctx.fillStyle = '#00ffcc';
+        ctx.font = `700 ${Math.round(28 * scale)}px "Inter", system-ui, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("AMBYSTOMA TECH", logoX, logoY + targetLogoH / 2);
+        ctx.restore();
+      }
+
+      // Referencia científica formal bajada y ubicada justo arriba de la simulación
+      const refX = logoX + (logoDrawn ? targetLogoW : Math.round(365 * scale)) + Math.round(32 * scale);
+
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      // Etiqueta formal APA y URL oficial (Línea 1)
+      const tagFontSize = Math.round(14 * scale);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = `700 ${tagFontSize}px monospace`;
+      const refTag = isSpanish
+        ? "■  REFERENCIA CIENTÍFICA (NORMA APA 7ª ED.) • https://ambystomatechnologies.github.io/wind-tunnel-simulator/"
+        : "■  SCIENTIFIC CITATION (APA 7TH ED.) • https://ambystomatechnologies.github.io/wind-tunnel-simulator/";
+      ctx.fillText(refTag, refX, headerH - Math.round(54 * scale));
+
+      // Cita de autoría y software (Línea 2, fuente destacada en blanco nítido)
+      ctx.fillStyle = '#ffffff';
+      let citFontSize = Math.round(18 * scale);
+      ctx.font = `700 ${citFontSize}px "Inter", system-ui, sans-serif`;
+      const refCitation = isSpanish
+        ? "Segura Torres, B. A. (2026). Simulador 2D de Fluidos y Túnel de Viento Interactivo [Software computacional]. Ambystoma Technologies."
+        : "Segura Torres, B. A. (2026). Interactive 2D Fluid Mechanics & Wind Tunnel Simulator [Computer software]. Ambystoma Technologies.";
+
+      const maxRefW = targetW - refX - Math.round(36 * scale);
+      while (ctx.measureText(refCitation).width > maxRefW && citFontSize > 11) {
+        citFontSize -= 0.5;
+        ctx.font = `700 ${citFontSize}px "Inter", system-ui, sans-serif`;
+      }
+      ctx.fillText(refCitation, refX, headerH - Math.round(22 * scale));
+
+      ctx.restore();
+
+      // 3. Área de Animación: Comienza inmediatamente en headerH y se extiende hasta targetH (sin franja negra abajo)
+      const animY = headerH;
+      const animW = targetW;
+      const animH = targetH - animY;
+
+      const sourceCanvas = (options && options.customSimCanvas) ? options.customSimCanvas : sim.canvas;
+      const crop = getFluidDomainCrop(sim, sourceCanvas);
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      if (sourceCanvas && sourceCanvas.width > 0 && sourceCanvas.height > 0 && animH > 0) {
+        try {
+          if (crop) {
+            ctx.drawImage(sourceCanvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, animY, animW, animH);
+          } else {
+            ctx.drawImage(sourceCanvas, 0, animY, animW, animH);
+          }
+        } catch (drawErr) {
+          console.warn("[Recorder] Error drawing clean video frame:", drawErr);
+        }
+      }
+      ctx.restore();
+
+    } catch (err) {
+      console.error("[Report] Error in drawCleanVideoLayout:", err);
+    } finally {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+  }
+
+  /**
+   * Renderiza el diseño limpio sin metadatos (tanto para imagen JPG/PNG como para vídeo):
+   * - Sin marcos de ningún tipo (eliminados completamente).
+   * - Idéntico al formato de vídeo sin metadatos: únicamente el logotipo a la izquierda y la cita de referencia arriba.
+   * - La simulación se recorta exactamente en su dominio físico sin franjas negras.
    */
   function drawCleanReportLayout(ctx, sim, targetW = 2560, targetH = 1440, options = {}) {
     if (!ctx || !sim || !sim.canvas) return;
+    drawCleanVideoLayout(ctx, sim, targetW, targetH, options);
+    return;
 
     const scaleX = targetW / 2560;
     const scaleY = targetH / 1440;
@@ -1735,6 +1929,8 @@
 
   window.drawReportLayout = drawReportLayout;
   window.drawCleanReportLayout = drawCleanReportLayout;
+  window.drawCleanVideoLayout = drawCleanVideoLayout;
+  window.getFluidDomainCrop = getFluidDomainCrop;
   window.generateAerodynamicReport = generateAerodynamicReport;
   window.generateSimulationCSV = generateSimulationCSV;
   window.sampleFluidAt = sampleFluidAt;
