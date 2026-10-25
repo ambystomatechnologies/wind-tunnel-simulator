@@ -88,6 +88,8 @@
     switch (mode) {
       case 'smoke':
         return isSpanish ? "Humo y Líneas de Corriente" : "Smoke & Streamlines";
+      case 'cfd_des_les':
+        return isSpanish ? "CFD: Aerodinámica DES / LES (Fondo Claro & Vórtices)" : "CFD: DES / LES Aerodynamics (Light Field & Vortices)";
       case 'pressure':
         return isSpanish ? "Mapa de Presión Estática (Pa)" : "Static Pressure Field (Pa)";
       case 'velocity':
@@ -107,6 +109,107 @@
       default:
         return mode;
     }
+  }
+
+  /**
+   * Obtiene la escala de colores y leyendas según el modo de visualización del simulador,
+   * preservando intactos todos los esquemas de color consolidados.
+   */
+  function getColormapRamp(sim, ctx, gradBarX, gradBarW, isSpanish, customVisMode = null) {
+    const colorGrad = ctx.createLinearGradient(gradBarX, 0, gradBarX + gradBarW, 0);
+    let leftLegend = "";
+    let centerLegend = "";
+    let rightLegend = "";
+    const activeMode = customVisMode || (sim ? sim.visMode : 'smoke');
+
+    if (activeMode === 'cfd_des_les') {
+      colorGrad.addColorStop(0, '#f8fafc');
+      colorGrad.addColorStop(0.35, '#8898aa');
+      colorGrad.addColorStop(0.60, '#1a2230');
+      colorGrad.addColorStop(0.85, '#00d4ff');
+      colorGrad.addColorStop(1, '#c0f6ff');
+      leftLegend = isSpanish ? "Flujo Libre" : "Freestream";
+      centerLegend = isSpanish ? "Estela / Separación" : "Separated Wake";
+      rightLegend = isSpanish ? "Núcleos de Vórtice" : "Vortex Cores";
+
+    } else if (activeMode === 'cfd_combustion') {
+      colorGrad.addColorStop(0, '#030733');
+      colorGrad.addColorStop(0.25, '#00b0ff');
+      colorGrad.addColorStop(0.45, '#22c55e');
+      colorGrad.addColorStop(0.60, '#facc15');
+      colorGrad.addColorStop(0.75, '#ff5500');
+      colorGrad.addColorStop(0.90, '#dc2626');
+      colorGrad.addColorStop(1, '#660505');
+      leftLegend = isSpanish ? "Fondo Azul Noche" : "Deep Night Blue";
+      centerLegend = isSpanish ? "Cizalladura y Mezcla" : "Shear & Mixing";
+      rightLegend = isSpanish ? "Llama / Núcleo Reactivo" : "Reacting Flame Core";
+
+    } else if (activeMode === 'pressure') {
+      colorGrad.addColorStop(0, '#0e44ff');
+      colorGrad.addColorStop(0.28, '#00e5ff');
+      colorGrad.addColorStop(0.50, '#101826');
+      colorGrad.addColorStop(0.72, '#ffaa00');
+      colorGrad.addColorStop(1, '#ff2200');
+      leftLegend = isSpanish ? "Succión (-P)" : "Suction (-P)";
+      centerLegend = "P = 0 Pa";
+      rightLegend = isSpanish ? "Estancamiento (+P)" : "Stagnation (+P)";
+
+    } else if (activeMode === 'velocity') {
+      colorGrad.addColorStop(0, '#0a0d24');
+      colorGrad.addColorStop(0.25, '#0077ff');
+      colorGrad.addColorStop(0.50, '#00e5ff');
+      colorGrad.addColorStop(0.70, '#00ff66');
+      colorGrad.addColorStop(0.85, '#ffff00');
+      colorGrad.addColorStop(1, '#ff3311');
+      leftLegend = "0 m/s";
+      centerLegend = isSpanish ? "Vel. Media" : "Mean Speed";
+      rightLegend = isSpanish ? "Velocidad Máx" : "Max Velocity";
+
+    } else if (activeMode === 'vorticity') {
+      colorGrad.addColorStop(0, '#fc3228');
+      colorGrad.addColorStop(0.35, '#c82020');
+      colorGrad.addColorStop(0.50, '#0e121c');
+      colorGrad.addColorStop(0.65, '#0088cc');
+      colorGrad.addColorStop(1, '#19afff');
+      leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
+      centerLegend = "ω = 0 s⁻¹";
+      rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
+
+    } else if (activeMode === 'schroeder_speed') {
+      colorGrad.addColorStop(0, '#000088');
+      colorGrad.addColorStop(0.18, '#0000ff');
+      colorGrad.addColorStop(0.38, '#00ffff');
+      colorGrad.addColorStop(0.58, '#00ff00');
+      colorGrad.addColorStop(0.78, '#ffff00');
+      colorGrad.addColorStop(0.92, '#ff0000');
+      colorGrad.addColorStop(1, '#880000');
+      leftLegend = isSpanish ? "0 m/s (Reposo)" : "0 m/s (Rest)";
+      centerLegend = isSpanish ? "U∞ Nominal" : "Nominal U∞";
+      rightLegend = isSpanish ? "Rapidez Máx" : "Max Speed";
+
+    } else if (activeMode === 'schroeder_curl') {
+      colorGrad.addColorStop(0, '#0000ff');
+      colorGrad.addColorStop(0.25, '#00ffff');
+      colorGrad.addColorStop(0.50, '#00ff00');
+      colorGrad.addColorStop(0.75, '#ffff00');
+      colorGrad.addColorStop(1, '#ff0000');
+      leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
+      centerLegend = isSpanish ? "ω = 0 (Irrotacional)" : "ω = 0 (Irrotational)";
+      rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
+
+    } else {
+      // Por defecto: Humo y líneas de corriente (Smoke & Streamlines)
+      colorGrad.addColorStop(0, '#020617');
+      colorGrad.addColorStop(0.35, '#0f172a');
+      colorGrad.addColorStop(0.65, '#0284c7');
+      colorGrad.addColorStop(0.88, '#38bdf8');
+      colorGrad.addColorStop(1, '#ffffff');
+      leftLegend = isSpanish ? "Fondo Túnel" : "Tunnel Background";
+      centerLegend = isSpanish ? "Flujo Laminar" : "Laminar Stream";
+      rightLegend = isSpanish ? "Trazador Humo" : "Smoke Tracer";
+    }
+
+    return { colorGrad, leftLegend, centerLegend, rightLegend };
   }
 
   /**
@@ -196,30 +299,47 @@
     return totalH;
   }
 
-  function generateAerodynamicReport(sim) {
-    if (!sim || !sim.canvas) {
-      console.error("[Report] Simulation canvas is not available.");
-      return;
-    }
 
-    const btnSaveReport = document.getElementById('btn-save-report');
-    if (btnSaveReport) btnSaveReport.classList.add('loading');
+    /**
+   * Renderiza el diseño técnico completo de informe aerodinámico con panel derecho de telemetría y tablas
+   */
+  function drawReportLayout(ctx, sim, targetW = 2560, targetH = 1440, options = {}) {
+    if (!ctx || !sim || !sim.canvas) return;
 
+    const scaleX = targetW / 2560;
+    const scaleY = targetH / 1440;
     try {
-      // 1. Asegurar último fotograma renderizado
-      if (typeof sim.render === 'function') {
-        sim.render();
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+
+      // --- FONDO PRINCIPAL GARANTIZADO ---
+      const bgGrad = ctx.createRadialGradient(1280, 720, 100, 1280, 720, 1500);
+      bgGrad.addColorStop(0, '#101424');
+      bgGrad.addColorStop(0.7, '#0a0d18');
+      bgGrad.addColorStop(1, '#06080e');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 2560, 1440);
+
+      // Cuadrícula Blueprint sutil de ingeniería (optimizada en un solo trazo continuo)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 255, 204, 0.025)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x <= 2560; x += 50) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 1440);
       }
-
-      const activeLang = window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null) || 'es';
-      const isSpanish = (activeLang === 'es' || (!window.currentLang && !localStorage.getItem('fluid_sim_lang') && (navigator.language || '').startsWith('es')));
-
-      // 2. Determinar objeto de prueba y métricas aerodinámicas
-      let targetElement = sim.selectedElement;
-      if (!targetElement && sim.elements && sim.elements.length > 0) {
-        targetElement = sim.elements.find(e => e && !e.isProbe) || sim.elements[0];
+      for (let y = 0; y <= 1440; y += 50) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(2560, y);
       }
+      ctx.stroke();
+      ctx.restore();
 
+      const activeLang = options.lang || window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null);
+      const isSpanish = (options.isSpanish !== undefined) ? options.isSpanish : (activeLang === 'es' || (!window.currentLang && !localStorage.getItem('fluid_sim_lang') && (navigator.language || '').startsWith('es')));
+
+      // 2. Determinar objeto de prueba y métricas aerodinámicas (vincular a la pieza barrida si existe)
+      let targetElement = null;
       let elementName = isSpanish ? "Túnel Libre (Flujo sin obstáculos)" : "Clean Wind Tunnel (Free flow)";
       let metrics = {
         dragForce: 0,
@@ -234,76 +354,62 @@
       };
       let isProbe = false;
 
-      if (targetElement) {
-        elementName = targetElement.name || (isSpanish ? "Cuerpo Aerodinámico" : "Aerodynamic Body");
-        if (targetElement.isProbe) {
-          isProbe = true;
-          metrics.dragForce = 0;
-          metrics.liftForce = 0;
-          metrics.pMax = targetElement.measuredP || 0;
-          metrics.pMin = targetElement.measuredVorticity || 0;
-        } else {
-          const obsIdx = sim.elements.indexOf(targetElement);
-          if (sim.isLBMMode && sim.lbm) {
-            metrics = {
-              dragForce: (sim.lbm.forceX || 0) * 1000,
-              liftForce: (sim.lbm.forceY || 0) * 1000,
-              cd: Math.abs(sim.lbm.forceX || 0) * 10,
-              cl: (sim.lbm.forceY || 0) * 10,
-              efficiency: Math.abs((sim.lbm.forceY || 0) / (Math.abs(sim.lbm.forceX || 0) + 1e-6)),
-              reynolds: Math.round(sim.lbm.viscosity > 0 ? (sim.lbm.u0 * 20) / sim.lbm.viscosity * 100 : 0),
-              pMax: 0,
-              pMin: 0,
-              aoa: targetElement.currentRotationDeg || 0
-            };
-          } else if (sim.fluid && typeof sim.fluid.calculateHydrodynamicForces === 'function') {
-            const raw = sim.fluid.calculateHydrodynamicForces(targetElement, obsIdx);
-            metrics = {
-              dragForce: raw.dragForce || 0,
-              liftForce: raw.liftForce || 0,
-              cd: raw.cd || 0,
-              cl: raw.cl || 0,
-              efficiency: raw.efficiency || 0,
-              reynolds: raw.reynolds || 0,
-              pMax: (raw.pMax === -Infinity || raw.pMax === undefined) ? 0 : raw.pMax,
-              pMin: (raw.pMin === Infinity || raw.pMin === undefined) ? 0 : raw.pMin,
-              aoa: targetElement.currentRotationDeg || 0
-            };
+      try {
+        const sweptElem = (window.AerodynamicSweep && typeof window.AerodynamicSweep.getLastSweptElement === 'function')
+          ? window.AerodynamicSweep.getLastSweptElement()
+          : null;
+        targetElement = (sweptElem && sim.elements && sim.elements.includes(sweptElem))
+          ? sweptElem
+          : sim.selectedElement;
+        if (!targetElement && sim.elements && sim.elements.length > 0) {
+          targetElement = sim.elements.find(e => e && !e.isProbe) || sim.elements[0];
+        }
+
+        if (targetElement) {
+          elementName = (typeof window.getLocalizedObstacleName === 'function')
+            ? window.getLocalizedObstacleName(targetElement.name || '', isSpanish)
+            : (targetElement.name || (isSpanish ? "Cuerpo Aerodinámico" : "Aerodynamic Body"));
+          if (targetElement.isProbe) {
+            isProbe = true;
+            metrics.dragForce = 0;
+            metrics.liftForce = 0;
+            metrics.pMax = targetElement.measuredP || 0;
+            metrics.pMin = targetElement.measuredVorticity || 0;
+          } else {
+            const obsIdx = sim.elements.indexOf(targetElement);
+            if (sim.isLBMMode && sim.lbm) {
+              const fx = (sim.lbm.forceX !== undefined) ? sim.lbm.forceX : (sim.lbm.barrierFx || 0);
+              const fy = (sim.lbm.forceY !== undefined) ? sim.lbm.forceY : (sim.lbm.barrierFy || 0);
+              metrics = {
+                dragForce: fx * 1000,
+                liftForce: fy * 1000,
+                cd: Math.abs(fx) * 10,
+                cl: fy * 10,
+                efficiency: Math.abs(fy / (Math.abs(fx) + 1e-6)),
+                reynolds: Math.round(sim.lbm.viscosity > 0 ? (sim.lbm.u0 * 20) / sim.lbm.viscosity * 100 : 0),
+                pMax: 0,
+                pMin: 0,
+                aoa: targetElement.currentRotationDeg || 0
+              };
+            } else if (sim.fluid && typeof sim.fluid.calculateHydrodynamicForces === 'function') {
+              const raw = sim.fluid.calculateHydrodynamicForces(targetElement, obsIdx) || {};
+              metrics = {
+                dragForce: raw.dragForce || 0,
+                liftForce: raw.liftForce || 0,
+                cd: raw.cd || 0,
+                cl: raw.cl || 0,
+                efficiency: raw.efficiency || 0,
+                reynolds: raw.reynolds || 0,
+                pMax: (raw.pMax === -Infinity || raw.pMax === undefined) ? 0 : raw.pMax,
+                pMin: (raw.pMin === Infinity || raw.pMin === undefined) ? 0 : raw.pMin,
+                aoa: targetElement.currentRotationDeg || 0
+              };
+            }
           }
         }
+      } catch (telemetryErr) {
+        console.warn("[Report] Telemetry extraction fallback:", telemetryErr);
       }
-
-      // 3. Crear Canvas de Informe Ultra HD (2560 x 1440 - Formato 16:9 QHD)
-      const reportCanvas = document.createElement('canvas');
-      reportCanvas.width = 2560;
-      reportCanvas.height = 1440;
-      const ctx = reportCanvas.getContext('2d');
-
-      // --- FONDO PRINCIPAL ---
-      const bgGrad = ctx.createRadialGradient(1280, 720, 100, 1280, 720, 1500);
-      bgGrad.addColorStop(0, '#101424');
-      bgGrad.addColorStop(0.7, '#0a0d18');
-      bgGrad.addColorStop(1, '#06080e');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, reportCanvas.width, reportCanvas.height);
-
-      // Cuadrícula Blueprint sutil de ingeniería
-      ctx.save();
-      ctx.strokeStyle = 'rgba(0, 255, 204, 0.025)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x <= reportCanvas.width; x += 50) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, reportCanvas.height);
-        ctx.stroke();
-      }
-      for (let y = 0; y <= reportCanvas.height; y += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(reportCanvas.width, y);
-        ctx.stroke();
-      }
-      ctx.restore();
 
       // =========================================================================
       // --- 1. ENCABEZADO INSTITUCIONAL PRINCIPAL (LOGO + IDENTIFICACIÓN + BADGES) ---
@@ -386,7 +492,7 @@
       let curBadgeX = headerX + headerW - 20;
 
       // Status Badge (Live / Paused)
-      const statusText = sim.isPaused ? (isSpanish ? "PAUSADO" : "PAUSED") : (isSpanish ? "EN VIVO (60 FPS)" : "LIVE (60 FPS)");
+      const statusText = (options && options.badgeTag) ? options.badgeTag : (sim.isPaused ? (isSpanish ? "PAUSADO" : "PAUSED") : (isSpanish ? "EN VIVO (60 FPS)" : "LIVE (60 FPS)"));
       const statusBg = sim.isPaused ? 'rgba(255, 184, 108, 0.15)' : 'rgba(0, 255, 204, 0.15)';
       const statusColor = sim.isPaused ? '#ffb86c' : '#00ffcc';
       curBadgeX -= 150;
@@ -428,7 +534,8 @@
       const capTitle = isSpanish ? "CAPTURA DE SIMULACIÓN CFD EN ALTA DEFINICIÓN" : "HIGH-DEFINITION CFD SIMULATION CAPTURE";
       ctx.fillText(capTitle, leftX + 20, panelsY + 23);
 
-      const activeVisName = getVisModeName(sim.visMode, isSpanish);
+      const activeVisMode = (options && options.visMode) ? options.visMode : (sim ? sim.visMode : "smoke");
+      const activeVisName = getVisModeName(activeVisMode, isSpanish);
       drawBadge(ctx, `${isSpanish ? "Visor" : "View"}: ${activeVisName}`, leftX + 430, panelsY + 23, 'rgba(0, 255, 204, 0.12)', '#00ffcc', 'rgba(0, 255, 204, 0.4)', 12);
 
       // Info de dominio y velocidad de corriente libre
@@ -446,7 +553,7 @@
       drawRoundedRect(ctx, innerX, innerY, innerW, innerH, 8, '#090b10', 'rgba(0, 255, 204, 0.25)', 1);
 
       // Cálculo de encuadre proporcional perfecto (aspect-fit)
-      const simAspect = (sim.canvas.width || 16) / (sim.canvas.height || 9);
+      const simAspect = (sourceCanvas && sourceCanvas.width && sourceCanvas.height) ? (sourceCanvas.width / sourceCanvas.height) : ((sim.canvas.width || 16) / (sim.canvas.height || 9));
       let drawW = innerW;
       let drawH = innerW / simAspect;
       if (drawH > innerH) {
@@ -460,7 +567,8 @@
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(sim.canvas, drawX, drawY, drawW, drawH);
+      const sourceCanvas = (options && options.customSimCanvas) ? options.customSimCanvas : sim.canvas;
+      ctx.drawImage(sourceCanvas, drawX, drawY, drawW, drawH);
 
       // Borde de encuadre fino
       ctx.strokeStyle = 'rgba(0, 255, 204, 0.4)';
@@ -519,110 +627,7 @@
       const colormapLabel = isSpanish ? "Escala de Colores:" : "Colormap Scale:";
       ctx.fillText(colormapLabel, leftX + 32, barBoxY + barBoxH / 2);
 
-      const colorGrad = ctx.createLinearGradient(gradBarX, 0, gradBarX + gradBarW, 0);
-      let leftLegend = "";
-      let centerLegend = "";
-      let rightLegend = "";
-
-      if (sim.visMode === 'pressure') {
-        // Presión Estática (Navier-Stokes): Succión (-P) azul -> Ambiente (0 Pa) neutro -> Estancamiento (+P) rojo
-        colorGrad.addColorStop(0, '#0e44ff');
-        colorGrad.addColorStop(0.28, '#00e5ff');
-        colorGrad.addColorStop(0.50, '#101826');
-        colorGrad.addColorStop(0.72, '#ffaa00');
-        colorGrad.addColorStop(1, '#ff2200');
-        leftLegend = isSpanish ? "Succión (-P)" : "Suction (-P)";
-        centerLegend = "P = 0 Pa";
-        rightLegend = isSpanish ? "Estancamiento (+P)" : "Stagnation (+P)";
-
-      } else if (sim.visMode === 'velocity') {
-        // Magnitud de Velocidad (Navier-Stokes): 0 m/s oscuro -> cian -> verde -> amarillo -> rojo máx
-        colorGrad.addColorStop(0, '#0a0d24');
-        colorGrad.addColorStop(0.25, '#0077ff');
-        colorGrad.addColorStop(0.50, '#00e5ff');
-        colorGrad.addColorStop(0.70, '#00ff66');
-        colorGrad.addColorStop(0.85, '#ffff00');
-        colorGrad.addColorStop(1, '#ff3311');
-        leftLegend = "0 m/s";
-        centerLegend = isSpanish ? "Vel. Media" : "Mean Speed";
-        rightLegend = isSpanish ? "Velocidad Máx" : "Max Velocity";
-
-      } else if (sim.visMode === 'vorticity') {
-        // Vorticidad Navier-Stokes: Giro horario rojo carmesí (-ω) -> 0 s⁻¹ oscuro -> Antihorario azul cian (+ω)
-        colorGrad.addColorStop(0, '#fc3228');
-        colorGrad.addColorStop(0.35, '#c82020');
-        colorGrad.addColorStop(0.50, '#0e121c');
-        colorGrad.addColorStop(0.65, '#0088cc');
-        colorGrad.addColorStop(1, '#19afff');
-        leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
-        centerLegend = "ω = 0 s⁻¹";
-        rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
-
-      } else if (sim.visMode === 'schroeder_speed') {
-        // LBM Schroeder: Rapidez (Paleta Jet perceptual exacta: azul 0 m/s -> cian -> verde U∞ -> amarillo -> rojo máx)
-        colorGrad.addColorStop(0, '#000088');
-        colorGrad.addColorStop(0.18, '#0000ff');
-        colorGrad.addColorStop(0.38, '#00ffff');
-        colorGrad.addColorStop(0.58, '#00ff00');
-        colorGrad.addColorStop(0.78, '#ffff00');
-        colorGrad.addColorStop(0.92, '#ff0000');
-        colorGrad.addColorStop(1, '#880000');
-        leftLegend = isSpanish ? "0 m/s (Reposo)" : "0 m/s (Rest)";
-        centerLegend = isSpanish ? "U∞ Nominal" : "Nominal U∞";
-        rightLegend = isSpanish ? "Rapidez Máx" : "Max Speed";
-
-      } else if (sim.visMode === 'schroeder_curl') {
-        // LBM Schroeder: Vorticidad (Paleta Jet: azul giro horario -> verde curl = 0 -> rojo antihorario)
-        colorGrad.addColorStop(0, '#0000ff');
-        colorGrad.addColorStop(0.25, '#00ffff');
-        colorGrad.addColorStop(0.50, '#00ff00');
-        colorGrad.addColorStop(0.75, '#ffff00');
-        colorGrad.addColorStop(1, '#ff0000');
-        leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
-        centerLegend = isSpanish ? "ω = 0 (Irrotacional)" : "ω = 0 (Irrotational)";
-        rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
-
-      } else if (sim.visMode === 'schroeder_flowlines') {
-        // LBM Schroeder: Líneas de Flujo (Paleta Jet de vorticidad con filamentos oscuros)
-        colorGrad.addColorStop(0, '#0000ff');
-        colorGrad.addColorStop(0.25, '#00ffff');
-        colorGrad.addColorStop(0.50, '#00ff00');
-        colorGrad.addColorStop(0.75, '#ffff00');
-        colorGrad.addColorStop(1, '#ff0000');
-        leftLegend = isSpanish ? "Horario (-ω)" : "Clockwise (-ω)";
-        centerLegend = isSpanish ? "Líneas de Flujo" : "LBM Streamlines";
-        rightLegend = isSpanish ? "Antihorario (+ω)" : "Counter-CW (+ω)";
-
-      } else if (sim.visMode === 'particles') {
-        // Trazadores de partículas
-        colorGrad.addColorStop(0, '#070a14');
-        colorGrad.addColorStop(0.40, '#0b253a');
-        colorGrad.addColorStop(0.80, '#00e5cc');
-        colorGrad.addColorStop(1, '#ffffff');
-        leftLegend = isSpanish ? "Dominio Libre" : "Clear Domain";
-        centerLegend = isSpanish ? "Trazas Fluidas" : "Fluid Particles";
-        rightLegend = isSpanish ? "Partículas Activas" : "Active Tracers";
-
-      } else if (sim.visMode === 'vectors') {
-        // Vectores de velocidad
-        colorGrad.addColorStop(0, '#081220');
-        colorGrad.addColorStop(0.35, '#00ffcc');
-        colorGrad.addColorStop(0.70, '#38bdf8');
-        colorGrad.addColorStop(1, '#fbbf24');
-        leftLegend = isSpanish ? "0 m/s (Estático)" : "0 m/s (Static)";
-        centerLegend = isSpanish ? "Vectores Velocidad" : "Velocity Vectors";
-        rightLegend = isSpanish ? "Velocidad Alta" : "High Speed";
-
-      } else {
-        // Modo Humo aerodinámico (smoke por defecto)
-        colorGrad.addColorStop(0, '#0c152a');
-        colorGrad.addColorStop(0.30, '#153358');
-        colorGrad.addColorStop(0.70, '#3b82c4');
-        colorGrad.addColorStop(1, '#e0f7ff');
-        leftLegend = isSpanish ? "Flujo Transparente" : "Clear Stream";
-        centerLegend = isSpanish ? "Filamentos de Humo" : "Smoke Rake";
-        rightLegend = isSpanish ? "Humo Denso" : "Dense Smoke";
-      }
+      const { colorGrad, leftLegend, centerLegend, rightLegend } = getColormapRamp(sim, ctx, gradBarX, gradBarW, isSpanish, activeVisMode);
 
       ctx.save();
       drawRoundedRect(ctx, gradBarX, gradBarY, gradBarW, gradBarH, 4, colorGrad, 'rgba(255,255,255,0.25)', 1);
@@ -678,7 +683,7 @@
         ? (isSpanish ? "Canal Cerrado (Paredes sólidas)" : "Closed Channel (Solid walls)")
         : (isSpanish ? "Túnel Abierto (Deslizamiento libre)" : "Open Tunnel (Free slip)");
 
-      const flowActiveText = (sim.fluid && sim.fluid.isFlowActive)
+      const flowActiveText = (sim.isFlowActive)
         ? (isSpanish ? "Soplado Activo Constante" : "Active Inflow Blowing")
         : (isSpanish ? "Flujo Cortado (Disipación)" : "Inflow Cutoff");
 
@@ -749,7 +754,7 @@
         },
         {
           c1: { label: isSpanish ? "Condición de Paredes:" : "Boundary Walls:", value: wallsText },
-          c2: { label: isSpanish ? "Estado del Flujo:" : "Flow Animation:", value: flowActiveText, color: (sim.fluid && sim.fluid.isFlowActive) ? '#00ffcc' : '#fb923c' }
+          c2: { label: isSpanish ? "Estado del Flujo:" : "Flow Animation:", value: flowActiveText, color: (sim.isFlowActive) ? '#00ffcc' : '#fb923c' }
         }
       ];
 
@@ -1019,9 +1024,334 @@
       );
       ctx.restore();
 
-      // =========================================================================
-      // --- 5. EXPORTAR Y DESCARGAR IMAGEN HD EN PNG ---
-      // =========================================================================
+
+    } catch (err) {
+      console.error("[Report] Error in drawReportLayout:", err);
+    } finally {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+  }
+
+  /**
+   * Renderiza el diseño limpio (Sin metadatos) maximizando la simulación y ajustando la escala de colores abajo
+   */
+  function drawCleanReportLayout(ctx, sim, targetW = 2560, targetH = 1440, options = {}) {
+    if (!ctx || !sim || !sim.canvas) return;
+
+    const scaleX = targetW / 2560;
+    const scaleY = targetH / 1440;
+    try {
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+
+      const activeLang = options.lang || window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null);
+      const isSpanish = (options.isSpanish !== undefined) ? options.isSpanish : (activeLang === 'es' || (!window.currentLang && !localStorage.getItem('fluid_sim_lang') && (navigator.language || '').startsWith('es')));
+
+      // 1. Fondo radial
+      const bgGrad = ctx.createRadialGradient(1280, 720, 100, 1280, 720, 1500);
+      bgGrad.addColorStop(0, '#101424');
+      bgGrad.addColorStop(0.7, '#0a0d18');
+      bgGrad.addColorStop(1, '#06080e');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 2560, 1440);
+
+      // Cuadrícula Blueprint (optimizada en un solo trazo continuo)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 255, 204, 0.025)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x <= 2560; x += 50) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 1440);
+      }
+      for (let y = 0; y <= 1440; y += 50) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(2560, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. Encabezado Superior (Logo + Referencia APA + Badges)
+      const headerY = 24;
+      const headerH = 88;
+      const navLogo = document.querySelector('.navbar-logo-img');
+      const targetLogoH = 56;
+      const logoAspect = (navLogo && navLogo.naturalWidth && navLogo.naturalHeight)
+        ? (navLogo.naturalWidth / navLogo.naturalHeight)
+        : (2163 / 403);
+      const targetLogoW = Math.round(targetLogoH * logoAspect);
+
+      // Caja Logo (Izquierda)
+      const logoBoxX = 40;
+      const logoBoxW = Math.max(320, targetLogoW + 48);
+      drawRoundedRect(ctx, logoBoxX, headerY, logoBoxW, headerH, 10, 'rgba(19, 23, 38, 0.94)', 'rgba(0, 255, 204, 0.35)', 1.5);
+
+      const logoDrawX = logoBoxX + Math.round((logoBoxW - targetLogoW) / 2);
+      const logoDrawY = headerY + Math.round((headerH - targetLogoH) / 2);
+      let logoDrawn = false;
+      if (navLogo && navLogo.complete && navLogo.naturalWidth > 0) {
+        try {
+          ctx.drawImage(navLogo, logoDrawX, logoDrawY, targetLogoW, targetLogoH);
+          logoDrawn = true;
+        } catch (e) {
+          logoDrawn = false;
+        }
+      }
+      if (!logoDrawn) {
+        ctx.save();
+        ctx.fillStyle = '#00ffcc';
+        ctx.font = '700 22px "Inter", system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("AMBYSTOMA TECH", logoBoxX + logoBoxW / 2, headerY + headerH / 2);
+        ctx.restore();
+      }
+
+      // Caja Referencia APA (Centro-Izquierda)
+      const refBoxX = logoBoxX + logoBoxW + 16;
+      const badgesWidth = 520;
+      const refBoxW = 2560 - 40 - badgesWidth - 16 - refBoxX;
+      drawRoundedRect(ctx, refBoxX, headerY, refBoxW, headerH, 10, 'rgba(19, 23, 38, 0.94)', 'rgba(56, 189, 248, 0.30)', 1.5);
+
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      // Título APA
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '700 12.5px monospace';
+      ctx.fillText(
+        isSpanish
+          ? "■  REFERENCIA CIENTÍFICA (NORMA APA 7ª ED.) • https://ambystomatechnologies.github.io/wind-tunnel-simulator/"
+          : "■  SCIENTIFIC CITATION (APA 7TH ED.) • https://ambystomatechnologies.github.io/wind-tunnel-simulator/",
+        refBoxX + 20,
+        headerY + 26
+      );
+      // Texto APA
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '600 14px "Inter", system-ui, sans-serif';
+      ctx.fillText(
+        isSpanish
+          ? "Segura Torres, B. A. (2026). Simulador 2D de Fluidos y Túnel de Viento Interactivo [Software computacional]. Ambystoma Technologies."
+          : "Segura Torres, B. A. (2026). Interactive 2D Fluid Mechanics & Wind Tunnel Simulator [Computer software]. Ambystoma Technologies.",
+        refBoxX + 20,
+        headerY + 58
+      );
+      ctx.restore();
+
+      // Columna de Badges (Derecha)
+      const badgesX = 2560 - 40 - badgesWidth;
+      const badgeCol1W = 240;
+      const badgeCol2W = 265;
+      const badgeRow1Y = headerY + 22;
+      const badgeRow2Y = headerY + 62;
+
+      // Badges fila 1
+      const engineText = sim.isLBMMode ? "LBM D2Q9 (SCHROEDER)" : "CFD NAVIER-STOKES";
+      drawBadge(ctx, engineText, badgesX + badgeCol1W / 2, badgeRow1Y, 'rgba(56, 189, 248, 0.12)', '#38bdf8', 'rgba(56, 189, 248, 0.45)', 12, true, 'center');
+
+      const isLiveRecord = Boolean(options && options.isLive);
+      const isVideoRec = Boolean(options && (options.isVideo || options.isLive));
+      const recText = isLiveRecord
+        ? (isSpanish ? "● GRABACIÓN EN VIVO (30 FPS)" : "● LIVE RECORDING (30 FPS)")
+        : (isVideoRec
+          ? (isSpanish ? "● VÍDEO RENDERIZADO" : "● RENDERED VIDEO")
+          : (isSpanish ? "● SIMULACIÓN EN VIVO" : "● LIVE SIMULATION"));
+      drawBadge(ctx, recText, badgesX + badgeCol1W + 15 + badgeCol2W / 2, badgeRow1Y, 'rgba(0, 255, 204, 0.12)', '#00ffcc', 'rgba(0, 255, 204, 0.45)', 12, true, 'center');
+
+      // Badges fila 2
+      const activeVisMode = (options && options.visMode) ? options.visMode : (sim ? sim.visMode : 'smoke');
+      const activeVisName = getVisModeName(activeVisMode, isSpanish);
+      drawBadge(ctx, `Visor: ${activeVisName}`, badgesX + badgeCol1W / 2, badgeRow2Y, 'rgba(0, 229, 255, 0.12)', '#00e5ff', 'rgba(0, 229, 255, 0.45)', 11.5, true, 'center');
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      drawBadge(ctx, `⏱ ${timeStr}`, badgesX + badgeCol1W + 15 + badgeCol2W / 2, badgeRow2Y, 'rgba(148, 163, 184, 0.12)', '#94a3b8', 'rgba(148, 163, 184, 0.35)', 11.5, true, 'center');
+
+      // 3. Barra Inferior del Visor: Escala de Colores + Leyenda + Telemetría
+      const barH = 76;
+      const barY = 1440 - 24 - barH; // 1340
+      const barX = 40;
+      const barW = 2480;
+
+      // 4. Área Central: Visor de Simulación CFD Amplio y Ajuste Inteligente
+      const topAvailable = headerY + headerH + 12; // 24 + 88 + 12 = 124
+      const bottomAvailable = barY - 12; // 1340 - 12 = 1328
+      const availableH = bottomAvailable - topAvailable; // 1204
+      const availableW = 2480;
+
+      const sourceCanvas = (options && options.customSimCanvas) ? options.customSimCanvas : sim.canvas;
+      const simAspect = (sourceCanvas && sourceCanvas.width && sourceCanvas.height)
+        ? (sourceCanvas.width / sourceCanvas.height)
+        : ((sim.canvas.width || 16) / (sim.canvas.height || 9));
+
+      let drawW = availableW;
+      let drawH = drawW / simAspect;
+      if (drawH > availableH) {
+        drawH = availableH;
+        drawW = drawH * simAspect;
+      }
+
+      const drawX = Math.round(barX + (availableW - drawW) / 2);
+      const drawY = Math.round(topAvailable + (availableH - drawH) / 2);
+
+      // Marco contenedor estilizado ajustado a la geometría exacta de la simulación
+      drawRoundedRect(ctx, drawX - 3, drawY - 3, drawW + 6, drawH + 6, 8, '#080b12', 'rgba(54, 59, 88, 0.85)', 1.5);
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      if (sourceCanvas && sourceCanvas.width > 0 && sourceCanvas.height > 0) {
+        try {
+          ctx.drawImage(sourceCanvas, drawX, drawY, drawW, drawH);
+        } catch (drawErr) {
+          console.warn("[Report] Error drawing clean source canvas:", drawErr);
+        }
+      }
+
+      // Borde fino del lienzo
+      ctx.strokeStyle = 'rgba(0, 255, 204, 0.45)';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(drawX, drawY, drawW, drawH);
+
+      // Marcas de retícula HUD en las 4 esquinas de la simulación
+      const cornerLen = 24;
+      ctx.strokeStyle = '#00ffcc';
+      ctx.lineWidth = 3.0;
+
+      ctx.beginPath();
+      // Top-Left
+      ctx.moveTo(drawX, drawY + cornerLen);
+      ctx.lineTo(drawX, drawY);
+      ctx.lineTo(drawX + cornerLen, drawY);
+      // Top-Right
+      ctx.moveTo(drawX + drawW - cornerLen, drawY);
+      ctx.lineTo(drawX + drawW);
+      ctx.lineTo(drawX + drawW, drawY + cornerLen);
+      // Bottom-Left
+      ctx.moveTo(drawX, drawY + drawH - cornerLen);
+      ctx.lineTo(drawX, drawY + drawH);
+      ctx.lineTo(drawX + cornerLen, drawY + drawH);
+      // Bottom-Right
+      ctx.moveTo(drawX + drawW - cornerLen, drawY + drawH);
+      ctx.lineTo(drawX + drawW);
+      ctx.lineTo(drawX + drawW, drawY + drawH - cornerLen);
+      ctx.stroke();
+      ctx.restore();
+
+      // Render de la Barra Inferior (Contenedor estilizado)
+      drawRoundedRect(ctx, barX, barY, barW, barH, 8, 'rgba(18, 22, 38, 0.96)', 'rgba(54, 59, 88, 0.85)', 1.5);
+
+      // Badge "ESCALA DE COLOR" a la izquierda
+      const labelBadgeW = drawBadge(
+        ctx,
+        isSpanish ? "ESCALA DE COLOR" : "COLORMAP SCALE",
+        barX + 20,
+        barY + barH / 2,
+        'rgba(0, 255, 204, 0.12)',
+        '#00ffcc',
+        'rgba(0, 255, 204, 0.4)',
+        13.5,
+        true,
+        'left'
+      );
+
+      const gradBarX = barX + 20 + labelBadgeW + 22;
+      const gradBarW = 540;
+      const gradBarH = 22;
+      const gradBarY = barY + 14;
+
+      const { colorGrad, leftLegend, centerLegend, rightLegend } = getColormapRamp(sim, ctx, gradBarX, gradBarW, isSpanish, activeVisMode);
+
+      ctx.save();
+      drawRoundedRect(ctx, gradBarX, gradBarY, gradBarW, gradBarH, 4, colorGrad, 'rgba(255, 255, 255, 0.45)', 1.2);
+      ctx.restore();
+
+      ctx.save();
+      ctx.font = '700 13px "Inter", monospace';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText(leftLegend, gradBarX, gradBarY + gradBarH + 6);
+      if (centerLegend) {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#00ffcc';
+        ctx.fillText(centerLegend, gradBarX + gradBarW / 2, gradBarY + gradBarH + 6);
+      }
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(rightLegend, gradBarX + gradBarW, gradBarY + gradBarH + 6);
+      ctx.restore();
+
+      // Badge del Visor Activo en el centro-derecha
+      const modePillX = gradBarX + gradBarW + 30;
+      drawBadge(
+        ctx,
+        `VISOR: ${activeVisName.toUpperCase()}`,
+        modePillX,
+        barY + barH / 2,
+        'rgba(56, 189, 248, 0.14)',
+        '#38bdf8',
+        'rgba(56, 189, 248, 0.40)',
+        13,
+        true,
+        'left'
+      );
+
+      // Info de telemetría a la derecha en la barra
+      ctx.save();
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.font = '600 14px monospace';
+      ctx.fillStyle = '#8bb4e8';
+      const speedVal = (sim && sim.fluid && typeof sim.fluid.inflowSpeed === 'number') ? sim.fluid.inflowSpeed.toFixed(1) : '5.0';
+      const resInfo = `CANVAS: ${sim.canvas.width}×${sim.canvas.height} px  |  HD RAW FIDELITY  |  DOMINIO: 16.0 m × 9.0 m  |  U∞: ${speedVal} m/s`;
+      ctx.fillText(resInfo, barX + barW - 24, barY + barH / 2);
+      ctx.restore();
+
+    } catch (err) {
+      console.error("[Report] Error in drawCleanReportLayout:", err);
+    } finally {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+  }
+
+  /**
+   * Genera y descarga el informe técnico completo en formato PNG o JPG
+   */
+  function generateAerodynamicReport(sim, format = 'jpeg', options = {}) {
+    if (!sim || !sim.canvas) {
+      console.error("[Report] Simulation canvas is not available.");
+      return;
+    }
+
+    const btnSaveReport = document.getElementById('btn-save-report');
+    if (btnSaveReport) btnSaveReport.classList.add('loading');
+
+    try {
+      if (typeof sim.render === 'function') {
+        sim.render();
+      }
+
+      const activeLang = window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null);
+      const isSpanish = (activeLang === 'es' || (!window.currentLang && !localStorage.getItem('fluid_sim_lang') && (navigator.language || '').startsWith('es')));
+
+      const reportCanvas = document.createElement('canvas');
+      reportCanvas.width = 2560;
+      reportCanvas.height = 1440;
+      const ctx = reportCanvas.getContext('2d');
+
+      const isNoMeta = (options && options.layout === 'no_meta');
+      if (isNoMeta) {
+        drawCleanReportLayout(ctx, sim, 2560, 1440, options);
+      } else {
+        drawReportLayout(ctx, sim, 2560, 1440, options);
+      }
+
+      const exportFormat = (format && format.toLowerCase() === 'png') ? 'png' : 'jpeg';
+      const mimeType = exportFormat === 'png' ? 'image/png' : 'image/jpeg';
+      const quality = exportFormat === 'png' ? undefined : 0.95;
+      const fileExt = exportFormat === 'png' ? 'png' : 'jpg';
+
       reportCanvas.toBlob(function (blob) {
         if (!blob) {
           console.error("[Report] Failed to create image blob.");
@@ -1029,12 +1359,16 @@
           return;
         }
 
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        const filenamePrefix = isSpanish ? "informe_aerodinamico" : "aerodynamic_report";
+        const filenamePrefix = isNoMeta
+          ? (isSpanish ? "captura_simulacion_sin_metadatos" : "clean_simulation_capture")
+          : (isSpanish ? "informe_aerodinamico" : "aerodynamic_report");
         const filenameDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
         a.href = url;
-        a.download = `${filenamePrefix}_${filenameDate}.png`;
+        a.download = `${filenamePrefix}_${filenameDate}.${fileExt}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1043,24 +1377,365 @@
           URL.revokeObjectURL(url);
         }, 10000);
 
-        if (typeof window.showToast === 'function') {
-          const successMsg = window.t
-            ? (window.t('reportSavedSuccess') || (isSpanish ? "¡Informe aerodinámico guardado en HD!" : "Aerodynamic report saved in HD!"))
-            : (isSpanish ? "¡Informe aerodinámico guardado en HD!" : "Aerodynamic report saved in HD!");
-          window.showToast(successMsg, 'success', 3500);
-        }
-
         if (btnSaveReport) btnSaveReport.classList.remove('loading');
-      }, 'image/png');
+      }, mimeType, quality);
 
     } catch (err) {
       console.error("[Report] Error generating report:", err);
-      if (typeof window.showToast === 'function') {
-        window.showToast("Error al generar el informe: " + err.message, 'error', 4000);
-      }
       if (btnSaveReport) btnSaveReport.classList.remove('loading');
     }
   }
+  function sampleFluidAt(sim, x, y) {
+    let uVal = 0, vVal = 0, pVal = 0, vortVal = 0, speed = 0;
+    if (sim.isLBMMode && sim.lbm) {
+      const lx = Math.max(1, Math.min(sim.lbm.nx - 2, (x / sim.fluid.domainWidth) * sim.lbm.nx));
+      const ly = Math.max(1, Math.min(sim.lbm.ny - 2, (y / sim.fluid.domainHeight) * sim.lbm.ny));
+      const idx = Math.floor(lx) + Math.floor(ly) * sim.lbm.nx;
+      const scaleToMs = (sim.fluid && sim.fluid.inflowSpeed ? sim.fluid.inflowSpeed : 5.0) / Math.max(0.01, sim.lbm.speed);
+      uVal = sim.lbm.ux[idx] * scaleToMs;
+      vVal = sim.lbm.uy[idx] * scaleToMs;
+      speed = Math.hypot(uVal, vVal);
+      pVal = (sim.lbm.rho[idx] - 1.0) * (1.0 / 3.0) * sim.fluid.density * (scaleToMs * scaleToMs);
+      vortVal = sim.lbm.curl[idx] * scaleToMs * (sim.lbm.nx / sim.fluid.domainWidth);
+    } else if (sim.fluid) {
+      const gx = x / sim.fluid.dx;
+      const gy = y / sim.fluid.dy;
+      uVal = sim.fluid.sampleBilinear(sim.fluid.u, gx, gy);
+      vVal = sim.fluid.sampleBilinear(sim.fluid.v, gx, gy);
+      pVal = sim.fluid.sampleBilinear(sim.fluid.p, gx, gy);
+      vortVal = sim.fluid.sampleBilinear(sim.fluid.vorticity, gx, gy);
+      speed = Math.hypot(uVal, vVal);
+    }
+    return { u: uVal, v: vVal, speed, p: pVal, vorticity: vortVal };
+  }
 
+  /**
+   * Genera y descarga el archivo CSV científico completo con:
+   * 1. Información y Logotipo ASCII oficial de Ambystoma Technologies
+   * 2. Referencia y Citación Científica Académica (Norma APA 7ª edición)
+   * 3. Metadatos generales de simulación y condiciones de corriente libre
+   * 4. Telemetría de fuerzas aerodinámicas y coeficientes (Cd, Cl, L/D, ΔP)
+   * 5. Datos de sondas y sensores de flujo (Tubo de Pitot: u, v, velocidad, presión estática, dinámica y total, vorticidad)
+   * 6. Barrido automático de ángulo de ataque y polares de arrastre (Cl-α, Cd-α, Drag Polar)
+   */
+  function generateSimulationCSV(sim) {
+    if (!sim) {
+      console.error("[Report] Simulation instance is not available for CSV export.");
+      return;
+    }
+
+    try {
+      const activeLang = window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null);
+      const isSpanish = activeLang === 'es';
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      const isoTime = now.toISOString();
+
+      const density = (sim.fluid && sim.fluid.density) ? sim.fluid.density : 1.225;
+      const viscosity = (sim.fluid && sim.fluid.viscosity) ? sim.fluid.viscosity : 0.00015;
+      const dynamicViscosity = density * viscosity;
+      const inflowSpeed = (sim.fluid && sim.fluid.inflowSpeed) ? sim.fluid.inflowSpeed : 5.0;
+      const inflowAngle = (sim.fluid && sim.fluid.inflowAngle !== undefined) ? (sim.fluid.inflowAngle * 180 / Math.PI) : 0;
+      const qInf = 0.5 * density * inflowSpeed * inflowSpeed;
+      const activeMaterial = getActiveMaterialName(density, viscosity, isSpanish);
+
+      // Determinar elemento objetivo (vincular a la pieza barrida si existe)
+      const sweptElemReport = (window.AerodynamicSweep && typeof window.AerodynamicSweep.getLastSweptElement === 'function')
+        ? window.AerodynamicSweep.getLastSweptElement()
+        : null;
+      let targetElement = (sweptElemReport && sim.elements && sim.elements.includes(sweptElemReport))
+        ? sweptElemReport
+        : sim.selectedElement;
+      if (!targetElement && sim.elements && sim.elements.length > 0) {
+        targetElement = sim.elements.find(e => e && !e.isProbe) || sim.elements[0];
+      }
+
+      let elementName = isSpanish ? "Túnel Libre (Sin obstáculos)" : "Clean Tunnel (No obstacles)";
+      let metrics = {
+        dragForce: 0,
+        liftForce: 0,
+        cd: 0,
+        cl: 0,
+        efficiency: 0,
+        reynolds: 0,
+        pMax: 0,
+        pMin: 0,
+        aoa: 0
+      };
+
+      if (targetElement) {
+        elementName = (typeof window.getLocalizedObstacleName === 'function')
+          ? window.getLocalizedObstacleName(targetElement.name || '', isSpanish)
+          : (targetElement.name || (isSpanish ? "Cuerpo Aerodinámico" : "Aerodynamic Body"));
+        if (targetElement.isProbe) {
+          metrics.pMax = targetElement.measuredP || 0;
+          metrics.pMin = targetElement.measuredVorticity || 0;
+        } else {
+          const obsIdx = sim.elements.indexOf(targetElement);
+          if (sim.isLBMMode && sim.lbm) {
+            metrics = {
+              dragForce: (sim.lbm.forceX || 0) * 1000,
+              liftForce: (sim.lbm.forceY || 0) * 1000,
+              cd: Math.abs(sim.lbm.forceX || 0) * 10,
+              cl: (sim.lbm.forceY || 0) * 10,
+              efficiency: Math.abs((sim.lbm.forceY || 0) / (Math.abs(sim.lbm.forceX || 0) + 1e-6)),
+              reynolds: Math.round(sim.lbm.viscosity > 0 ? (sim.lbm.u0 * 20) / sim.lbm.viscosity * 100 : 0),
+              pMax: 0,
+              pMin: 0,
+              aoa: targetElement.currentRotationDeg || 0
+            };
+          } else if (sim.fluid && typeof sim.fluid.calculateHydrodynamicForces === 'function') {
+            const raw = sim.fluid.calculateHydrodynamicForces(targetElement, obsIdx);
+            metrics = {
+              dragForce: raw.dragForce || 0,
+              liftForce: raw.liftForce || 0,
+              cd: raw.cd || 0,
+              cl: raw.cl || 0,
+              efficiency: raw.efficiency || 0,
+              reynolds: raw.reynolds || 0,
+              pMax: (raw.pMax === -Infinity || raw.pMax === undefined) ? 0 : raw.pMax,
+              pMin: (raw.pMin === Infinity || raw.pMin === undefined) ? 0 : raw.pMin,
+              aoa: targetElement.currentRotationDeg || 0
+            };
+          }
+        }
+      }
+
+      const deltaP = Math.abs((metrics.pMax || 0) - (metrics.pMin || 0));
+      const regimeText = (Math.abs(metrics.cl) < 0.15 && metrics.cd > 0.8)
+        ? (isSpanish ? "Pérdida / Stall" : "Separated (Stall)")
+        : (metrics.reynolds > 8000 ? (isSpanish ? "Vórtices Desprendidos" : "Vortex Shedding") : (isSpanish ? "Flujo Laminar Adherido" : "Attached Laminar"));
+
+      // Construcción del documento CSV estructurado
+      let csv = '\uFEFF'; // Byte Order Mark para compatibilidad total con Excel y caracteres UTF-8
+
+      // =========================================================================
+      // 1. ENCABEZADO INSTITUCIONAL, LOGOTIPO ASCII Y CITACIÓN CIENTÍFICA
+      // =========================================================================
+      csv += '# =========================================================================================\n';
+      csv += '#       ___              _             _                           \n';
+      csv += '#      /   | ____ ___  | |__  _   _ ___| |_ ___  _ __ ___   __ _   \n';
+      csv += '#     / /| |/ __ `__ \\ | \'_ \\| | | / __| __/ _ \\| \'_ ` _ \\ / _` |  \n';
+      csv += '#    / ___ | | | | | | | |_) | |_| \\__ \\ || (_) | | | | | | (_| |  \n';
+      csv += '#   /_/  |_|_| |_| |_| |_.__/ \\__, |___/\\__\\___/|_| |_| |_|\\__,_|  \n';
+      csv += '#                             |___/                                \n';
+      csv += '#                  T E C H N O L O G I E S\n';
+      csv += '# =========================================================================================\n';
+      csv += '# AMBYSTOMA TECHNOLOGIES - LAB DE INVESTIGACIÓN AERODINÁMICA Y DINÁMICA DE FLUIDOS 2D\n';
+      csv += '# Software: Simulador Interactivo de Túnel de Viento y Mecánica de Fluidos CFD\n';
+      csv += '# Repositorio Oficial / Plataforma Web: https://ambystomatechnologies.github.io/wind-tunnel-simulator/\n';
+      csv += '# Licencia: Código Abierto (MIT Open Source License) • Libre para Educación e Investigación\n';
+      csv += '# =========================================================================================\n';
+      csv += '#\n';
+      csv += '# REFERENCIA Y CITACIÓN CIENTÍFICA OBLIGATORIA (NORMA APA 7ª EDICIÓN):\n';
+      csv += '#\n';
+      csv += '# En Español:\n';
+      csv += '# Segura Torres, B. A. (2026). Simulador 2D de Fluidos y Túnel de Viento Interactivo [Software computacional]. Ambystoma Technologies. https://ambystomatechnologies.github.io/wind-tunnel-simulator/\n';
+      csv += '#\n';
+      csv += '# In English:\n';
+      csv += '# Segura Torres, B. A. (2026). Interactive 2D Fluid & Wind Tunnel Simulator [Computational software]. Ambystoma Technologies. https://ambystomatechnologies.github.io/wind-tunnel-simulator/\n';
+      csv += '#\n';
+      csv += '# Por favor cite este simulador en tesis de grado, artículos de investigación y laboratorios.\n';
+      csv += '# =========================================================================================\n\n';
+
+      // =========================================================================
+      // 2. METADATOS GENERALES DEL TÚNEL Y CONDICIONES AMBIENTALES
+      // =========================================================================
+      csv += isSpanish
+        ? '[METADATA_SIMULACION_Y_CONDICIONES_AMBIENTALES]\nParametro,Valor,Unidad,Descripcion\n'
+        : '[SIMULATION_METADATA_AND_FLOW_CONDITIONS]\nParameter,Value,Unit,Description\n';
+      csv += isSpanish
+        ? `Fecha_Generacion,"${timeStr}",Hora_Local,"Fecha y hora de exportación del dataset"\n`
+        : `Generation_Date,"${timeStr}",Local_Time,"Dataset export date and time"\n`;
+      csv += isSpanish
+        ? `Timestamp_ISO,"${isoTime}",UTC,"Estándar ISO-8601"\n`
+        : `ISO_Timestamp,"${isoTime}",UTC,"ISO-8601 standard"\n`;
+      csv += isSpanish
+        ? `Motor_Computacional,"${sim.isLBMMode ? "LBM D2Q9 (Schroeder BGK)" : "CFD Navier-Stokes (MacCormack + Poisson)"}",N/A,"Algoritmo numérico solver"\n`
+        : `Solver_Engine,"${sim.isLBMMode ? "LBM D2Q9 (Schroeder BGK)" : "CFD Navier-Stokes (MacCormack + Poisson)"}",N/A,"Numerical solver algorithm"\n`;
+      csv += isSpanish
+        ? `Resolucion_Malla,"${sim.isLBMMode ? "200x100" : "160x90"}",${sim.isLBMMode ? "nodos" : "celdas"},"Resolución espacial discreta"\n`
+        : `Grid_Resolution,"${sim.isLBMMode ? "200x100" : "160x90"}",${sim.isLBMMode ? "nodes" : "cells"},"Discrete spatial grid resolution"\n`;
+      csv += isSpanish
+        ? `Dimension_Dominio_X,${sim.fluid ? sim.fluid.domainWidth.toFixed(2) : "16.00"},m,"Longitud total del canal"\n`
+        : `Domain_Dimension_X,${sim.fluid ? sim.fluid.domainWidth.toFixed(2) : "16.00"},m,"Total channel length"\n`;
+      csv += isSpanish
+        ? `Dimension_Dominio_Y,${sim.fluid ? sim.fluid.domainHeight.toFixed(2) : "9.00"},m,"Altura del túnel de viento"\n`
+        : `Domain_Dimension_Y,${sim.fluid ? sim.fluid.domainHeight.toFixed(2) : "9.00"},m,"Wind tunnel height"\n`;
+      csv += isSpanish
+        ? `Paso_Espacial_dx,${sim.fluid ? sim.fluid.dx.toFixed(3) : "0.100"},m,"Paso de discretización espacial X"\n`
+        : `Spatial_Step_dx,${sim.fluid ? sim.fluid.dx.toFixed(3) : "0.100"},m,"Spatial grid step X"\n`;
+      csv += isSpanish
+        ? `Paso_Espacial_dy,${sim.fluid ? sim.fluid.dy.toFixed(3) : "0.100"},m,"Paso de discretización espacial Y"\n`
+        : `Spatial_Step_dy,${sim.fluid ? sim.fluid.dy.toFixed(3) : "0.100"},m,"Spatial grid step Y"\n`;
+      csv += isSpanish
+        ? `Medio_Material,"${activeMaterial}",N/A,"Fluido de trabajo"\n`
+        : `Fluid_Medium,"${activeMaterial}",N/A,"Working fluid medium"\n`;
+      csv += isSpanish
+        ? `Densidad_rho,${density.toFixed(4)},kg/m3,"Densidad del medio fluido"\n`
+        : `Density_rho,${density.toFixed(4)},kg/m3,"Fluid medium density"\n`;
+      csv += isSpanish
+        ? `Viscosidad_Cinematica_nu,${viscosity.toExponential(4)},m2/s,"Viscosidad cinemática"\n`
+        : `Kinematic_Viscosity_nu,${viscosity.toExponential(4)},m2/s,"Kinematic viscosity"\n`;
+      csv += isSpanish
+        ? `Viscosidad_Dinamica_mu,${dynamicViscosity.toExponential(4)},Pa*s,"Viscosidad dinámica absoluta (mu = rho * nu)"\n`
+        : `Dynamic_Viscosity_mu,${dynamicViscosity.toExponential(4)},Pa*s,"Absolute dynamic viscosity (mu = rho * nu)"\n`;
+      csv += isSpanish
+        ? `Velocidad_Inflow_Uinf,${inflowSpeed.toFixed(2)},m/s,"Velocidad de corriente libre en entrada"\n`
+        : `Inflow_Velocity_Uinf,${inflowSpeed.toFixed(2)},m/s,"Free-stream inlet velocity"\n`;
+      csv += isSpanish
+        ? `Velocidad_Inflow_kmh,${(inflowSpeed * 3.6).toFixed(2)},km/h,"Velocidad de flujo en km/h"\n`
+        : `Inflow_Velocity_kmh,${(inflowSpeed * 3.6).toFixed(2)},km/h,"Flow velocity in km/h"\n`;
+      csv += isSpanish
+        ? `Presion_Dinamica_qinf,${qInf.toFixed(2)},Pa,"Presión dinámica de corriente libre (0.5 * rho * U^2)"\n`
+        : `Dynamic_Pressure_qinf,${qInf.toFixed(2)},Pa,"Free-stream dynamic pressure (0.5 * rho * U^2)"\n`;
+      csv += isSpanish
+        ? `Angulo_Inflow_deg,${inflowAngle.toFixed(1)},deg,"Ángulo de inclinación del flujo de entrada"\n`
+        : `Inflow_Angle_deg,${inflowAngle.toFixed(1)},deg,"Inlet flow inclination angle"\n`;
+      csv += isSpanish
+        ? `Condicion_Paredes,"${(sim.fluid && sim.fluid.closedWalls) ? "Canal Cerrado (Paredes sólidas no-slip)" : "Túnel Abierto (Deslizamiento libre free-slip)"}",N/A,"Fronteras superior e inferior"\n`
+        : `Wall_Condition,"${(sim.fluid && sim.fluid.closedWalls) ? "Closed Channel (Solid no-slip walls)" : "Open Tunnel (Free-slip boundary)"}",N/A,"Top and bottom boundaries"\n`;
+      csv += isSpanish
+        ? `Turbulencia,"${(sim.fluid && sim.fluid.isTurbulent) ? `Turbulento (Tu: ${sim.fluid.turbulenceIntensity || 10}%)` : "Laminar Uniforme (Tu: 0%)"}",N/A,"Régimen de turbulencia en corriente libre"\n\n`
+        : `Turbulence,"${(sim.fluid && sim.fluid.isTurbulent) ? `Turbulent (Tu: ${sim.fluid.turbulenceIntensity || 10}%)` : "Uniform Laminar (Tu: 0%)"}",N/A,"Free-stream turbulence regime"\n\n`;
+
+      // =========================================================================
+      // 3. TELEMETRÍA AERODINÁMICA DE CUERPOS EN EL TÚNEL
+      // =========================================================================
+      csv += isSpanish ? '[TELEMETRIA_AERODINAMICA_Y_FUERZAS]\n' : '[AERODYNAMIC_TELEMETRY_AND_FORCES]\n';
+      csv += isSpanish
+        ? 'ID,Nombre,Tipo_Elemento,AoA_deg,Fuerza_Arrastre_Fd_N,Fuerza_Sustentacion_Fl_N,Cd,Cl,Eficiencia_L_over_D,Presion_Estancamiento_Pmax_Pa,Presion_Succion_Pmin_Pa,Delta_P_Pa,Numero_Reynolds_Re,Regimen_Aerodinamico\n'
+        : 'ID,Name,Element_Type,AoA_deg,Drag_Force_Fd_N,Lift_Force_Fl_N,Cd,Cl,Efficiency_L_over_D,Stagnation_Pressure_Pmax_Pa,Suction_Pressure_Pmin_Pa,Delta_P_Pa,Reynolds_Number_Re,Aerodynamic_Regime\n';
+      csv += `1,"${elementName}","${targetElement ? (targetElement.isProbe ? (isSpanish ? "SondaFlujo" : "FlowProbe") : (isSpanish ? "ObstaculoHidrodinamico" : "HydrodynamicObstacle")) : "None"}",${Math.round(metrics.aoa)},${metrics.dragForce.toFixed(3)},${metrics.liftForce.toFixed(3)},${metrics.cd.toFixed(4)},${metrics.cl.toFixed(4)},${metrics.efficiency.toFixed(2)},${(metrics.pMax || 0).toFixed(2)},${(metrics.pMin || 0).toFixed(2)},${deltaP.toFixed(2)},${metrics.reynolds},"${regimeText}"\n\n`;
+
+      // =========================================================================
+      // 4. DATOS DE SONDAS Y SENSORES DE FLUJO (TUBO DE PITOT VIRTUAL)
+      // =========================================================================
+      csv += isSpanish ? '[SONDAS_Y_SENSORES_DE_FLUJO]\n' : '[FLOW_PROBES_AND_SENSORS]\n';
+      csv += isSpanish
+        ? '# Lecturas puntuales de velocidad, presiones estática, dinámica y total, y vorticidad\nSonda_ID,Nombre,Categoria,Pos_X_m,Pos_Y_m,Velocidad_U_ms,Velocidad_V_ms,Velocidad_Magnitud_ms,Presion_Estatica_Pa,Presion_Dinamica_q_Pa,Presion_Total_P0_Pa,Vorticidad_s-1\n'
+        : '# Pointwise readings of velocity, static, dynamic, total pressure, and vorticity\nProbe_ID,Name,Category,Pos_X_m,Pos_Y_m,Velocity_U_ms,Velocity_V_ms,Velocity_Magnitude_ms,Static_Pressure_Pa,Dynamic_Pressure_q_Pa,Total_Pressure_P0_Pa,Vorticity_s-1\n';
+
+      let probeCount = 0;
+      // Sondas creadas interactivamente por el usuario
+      if (sim.elements && sim.elements.length > 0) {
+        sim.elements.forEach((el) => {
+          if (el && (el.isProbe || el.constructor.name === 'FlowProbe')) {
+            probeCount++;
+            const s = sampleFluidAt(sim, el.x, el.y);
+            const speedVal = s.speed || el.measuredSpeed || 0;
+            const uVal = s.u || el.measuredU || 0;
+            const vVal = s.v || el.measuredV || 0;
+            const pVal = s.p || el.measuredP || 0;
+            const qVal = 0.5 * density * speedVal * speedVal;
+            const pTotal = pVal + qVal;
+            const vortVal = s.vorticity || el.measuredVorticity || 0;
+            const pName = el.name ? ((typeof window.getLocalizedObstacleName === 'function') ? window.getLocalizedObstacleName(el.name, isSpanish) : el.name) : (isSpanish ? `Sonda ${probeCount}` : `Probe ${probeCount}`);
+            const pCat = isSpanish ? "Sonda de Usuario" : "User Probe";
+
+            csv += `${probeCount},"${pName}","${pCat}",${el.x.toFixed(2)},${el.y.toFixed(2)},${uVal.toFixed(3)},${vVal.toFixed(3)},${speedVal.toFixed(3)},${pVal.toFixed(2)},${qVal.toFixed(2)},${pTotal.toFixed(2)},${vortVal.toFixed(2)}\n`;
+          }
+        });
+      }
+
+      // Estaciones de medición de referencia estándar en el túnel (para enseñanza y laboratorio)
+      const refStations = [
+        { name: isSpanish ? "Pitot Entrada (Flujo Libre)" : "Inflow Pitot (Free Stream)", x: 1.5, y: 4.5 },
+        { name: isSpanish ? "Borde de Ataque (Upstream)" : "Leading Edge (Upstream)", x: 4.0, y: 4.5 },
+        { name: isSpanish ? "Extradós Superior (Succión)" : "Upper Extrados (Suction)", x: 6.0, y: 5.6 },
+        { name: isSpanish ? "Intradós Inferior (Presión)" : "Lower Intrados (Pressure)", x: 6.0, y: 3.4 },
+        { name: isSpanish ? "Estela Cercana (Wake Center)" : "Near Wake (Center)", x: 8.5, y: 4.5 },
+        { name: isSpanish ? "Rastrillo Estela Superior (y=5.5m)" : "Wake Rake Upper (y=5.5m)", x: 11.0, y: 5.5 },
+        { name: isSpanish ? "Rastrillo Estela Centro (y=4.5m)" : "Wake Rake Center (y=4.5m)", x: 11.0, y: 4.5 },
+        { name: isSpanish ? "Rastrillo Estela Inferior (y=3.5m)" : "Wake Rake Lower (y=3.5m)", x: 11.0, y: 3.5 },
+        { name: isSpanish ? "Pitot de Salida del Túnel" : "Tunnel Exit Pitot", x: 14.5, y: 4.5 }
+      ];
+
+      refStations.forEach(st => {
+        probeCount++;
+        const s = sampleFluidAt(sim, st.x, st.y);
+        const qVal = 0.5 * density * s.speed * s.speed;
+        const pTotal = s.p + qVal;
+        const cat = isSpanish ? "Estación de Referencia" : "Reference Station";
+        csv += `${probeCount},"${st.name}","${cat}",${st.x.toFixed(2)},${st.y.toFixed(2)},${s.u.toFixed(3)},${s.v.toFixed(3)},${s.speed.toFixed(3)},${s.p.toFixed(2)},${qVal.toFixed(2)},${pTotal.toFixed(2)},${s.vorticity.toFixed(2)}\n`;
+      });
+      csv += '\n';
+
+      // =========================================================================
+      // 5. BARRIDO AUTOMÁTICO DE ÁNGULO DE ATAQUE Y POLARES (Cl-α, Cd-α, Drag Polar)
+      // =========================================================================
+      csv += isSpanish ? '[BARRIDO_ANGULO_ATAQUE_Y_POLARES_CL_CD]\n' : '[ANGLE_OF_ATTACK_SWEEP_AND_POLARS_CL_CD]\n';
+      csv += isSpanish
+        ? '# Curva de sustentación, arrastre, polar de Lilienthal y rendimiento L/D\n'
+        : '# Lift curve, drag polar of Lilienthal and L/D efficiency\n';
+      csv += isSpanish
+        ? 'AoA_grados,Cl_Sustentacion,Cd_Arrastre,Eficiencia_L_D,Fuerza_Arrastre_N,Fuerza_Sustentacion_N,Regimen_Aerodinamico\n'
+        : 'AoA_deg,Cl_Lift,Cd_Drag,Efficiency_L_over_D,Drag_Force_N,Lift_Force_N,Aerodynamic_Regime\n';
+
+      let sweepData = null;
+      if (sim.lastAlphaSweep && sim.lastAlphaSweep.data && sim.lastAlphaSweep.data.length > 0) {
+        sweepData = sim.lastAlphaSweep.data;
+      } else if (window.AerodynamicSweep && typeof window.AerodynamicSweep.computeAerodynamicPolar === 'function' && targetElement && !targetElement.isProbe) {
+        const sweepObj = window.AerodynamicSweep.computeAerodynamicPolar(targetElement, sim.fluid, -10, 20, 1, sim);
+        if (sweepObj && sweepObj.data) {
+          sweepData = sweepObj.data;
+          sim.lastAlphaSweep = sweepObj;
+        }
+      }
+
+      if (sweepData && sweepData.length > 0) {
+        sweepData.forEach(pt => {
+          const reg = (typeof window.getLocalizedRegime === 'function')
+            ? window.getLocalizedRegime(pt.regime, isSpanish)
+            : pt.regime;
+          csv += `${pt.aoa},${pt.cl},${pt.cd},${pt.lod},${pt.fd},${pt.fl},"${reg}"\n`;
+        });
+      } else {
+        csv += isSpanish
+          ? `# No se detectó un perfil sólido para el cálculo de la polar. Agregue un perfil NACA o cuerpo en el túnel.\n`
+          : `# No solid body detected for polar calculation. Add a NACA airfoil or body in the tunnel.\n`;
+      }
+      csv += '\n';
+
+      // =========================================================================
+      // 6. EXPORTAR Y DESCARGAR ARCHIVO CSV
+      // =========================================================================
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const filenamePrefix = isSpanish ? "datos_simulacion_telemetria" : "simulation_telemetry_data";
+      const filenameDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+      a.href = url;
+      a.download = `${filenamePrefix}_${filenameDate}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setTimeout(function () {
+        URL.revokeObjectURL(url);
+      }, 10000);
+
+      if (typeof window.showToast === 'function') {
+        const successMsg = window.t
+          ? (window.t('csvSavedSuccess') || (isSpanish ? "¡Datos de telemetría y sondas exportados a CSV con éxito!" : "Simulation telemetry and probe data successfully exported to CSV!"))
+          : (isSpanish ? "¡Datos de telemetría y sondas exportados a CSV con éxito!" : "Simulation telemetry and probe data successfully exported to CSV!");
+        window.showToast(successMsg, 'success', 3500);
+      }
+
+    } catch (err) {
+      console.error("[Report] Error generating CSV:", err);
+      if (typeof window.showToast === 'function') {
+        window.showToast("Error al generar el archivo CSV: " + err.message, 'error', 4000);
+      }
+    }
+  }
+
+
+  window.drawReportLayout = drawReportLayout;
+  window.drawCleanReportLayout = drawCleanReportLayout;
   window.generateAerodynamicReport = generateAerodynamicReport;
+  window.generateSimulationCSV = generateSimulationCSV;
+  window.sampleFluidAt = sampleFluidAt;
 })();

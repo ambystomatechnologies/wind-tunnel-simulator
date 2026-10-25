@@ -28,6 +28,10 @@ class FluidField {
     this.smoke = new Float32Array(this.size);
     this.smoke0 = new Float32Array(this.size);
 
+    // Campo térmico de combustión y temperatura (0.0 ambiente criogénico -> 1.0 llama intensa)
+    this.combustion = new Float32Array(this.size);
+    this.combustion0 = new Float32Array(this.size);
+
     // Campo de vorticidad: ω = ∂v/∂x - ∂u/∂y (s^-1)
     this.vorticity = new Float32Array(this.size);
 
@@ -104,6 +108,8 @@ class FluidField {
       this.div[i] = 0.0;
       this.smoke[i] = 0.0;
       this.smoke0[i] = 0.0;
+      this.combustion[i] = 0.0;
+      this.combustion0[i] = 0.0;
       this.vorticity[i] = 0.0;
     }
 
@@ -128,6 +134,230 @@ class FluidField {
       // Repoblar las partículas desde la entrada hacia adelante como al inicio del programa
       this.initParticles(true);
     }
+  }
+
+  /**
+   * Elimina vórtices, corrientes residuales, humo y perturbaciones en un radio alrededor de (worldX, worldY).
+   * Si el flujo está inactivo, restaura la velocidad a reposo (0 m/s) y disipa todo el movimiento.
+   * Si el flujo está activo, restablece al flujo laminar base de entrada.
+   */
+  cleanArea(worldX, worldY, radius) {
+    const nx = this.nx;
+    const ny = this.ny;
+    const dx = this.dx;
+    const dy = this.dy;
+
+    const minI = Math.max(0, Math.floor((worldX - radius) / dx));
+    const maxI = Math.min(nx - 1, Math.ceil((worldX + radius) / dx));
+    const minJ = Math.max(0, Math.floor((worldY - radius) / dy));
+    const maxJ = Math.min(ny - 1, Math.ceil((worldY + radius) / dy));
+    const rSq = radius * radius;
+
+    const uTarget = this.isFlowActive ? (this.inflowSpeed * Math.cos(this.inflowAngle)) : 0.0;
+    const vTarget = this.isFlowActive ? (this.inflowSpeed * Math.sin(this.inflowAngle)) : 0.0;
+
+    for (let j = minJ; j <= maxJ; j++) {
+      const yCell = (j + 0.5) * dy;
+      const dyDist = yCell - worldY;
+      const dySq = dyDist * dyDist;
+      const row = j * nx;
+
+      for (let i = minI; i <= maxI; i++) {
+        const xCell = (i + 0.5) * dx;
+        const dxDist = xCell - worldX;
+        const distSq = dxDist * dxDist + dySq;
+
+        if (distSq <= rSq) {
+          const id = row + i;
+          if (this.solid[id] === 0) {
+            const dist = Math.sqrt(distSq);
+            let blendFactor = 1.0;
+            if (dist > radius * 0.65) {
+              const t = (dist - radius * 0.65) / (radius * 0.35);
+              blendFactor = 1.0 - t * t * (3.0 - 2.0 * t);
+            }
+
+            this.u[id] = this.u[id] * (1.0 - blendFactor) + uTarget * blendFactor;
+            this.v[id] = this.v[id] * (1.0 - blendFactor) + vTarget * blendFactor;
+            this.u0[id] = this.u[id];
+            this.v0[id] = this.v[id];
+
+            this.p[id] *= (1.0 - blendFactor);
+            this.div[id] *= (1.0 - blendFactor);
+            this.smoke[id] *= (1.0 - blendFactor);
+            this.smoke0[id] *= (1.0 - blendFactor);
+            this.combustion[id] *= (1.0 - blendFactor);
+            this.combustion0[id] *= (1.0 - blendFactor);
+            this.vorticity[id] *= (1.0 - blendFactor);
+
+            if (blendFactor >= 0.95) {
+              this.u[id] = uTarget;
+              this.v[id] = vTarget;
+              this.u0[id] = uTarget;
+              this.v0[id] = vTarget;
+              this.p[id] = 0.0;
+              this.div[id] = 0.0;
+              this.smoke[id] = 0.0;
+              this.smoke0[id] = 0.0;
+              this.combustion[id] = 0.0;
+              this.combustion0[id] = 0.0;
+              this.vorticity[id] = 0.0;
+            }
+          }
+        }
+      }
+    }
+
+    if (this.particles && this.particles.length > 0) {
+      for (let p of this.particles) {
+        const dpx = p.x - worldX;
+        const dpy = p.y - worldY;
+        if (dpx * dpx + dpy * dpy <= rSq) {
+          if (this.isFlowActive) {
+            p.x = Math.random() * 0.8 + 0.05;
+            p.y = Math.random() * (this.domainHeight - 0.2) + 0.1;
+            p.speed = this.inflowSpeed;
+          } else {
+            p.x = -20.0;
+          }
+        }
+      }
+    }
+
+    this.enforceBoundaryConditions(this.u, this.v);
+    this.computeVorticity();
+  }
+
+  /**
+   * Borrador Mágico / Balde de Pintura:
+   * Al hacer clic en un punto del fluido, inunda (Flood Fill BFS) toda la región conectada
+   * delimitada por obstáculos sólidos o bordes, borrando todos los vórtices y corrientes.
+   * Si el flujo está inactivo, restablece a reposo absoluto (u=0, v=0, vort=0, smoke=0).
+   * Si el flujo está activo, restablece al flujo laminar base de entrada.
+   */
+  cleanFloodFill(worldX, worldY) {
+    const nx = this.nx;
+    const ny = this.ny;
+    const dx = this.dx;
+    const dy = this.dy;
+
+    const startI = Math.max(0, Math.min(nx - 1, Math.floor(worldX / dx)));
+    const startJ = Math.max(0, Math.min(ny - 1, Math.floor(worldY / dy)));
+    const startId = startJ * nx + startI;
+
+    // Si el clic cayó sobre un obstáculo sólido, buscar la celda libre adyacente más próxima
+    let seedId = startId;
+    if (this.solid[seedId] !== 0) {
+      let found = -1;
+      let minD = Infinity;
+      for (let dj = -3; dj <= 3; dj++) {
+        const cj = startJ + dj;
+        if (cj < 0 || cj >= ny) continue;
+        for (let di = -3; di <= 3; di++) {
+          const ci = startI + di;
+          if (ci < 0 || ci >= nx) continue;
+          const id = cj * nx + ci;
+          if (this.solid[id] === 0) {
+            const d = di * di + dj * dj;
+            if (d < minD) {
+              minD = d;
+              found = id;
+            }
+          }
+        }
+      }
+      if (found === -1) return;
+      seedId = found;
+    }
+
+    // BFS Flood Fill delimitado por contornos sólidos (solid !== 0)
+    const visited = new Uint8Array(this.size);
+    const queue = new Int32Array(this.size);
+    let head = 0;
+    let tail = 0;
+
+    visited[seedId] = 1;
+    queue[tail++] = seedId;
+
+    while (head < tail) {
+      const curr = queue[head++];
+      const ci = curr % nx;
+      const cj = (curr / nx) | 0;
+
+      // Izquierda
+      if (ci > 0) {
+        const nId = curr - 1;
+        if (!visited[nId] && this.solid[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+      // Derecha
+      if (ci < nx - 1) {
+        const nId = curr + 1;
+        if (!visited[nId] && this.solid[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+      // Abajo
+      if (cj > 0) {
+        const nId = curr - nx;
+        if (!visited[nId] && this.solid[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+      // Arriba
+      if (cj < ny - 1) {
+        const nId = curr + nx;
+        if (!visited[nId] && this.solid[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+    }
+
+    const uTarget = this.isFlowActive ? (this.inflowSpeed * Math.cos(this.inflowAngle)) : 0.0;
+    const vTarget = this.isFlowActive ? (this.inflowSpeed * Math.sin(this.inflowAngle)) : 0.0;
+
+    for (let k = 0; k < tail; k++) {
+      const id = queue[k];
+      this.u[id] = uTarget;
+      this.v[id] = vTarget;
+      this.u0[id] = uTarget;
+      this.v0[id] = vTarget;
+      this.p[id] = 0.0;
+      this.div[id] = 0.0;
+      this.smoke[id] = 0.0;
+      this.smoke0[id] = 0.0;
+      this.combustion[id] = 0.0;
+      this.combustion0[id] = 0.0;
+      this.vorticity[id] = 0.0;
+    }
+
+    // Limpiar partículas trazadoras en la zona inundada
+    if (this.particles && this.particles.length > 0) {
+      for (let p of this.particles) {
+        const pi = Math.floor(p.x / dx);
+        const pj = Math.floor(p.y / dy);
+        if (pi >= 0 && pi < nx && pj >= 0 && pj < ny) {
+          const pid = pj * nx + pi;
+          if (visited[pid]) {
+            if (this.isFlowActive) {
+              p.x = Math.random() * 0.8 + 0.05;
+              p.y = Math.random() * (this.domainHeight - 0.2) + 0.1;
+              p.speed = this.inflowSpeed;
+            } else {
+              p.x = -20.0;
+            }
+          }
+        }
+      }
+    }
+
+    this.enforceBoundaryConditions(this.u, this.v);
+    this.computeVorticity();
   }
 
   setFlowRegime(regime, intensity = null) {
@@ -200,6 +430,8 @@ class FluidField {
     this.simTime += dt;
 
     this.applyInflow(dt);
+    this.applyThrusters(dt);
+    this.applyWakeInstability();
     this.advectVelocity(dt);
 
     // Confinamiento de Vorticidad para contrarrestar la viscosidad numérica de la interpolación
@@ -212,6 +444,7 @@ class FluidField {
     this.projectPressure();
     this.advectSmoke(dt);
     this.diffuseSmoke(dt);
+    this.advectCombustion(dt);
     this.computeVorticity();
     this.updateParticles(dt);
   }
@@ -234,27 +467,120 @@ class FluidField {
     if (estRe < 47) return; // Límite crítico de desprendimiento de vórtices de Von Kármán
 
     for (let obs of this.activeObstacles) {
-      if (!obs.isActive) continue;
+      if (!obs.isActive || obs.isThruster || obs.isSolid === false) continue;
       const aabb = obs.getAABB();
       const D = Math.max(0.4, aabb[3] - aabb[1]);
       const fShed = (St * U) / D;
       const omega = 2.0 * Math.PI * fShed;
 
-      // Amplitud de cizalladura en desprendimiento
-      const amp = isTurb ? (0.35 * U) : (0.22 * U);
+      // Amplitud sutil de perturbación para disparar la inestabilidad hidrodinámica natural de von Kármán
+      const amp = isTurb ? (0.10 * U) : (0.05 * U);
       const vOsc = amp * Math.sin(omega * this.simTime);
 
-      const rearI = Math.min(nx - 2, Math.round(aabb[2] / dx) + 1);
+      const rearI = Math.min(nx - 3, Math.round(aabb[2] / dx) + 1);
       const minJ = Math.max(1, Math.floor(aabb[1] / dy));
       const maxJ = Math.min(ny - 2, Math.ceil(aabb[3] / dy));
       const midY = (aabb[1] + aabb[3]) * 0.5;
 
-      for (let j = minJ; j <= maxJ; j++) {
-        const id = j * nx + rearI;
-        if (this.solid[id] === 0) {
-          const yDist = Math.abs((j * dy) - midY) / (D * 0.5);
-          const weight = Math.max(0, 1.0 - yDist);
-          this.v[id] += vOsc * weight;
+      for (let di = 0; di < 2; di++) {
+        const iCol = rearI + di;
+        const iWeight = (di === 0) ? 0.7 : 0.3;
+        for (let j = minJ; j <= maxJ; j++) {
+          const id = j * nx + iCol;
+          if (this.solid[id] === 0) {
+            const yDist = Math.abs((j * dy) - midY) / (D * 0.5);
+            const weight = Math.max(0, 1.0 - yDist) * iWeight;
+            this.v[id] += vOsc * weight;
+          }
+        }
+      }
+    }
+  }
+
+  // --- PROPULSORES ACTIVOS DE FLUIDO (Inyección direccional de cantidad de movimiento y vapor/humo) ---
+  applyThrusters(dt) {
+    if (!this.activeObstacles || this.activeObstacles.length === 0) return;
+
+    const nx = this.nx;
+    const ny = this.ny;
+    const dx = this.dx;
+    const dy = this.dy;
+
+    for (let obs of this.activeObstacles) {
+      if (!obs.isActive || !obs.isThruster) continue;
+      const ex = (typeof obs.getThrusterExhaust === 'function') ? obs.getThrusterExhaust() : null;
+      if (!ex) continue;
+
+      const vJet = Math.max(0.0, Math.min(12.0, obs.thrustSpeed !== undefined ? obs.thrustSpeed : 5.0));
+      if (vJet <= 0.001) continue;
+
+      const dirX = ex.dir[0];
+      const dirY = ex.dir[1];
+      const normX = -dirY;
+      const normY = dirX;
+      const isVapor = (obs.smokeMode !== 'clean');
+
+      const aabb = obs.getAABB();
+      const halfL = Math.max(0.35, (aabb[2] - aabb[0]) * 0.48);
+      const nozzleHalfW = (ex.aperture ? ex.aperture * 0.48 : Math.max(0.08, (aabb[3] - aabb[1]) * 0.28));
+
+      // Aceleración de fluido: dentro de la tobera (step < 0) solo se acelera velocidad a lo largo del núcleo interno
+      // pero NUNCA se inyecta humo ni celdas visibles. El humo y la combustión brotan EXCLUSIVAMENTE a partir
+      // de la boca de salida (step >= 0), acotados estrictamente a la apertura de la tobera.
+      const stepsChamber = 4;
+      const stepsExit = 6;
+      const totalSteps = stepsChamber + stepsExit;
+      const ds = (halfL * 1.2) / totalSteps;
+      const crossSamples = Math.max(6, Math.ceil((nozzleHalfW * 2.2) / (dy * 0.35)));
+
+      for (let step = -stepsChamber; step <= stepsExit; step++) {
+        const sDist = step * ds;
+        const cxAxial = ex.center[0] + dirX * sDist;
+        const cyAxial = ex.center[1] + dirY * sDist;
+
+        // Ancho acotado: dentro de la tobera es más estrecho; fuera de la boca se ensancha sutilmente
+        const curHalfW = (step < 0) 
+          ? nozzleHalfW * (0.60 + 0.35 * ((step + stepsChamber) / stepsChamber))
+          : nozzleHalfW * (0.95 + 0.20 * (step / stepsExit));
+
+        // Ponderación axial de velocidad
+        const axialWeight = (step < 0) 
+          ? (0.50 + 0.50 * ((step + stepsChamber) / stepsChamber)) 
+          : Math.max(0.35, 1.0 - (step / stepsExit) * 0.30);
+
+        for (let cs = 0; cs <= crossSamples; cs++) {
+          const cFrac = (cs / crossSamples) * 2.0 - 1.0;
+          // Perfil parabólico
+          const profile = Math.max(0.25, 1.0 - cFrac * cFrac * 0.70);
+          const localSpeed = vJet * axialWeight * profile;
+
+          const wx = cxAxial + normX * (cFrac * curHalfW);
+          const wy = cyAxial + normY * (cFrac * curHalfW);
+
+          const igx = Math.round(wx / dx);
+          const igy = Math.round(wy / dy);
+
+          if (igx >= 1 && igx < nx - 1 && igy >= 1 && igy < ny - 1) {
+            const id = igy * nx + igx;
+            const blend = 0.55;
+            this.u[id] = this.u[id] * (1.0 - blend) + (dirX * localSpeed) * blend;
+            this.v[id] = this.v[id] * (1.0 - blend) + (dirY * localSpeed) * blend;
+
+            // Dentro de la tobera (step < 0) y en modo Viento Limpio, el fluido es 100% limpio y transparente
+            if (!isVapor || step < 0) {
+              this.smoke[id] = 0.0;
+            } else if (isVapor && step === 0) {
+              // En modo vapor, inyectar suavemente solo en la línea de salida (step === 0)
+              // para que el flujo lo transporte naturalmente hacia atrás sin formar un bloque estático en la punta
+              this.smoke[id] = Math.min(1.0, this.smoke[id] + 0.35);
+            }
+
+            if (step === 0) {
+              this.combustion[id] = 1.0;
+            } else if (step < 0) {
+              this.combustion[id] = 0.0;
+            }
+          }
         }
       }
     }
@@ -333,8 +659,17 @@ class FluidField {
         this.u[id] = uVal;
         this.v[id] = vVal;
 
-        // Inyección constante de humo en líneas de corriente si el flujo está activo
+        // Mantener alimentación motriz continua hacia la primera capa del túnel para impedir taponamientos
+        const id1 = id + 1;
+        if (this.isFlowActive && this.solid[id1] === 0 && uVal > 0.05) {
+          if (this.u[id1] < uVal * 0.45) {
+            this.u[id1] = Math.max(this.u[id1], uVal * 0.5);
+          }
+        }
+
+        // Inyección constante de humo en líneas de corriente si el flujo está activo (exacto de Old)
         if (this.isFlowActive) {
+          let smokeVal = 0.0;
           if (this.smokeRegime === 'smoke_lines') {
             let mod;
             if (isTurb) {
@@ -343,12 +678,18 @@ class FluidField {
             } else {
               mod = (j % this.smokeSpacing);
             }
-            this.smoke[id] = (mod <= 1) ? 1.0 : 0.0;
+            smokeVal = (mod <= 1) ? 1.0 : 0.0;
           } else {
-            this.smoke[id] = 0.8;
+            smokeVal = 0.8;
           }
+          this.smoke[id] = smokeVal;
+          if (this.solid[id1] === 0 && smokeVal > 0) {
+            this.smoke[id1] = Math.max(this.smoke[id1], smokeVal * 0.95);
+          }
+          this.combustion[id] = 0.0;
         } else {
           this.smoke[id] = 0.0;
+          this.combustion[id] = 0.0;
         }
       }
     }
@@ -455,7 +796,7 @@ class FluidField {
           const id = row + i;
           if (this.solid[id] !== 0) continue;
 
-          const pL = (this.solid[id - 1] === 0) ? p[id - 1] : p[id];
+          const pL = (i === 1) ? p[id] : ((this.solid[id - 1] === 0) ? p[id - 1] : p[id]);
           const pR = (this.solid[id + 1] === 0) ? p[id + 1] : p[id];
           const pB = (this.solid[id - nx] === 0) ? p[id - nx] : p[id];
           const pT = (this.solid[id + nx] === 0) ? p[id + nx] : p[id];
@@ -476,7 +817,7 @@ class FluidField {
           continue;
         }
 
-        const pL = (this.solid[id - 1] === 0) ? p[id - 1] : p[id];
+        const pL = (i === 1) ? p[id] : ((this.solid[id - 1] === 0) ? p[id - 1] : p[id]);
         const pR = (this.solid[id + 1] === 0) ? p[id + 1] : p[id];
         const pB = (this.solid[id - nx] === 0) ? p[id - nx] : p[id];
         const pT = (this.solid[id + nx] === 0) ? p[id + nx] : p[id];
@@ -515,6 +856,36 @@ class FluidField {
         // Desvanecimiento suave y natural del humo (más rápido cuando se detiene el flujo)
         const decay = this.isFlowActive ? 0.999 : 0.992;
         this.smoke[id] = this.sampleBilinear(this.smoke0, xBack, yBack) * decay;
+      }
+    }
+  }
+
+  advectCombustion(dt) {
+    const nx = this.nx;
+    const ny = this.ny;
+    const dx = this.dx;
+    const dy = this.dy;
+
+    this.combustion0.set(this.combustion);
+
+    for (let j = 1; j < ny - 1; j++) {
+      const row = j * nx;
+      for (let i = 1; i < nx - 1; i++) {
+        const id = row + i;
+        if (this.solid[id] !== 0) {
+          this.combustion[id] = 0.0;
+          continue;
+        }
+
+        const uCurr = this.u[id];
+        const vCurr = this.v[id];
+
+        const xBack = i - (uCurr * dt / dx);
+        const yBack = j - (vCurr * dt / dy);
+
+        // Desvanecimiento térmico realista del frente de reacción
+        const decay = this.isFlowActive ? 0.997 : 0.988;
+        this.combustion[id] = this.sampleBilinear(this.combustion0, xBack, yBack) * decay;
       }
     }
   }
@@ -620,6 +991,15 @@ class FluidField {
       const id = j * nx;
       uField[id] = this.inletU[j];
       vField[id] = this.inletV[j];
+
+      // La tobera de entrada es una fuente motriz activa continua (soplador).
+      // Impedir que vórtices retrógrados taponen la tobera en la capa adyacente (x = 1):
+      if (this.isFlowActive && this.inletU[j] > 0.05) {
+        const id1 = id + 1;
+        if (this.solid[id1] === 0 && uField[id1] < this.inletU[j] * 0.4) {
+          uField[id1] = Math.max(uField[id1], this.inletU[j] * 0.4);
+        }
+      }
     }
 
     // Salida (x = nx - 1): Outflow libre
@@ -686,6 +1066,10 @@ class FluidField {
     const domainW = this.domainWidth;
     const domainH = this.domainHeight;
 
+    const activeThrusters = (this.activeObstacles || []).filter(o => o && o.isActive && o.isThruster && (o.thrustSpeed || 0) > 0.05);
+    const numThrusters = activeThrusters.length;
+    let thrusterCycle = 0;
+
     for (let p of this.particles) {
       // Las partículas viajan el trayecto completo de extremo a extremo del túnel:
       // Solo renacen cuando llegan al final del túnel a la derecha (o salen por los bordes)
@@ -693,8 +1077,37 @@ class FluidField {
 
       if (hasExited) {
         if (!this.isFlowActive) {
+          // Si el flujo del túnel está detenido pero hay propulsores activos, las partículas brotan equitativamente de TODOS los propulsores
+          if (numThrusters > 0) {
+            const thruster = activeThrusters[(thrusterCycle++) % numThrusters];
+            const ex = (typeof thruster.getThrusterExhaust === 'function') ? thruster.getThrusterExhaust() : null;
+            if (ex) {
+              const frac = Math.random();
+              p.x = ex.p0[0] + (ex.p1[0] - ex.p0[0]) * frac;
+              p.y = ex.p0[1] + (ex.p1[1] - ex.p0[1]) * frac;
+              p.stuckCounter = 0;
+              p.speed = thruster.thrustSpeed || 5.0;
+              continue;
+            }
+          }
           p.x = -999;
           continue;
+        }
+
+        // Si el flujo está activo:
+        // Si hay propulsores activos, una porción de las partículas que renacen brota directamente de los propulsores
+        // para que todos los propulsores emitan partículas continuamente, y el resto renace en la entrada del túnel.
+        if (numThrusters > 0 && Math.random() < Math.min(0.65, numThrusters * 0.25)) {
+          const thruster = activeThrusters[(thrusterCycle++) % numThrusters];
+          const ex = (typeof thruster.getThrusterExhaust === 'function') ? thruster.getThrusterExhaust() : null;
+          if (ex) {
+            const frac = Math.random();
+            p.x = ex.p0[0] + (ex.p1[0] - ex.p0[0]) * frac;
+            p.y = ex.p0[1] + (ex.p1[1] - ex.p0[1]) * frac;
+            p.stuckCounter = 0;
+            p.speed = thruster.thrustSpeed || 5.0;
+            continue;
+          }
         }
 
         // Renacen únicamente al inicio en la tobera de entrada para recorrer la pantalla completa
@@ -720,6 +1133,12 @@ class FluidField {
       // Si queda atrapada en un punto de estancamiento sólido, incrementar contador de atasco
       if (p.speed < 0.04) {
         p.stuckCounter = (p.stuckCounter || 0) + 1;
+        // Si está cerca de la tobera de entrada, empujarla suavemente hacia adelante para evitar atascos
+        if (p.x < 0.8 && p.stuckCounter > 15 && this.isFlowActive) {
+          p.x += 0.15;
+          p.speed = Math.max(0.5, this.inflowSpeed * 0.5);
+          p.stuckCounter = 0;
+        }
       } else {
         p.stuckCounter = 0;
       }
@@ -759,14 +1178,14 @@ class FluidField {
     this.obstacleIndex.fill(-1);
 
     this.activeObstacles = obstacles || [];
-    const solidObstacles = (obstacles || []).filter(o => o && o.isActive && !o.isProbe && o.isSolid !== false);
+    const solidObstacles = (obstacles || []).filter(o => o && o.isActive && !o.isProbe && o.isSolid !== false && !o.isThruster);
     this.lastObstacleAABB = (solidObstacles.length > 0) ? solidObstacles[0].getAABB() : null;
 
     if (!obstacles || obstacles.length === 0) return;
 
     for (let obsIdx = 0; obsIdx < obstacles.length; obsIdx++) {
       const obs = obstacles[obsIdx];
-      if (!obs.isActive || obs.isProbe || obs.isSolid === false) continue;
+      if (!obs.isActive || obs.isProbe || obs.isSolid === false || obs.isThruster) continue;
 
       const aabb = obs.getAABB();
       const minI = Math.max(1, Math.floor(aabb[0] / dx));
@@ -832,11 +1251,35 @@ class FluidField {
 
     const mu = this.density * this.viscosity;
 
-    const aabb = obstacle.getAABB();
+    const aabb = (typeof obstacle.getAABB === 'function') ? obstacle.getAABB() : null;
+    if (!aabb || !isFinite(aabb[0]) || !isFinite(aabb[1]) || !isFinite(aabb[2]) || !isFinite(aabb[3])) {
+      return {
+        dragForce: 0,
+        liftForce: 0,
+        cd: 0,
+        cl: 0,
+        efficiency: 0,
+        reynolds: 0,
+        pMax: 0,
+        pMin: 0
+      };
+    }
     const minI = Math.max(1, Math.floor(aabb[0] / dx) - 2);
     const maxI = Math.min(nx - 2, Math.ceil(aabb[2] / dx) + 2);
     const minJ = Math.max(1, Math.floor(aabb[1] / dy) - 2);
     const maxJ = Math.min(this.ny - 2, Math.ceil(aabb[3] / dy) + 2);
+    if (minI > maxI || minJ > maxJ) {
+      return {
+        dragForce: 0,
+        liftForce: 0,
+        cd: 0,
+        cl: 0,
+        efficiency: 0,
+        reynolds: 0,
+        pMax: 0,
+        pMin: 0
+      };
+    }
 
     for (let j = minJ; j <= maxJ; j++) {
       const row = j * nx;

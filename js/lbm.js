@@ -56,6 +56,8 @@ class LatticeBoltzmannEngine {
     this.contrast = 1.0;           // Factor de contraste perceptual para vorticidad
     this.stepsPerFrame = 11;       // Pasos de colisión/streaming por fotograma a 60 FPS
     this.closedWalls = false;      // Paredes superior e inferior sólidas o abiertas
+    this.isFlowActive = true;      // Control de flujo activo (permite detener y desvanecer el flujo LBM)
+    this.flowFadeFactor = 1.0;     // Factor de atenuación visual [0.0 - 1.0] para desvanecimiento natural
 
     // Arreglos de densidades de partículas discretas D2Q9 (Typed Arrays de alto rendimiento)
     this.n0 = new Float32Array(this.size);
@@ -113,6 +115,197 @@ class LatticeBoltzmannEngine {
   }
 
   /**
+   * Activa o desactiva la inyección de flujo en el túnel LBM
+   * @param {boolean} active 
+   * @param {boolean} immediate Si es true, silencia y desvanece de inmediato sin transición
+   */
+  setFlowActive(active, immediate = false) {
+    this.isFlowActive = Boolean(active);
+    const hasActiveThrusters = (this.activeObstacles || []).some(o => o && o.isActive && o.isThruster && (o.thrustSpeed || 0) > 0.05);
+    if (!this.isFlowActive && immediate && !hasActiveThrusters) {
+      this.flowFadeFactor = 0.0;
+      for (let i = 0; i < this.size; i++) {
+        this.ux[i] = 0.0;
+        this.uy[i] = 0.0;
+      }
+      this.barrierFx = 0.0;
+      this.barrierFy = 0.0;
+    }
+    if (this.isFlowActive || hasActiveThrusters) {
+      this.flowFadeFactor = 1.0;
+      let activeTracers = 0;
+      for (let t = 0; t < this.nTracers; t++) {
+        if (this.tracerX[t] >= 0) activeTracers++;
+      }
+      if (activeTracers < this.nTracers * 0.5) {
+        this.initTracers();
+      }
+    }
+  }
+
+  /**
+   * Elimina vórtices y corrientes en un radio en el simulador LBM (Schroeder)
+   * Restablece la función de distribución D2Q9 al estado de equilibrio base
+   */
+  cleanArea(worldX, worldY, radius, domainWidth = 16.0, domainHeight = 9.0) {
+    const nx = this.nx;
+    const ny = this.ny;
+
+    const gridX = (worldX / domainWidth) * nx;
+    const gridY = (worldY / domainHeight) * ny;
+    const radX = (radius / domainWidth) * nx;
+    const radY = (radius / domainHeight) * ny;
+    const maxRad = Math.max(radX, radY);
+    const maxRadSq = maxRad * maxRad;
+
+    const minX = Math.max(1, Math.floor(gridX - maxRad));
+    const maxX = Math.min(nx - 2, Math.ceil(gridX + maxRad));
+    const minY = Math.max(1, Math.floor(gridY - maxRad));
+    const maxY = Math.min(ny - 2, Math.ceil(gridY + maxRad));
+
+    const effectiveSpeed = this.isFlowActive ? this.speed : 0.0;
+    const u0 = effectiveSpeed * Math.cos(this.inflowAngle);
+    const v0 = effectiveSpeed * Math.sin(this.inflowAngle);
+
+    for (let y = minY; y <= maxY; y++) {
+      const dy = y - gridY;
+      const dySq = dy * dy;
+      const row = y * nx;
+      for (let x = minX; x <= maxX; x++) {
+        const dx = x - gridX;
+        if (dx * dx + dySq <= maxRadSq) {
+          const id = row + x;
+          if (this.barrier[id] === 0) {
+            this.setEquilibrium(x, y, u0, v0, 1.0);
+          }
+        }
+      }
+    }
+
+    // Reiniciar trazadores de humo LBM dentro del radio limpiado
+    for (let t = 0; t < this.nTracers; t++) {
+      const tx = this.tracerX[t];
+      const ty = this.tracerY[t];
+      if (tx >= 0) {
+        const dtx = tx - gridX;
+        const dty = ty - gridY;
+        if (dtx * dtx + dty * dty <= maxRadSq) {
+          if (this.isFlowActive) {
+            this.tracerX[t] = 0.5;
+            this.tracerY[t] = Math.random() * this.ny;
+          } else {
+            this.tracerX[t] = -10.0;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Borrador Mágico / Balde de Pintura para Schroeder LBM:
+   * Al hacer clic en un punto del fluido, inunda (Flood Fill BFS) toda la región conectada
+   * delimitada por barreras sólidas, restableciendo la distribución D2Q9 al estado base.
+   */
+  cleanFloodFill(worldX, worldY, domainWidth = 16.0, domainHeight = 9.0) {
+    const nx = this.nx;
+    const ny = this.ny;
+
+    const startX = Math.max(0, Math.min(nx - 1, Math.floor((worldX / domainWidth) * nx)));
+    const startY = Math.max(0, Math.min(ny - 1, Math.floor((worldY / domainHeight) * ny)));
+    let seedId = startY * nx + startX;
+
+    if (this.barrier[seedId] !== 0) {
+      let found = -1;
+      let minD = Infinity;
+      for (let dy = -3; dy <= 3; dy++) {
+        const cy = startY + dy;
+        if (cy < 0 || cy >= ny) continue;
+        for (let dx = -3; dx <= 3; dx++) {
+          const cx = startX + dx;
+          if (cx < 0 || cx >= nx) continue;
+          const id = cy * nx + cx;
+          if (this.barrier[id] === 0) {
+            const d = dx * dx + dy * dy;
+            if (d < minD) { minD = d; found = id; }
+          }
+        }
+      }
+      if (found === -1) return;
+      seedId = found;
+    }
+
+    const visited = new Uint8Array(this.size);
+    const queue = new Int32Array(this.size);
+    let head = 0;
+    let tail = 0;
+
+    visited[seedId] = 1;
+    queue[tail++] = seedId;
+
+    while (head < tail) {
+      const curr = queue[head++];
+      const cx = curr % nx;
+      const cy = (curr / nx) | 0;
+
+      if (cx > 0) {
+        const nId = curr - 1;
+        if (!visited[nId] && this.barrier[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+      if (cx < nx - 1) {
+        const nId = curr + 1;
+        if (!visited[nId] && this.barrier[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+      if (cy > 0) {
+        const nId = curr - nx;
+        if (!visited[nId] && this.barrier[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+      if (cy < ny - 1) {
+        const nId = curr + nx;
+        if (!visited[nId] && this.barrier[nId] === 0) {
+          visited[nId] = 1;
+          queue[tail++] = nId;
+        }
+      }
+    }
+
+    const effectiveSpeed = this.isFlowActive ? this.speed : 0.0;
+    const u0 = effectiveSpeed * Math.cos(this.inflowAngle);
+    const v0 = effectiveSpeed * Math.sin(this.inflowAngle);
+
+    for (let k = 0; k < tail; k++) {
+      const id = queue[k];
+      const x = id % nx;
+      const y = (id / nx) | 0;
+      this.setEquilibrium(x, y, u0, v0, 1.0);
+    }
+
+    // Reiniciar trazadores de humo LBM dentro del área inundada
+    for (let t = 0; t < this.nTracers; t++) {
+      const tx = Math.floor(this.tracerX[t]);
+      const ty = Math.floor(this.tracerY[t]);
+      if (tx >= 0 && tx < nx && ty >= 0 && ty < ny) {
+        if (visited[ty * nx + tx]) {
+          if (this.isFlowActive) {
+            this.tracerX[t] = 0.5;
+            this.tracerY[t] = Math.random() * this.ny;
+          } else {
+            this.tracerX[t] = -10.0;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Genera el mapa de color perceptual Jet (azul -> cian -> verde -> amarillo -> rojo)
    * Donde el verde indica rotación nula (curl = 0), rojo vorticidad antihoraria y azul horaria.
    */
@@ -156,11 +349,14 @@ class LatticeBoltzmannEngine {
    * con una perturbación microscópica para inducir el desprendimiento físico natural de vórtices
    */
   initFluid() {
-    const u0 = this.speed * Math.cos(this.inflowAngle);
-    const v0 = this.speed * Math.sin(this.inflowAngle);
+    const effectiveSpeed = this.isFlowActive ? this.speed : 0.0;
+    const u0 = effectiveSpeed * Math.cos(this.inflowAngle);
+    const v0 = effectiveSpeed * Math.sin(this.inflowAngle);
     for (let y = 0; y < this.ny; y++) {
       // Micro-perturbación transversal para romper simetría aritmética perfecta
-      const perturb = 0.00035 * Math.sin((y / this.ny) * 2.0 * Math.PI);
+      const perturb = (this.isFlowActive && effectiveSpeed > 0.001)
+        ? 0.00035 * Math.sin((y / this.ny) * 2.0 * Math.PI)
+        : 0.0;
       for (let x = 0; x < this.nx; x++) {
         this.setEquilibrium(x, y, u0, v0 + perturb, 1.0);
       }
@@ -222,8 +418,9 @@ class LatticeBoltzmannEngine {
    * Condiciones de frontera en bordes del túnel
    */
   setBoundaries() {
-    const u0 = this.speed * Math.cos(this.inflowAngle);
-    const v0 = this.speed * Math.sin(this.inflowAngle);
+    const effectiveSpeed = this.isFlowActive ? this.speed : 0.0;
+    const u0 = effectiveSpeed * Math.cos(this.inflowAngle);
+    const v0 = effectiveSpeed * Math.sin(this.inflowAngle);
     const nx = this.nx;
     const ny = this.ny;
 
@@ -242,7 +439,9 @@ class LatticeBoltzmannEngine {
     // Entrada izquierda y salida derecha
     for (let y = 1; y < ny - 1; y++) {
       this.setEquilibrium(0, y, u0, v0, 1.0);
-      this.setEquilibrium(nx - 1, y, u0, v0, 1.0);
+      if (this.isFlowActive) {
+        this.setEquilibrium(nx - 1, y, u0, v0, 1.0);
+      }
     }
   }
 
@@ -287,6 +486,14 @@ class LatticeBoltzmannEngine {
         const invRho = 1.0 / thisrho;
         let thisux = (nE[i] + nNE[i] + nSE[i] - nW[i] - nNW[i] - nSW[i]) * invRho;
         let thisuy = (nN[i] + nNE[i] + nNW[i] - nS[i] - nSE[i] - nSW[i]) * invRho;
+
+        if (!this.isFlowActive && !this.hasActiveThrusters) {
+          // Desvanecimiento suave y natural del fluido cuando el flujo está detenido y no hay propulsores
+          thisux *= 0.94;
+          thisuy *= 0.94;
+          if (Math.abs(thisux) < 1e-4) thisux = 0.0;
+          if (Math.abs(thisuy) < 1e-4) thisuy = 0.0;
+        }
 
         // Limitar velocidad local para mantener estabilidad incondicional subsónica
         const spd2 = thisux * thisux + thisuy * thisuy;
@@ -431,6 +638,7 @@ class LatticeBoltzmannEngine {
     const nx = this.nx;
     const ny = this.ny;
     for (let t = 0; t < this.nTracers; t++) {
+      if (this.tracerX[t] < 0) continue;
       const rx = Math.max(0, Math.min(nx - 1, Math.round(this.tracerX[t])));
       const ry = Math.max(0, Math.min(ny - 1, Math.round(this.tracerY[t])));
       const idx = rx + ry * nx;
@@ -439,8 +647,12 @@ class LatticeBoltzmannEngine {
       this.tracerY[t] += this.uy[idx];
 
       if (this.tracerX[t] >= nx - 1 || this.tracerX[t] < 0 || this.tracerY[t] >= ny - 1 || this.tracerY[t] < 0) {
-        this.tracerX[t] = 0;
-        this.tracerY[t] = Math.random() * (ny - 2) + 1;
+        if (this.isFlowActive) {
+          this.tracerX[t] = 0;
+          this.tracerY[t] = Math.random() * (ny - 2) + 1;
+        } else {
+          this.tracerX[t] = -100;
+        }
       }
     }
   }
@@ -506,9 +718,29 @@ class LatticeBoltzmannEngine {
    */
   step(steps = null) {
     const nSteps = steps || this.stepsPerFrame;
-    this.setBoundaries();
+    this.hasActiveThrusters = (this.activeObstacles || []).some(o => o && o.isActive && o.isThruster && (o.thrustSpeed || 0) > 0.05);
+
+    // Actualización progresiva del factor de atenuación visual (fade factor)
+    if (this.isFlowActive || this.hasActiveThrusters) {
+      if (this.flowFadeFactor < 1.0) {
+        this.flowFadeFactor = Math.min(1.0, this.flowFadeFactor + 0.04);
+      }
+    } else {
+      if (this.flowFadeFactor > 0.0) {
+        this.flowFadeFactor = Math.max(0.0, this.flowFadeFactor - 0.035);
+      }
+    }
+
+    // Si el flujo está totalmente detenido y ya se desvaneció por completo y no hay propulsor, reposar simulación
+    if (!this.isFlowActive && this.flowFadeFactor <= 0.0 && !this.hasActiveThrusters) {
+      this.barrierFx = 0.0;
+      this.barrierFy = 0.0;
+      return;
+    }
 
     for (let s = 0; s < nSteps; s++) {
+      this.setBoundaries();
+      this.applyThrusters();
       this.collide();
       this.stream();
       this.timeStepCount++;
@@ -524,6 +756,12 @@ class LatticeBoltzmannEngine {
       this.lastBarrierFy = this.barrierFy;
     }
 
+    // Si el flujo está detenido, atenuar progresivamente la fuerza aerodinámica medida
+    if (!this.isFlowActive) {
+      this.barrierFx *= this.flowFadeFactor;
+      this.barrierFy *= this.flowFadeFactor;
+    }
+
     // Verificación de estabilidad una sola vez por cuadro para rendimiento puro a 60 FPS
     const checkIdx = (this.nx * 0.4 | 0) + (this.ny * 0.5 | 0) * this.nx;
     if (this.rho[checkIdx] < 0.1 || !Number.isFinite(this.rho[checkIdx])) {
@@ -536,15 +774,18 @@ class LatticeBoltzmannEngine {
    */
   rasterizeObstacles(elements, domainWidth = 16.0, domainHeight = 9.0) {
     this.barrier.fill(0);
+    this.activeObstacles = elements || [];
+    this.domainWidth = domainWidth;
+    this.domainHeight = domainHeight;
     const nx = this.nx;
     const ny = this.ny;
 
     if (!elements || elements.length === 0) return;
 
     for (let elem of elements) {
-      if (!elem.isActive || elem.isProbe || elem.isSolid === false) continue;
+      if (!elem.isActive || elem.isProbe || elem.isSolid === false || elem.isThruster) continue;
 
-      if (elem.loops && elem.loops.length > 0) {
+      if ((elem.loops && elem.loops.length > 0) || elem.isImportedImage) {
         const aabb = elem.getAABB();
         const startX = Math.max(1, Math.floor((aabb[0] / domainWidth) * nx));
         const endX = Math.min(nx - 2, Math.ceil((aabb[2] / domainWidth) * nx));
@@ -693,6 +934,77 @@ class LatticeBoltzmannEngine {
    * Esto elimina por completo el pixelado en el borde del obstáculo, permitiendo que el contorno
    * vectorial continuo y el filtro bilineal HD se fusionen con total nitidez sin alterar la física.
    */
+  // --- PROPULSORES ACTIVOS EN RETÍCULA LBM ---
+  applyThrusters() {
+    if (!this.activeObstacles || this.activeObstacles.length === 0) return;
+    const nx = this.nx;
+    const ny = this.ny;
+    const dw = this.domainWidth || 20.0;
+    const dh = this.domainHeight || 9.0;
+
+    for (let obs of this.activeObstacles) {
+      if (!obs.isActive || !obs.isThruster) continue;
+      const ex = (typeof obs.getThrusterExhaust === 'function') ? obs.getThrusterExhaust() : null;
+      if (!ex) continue;
+
+      const vJet = Math.max(0.0, Math.min(12.0, obs.thrustSpeed !== undefined ? obs.thrustSpeed : 5.0));
+      if (vJet <= 0.001) continue;
+
+      // Velocidad LBM equivalente (hasta 0.16 para estabilidad incondicional)
+      const lbmSpeed = Math.min(0.16, Math.max(0.02, (vJet / 5.0) * this.speed * 1.5));
+      const dirX = ex.dir[0];
+      const dirY = ex.dir[1];
+      const normX = -dirY;
+      const normY = dirX;
+
+      const aabb = obs.getAABB();
+      const halfL = Math.max(0.35, (aabb[2] - aabb[0]) * 0.48);
+      const nozzleHalfW = (ex.aperture ? ex.aperture * 0.48 : Math.max(0.08, (aabb[3] - aabb[1]) * 0.28));
+
+      const stepsChamber = 4;
+      const stepsExit = 6;
+      const totalSteps = stepsChamber + stepsExit;
+      const ds = (halfL * 1.2) / totalSteps;
+      const crossSamples = Math.max(6, Math.ceil((nozzleHalfW * 2.2 / dh) * ny * 1.5));
+
+      for (let step = -stepsChamber; step <= stepsExit; step++) {
+        const sDist = step * ds;
+        const cxAxial = ex.center[0] + dirX * sDist;
+        const cyAxial = ex.center[1] + dirY * sDist;
+
+        const curHalfW = (step < 0) 
+          ? nozzleHalfW * (0.60 + 0.35 * ((step + stepsChamber) / stepsChamber))
+          : nozzleHalfW * (0.95 + 0.20 * (step / stepsExit));
+
+        const axialWeight = (step < 0) 
+          ? (0.50 + 0.50 * ((step + stepsChamber) / stepsChamber)) 
+          : Math.max(0.35, 1.0 - (step / stepsExit) * 0.30);
+
+        for (let cs = 0; cs <= crossSamples; cs++) {
+          const cFrac = (cs / crossSamples) * 2.0 - 1.0;
+          const profile = Math.max(0.25, 1.0 - cFrac * cFrac * 0.70);
+          const localSpeed = lbmSpeed * axialWeight * profile;
+
+          const wx = cxAxial + normX * (cFrac * curHalfW);
+          const wy = cyAxial + normY * (cFrac * curHalfW);
+
+          const lx = Math.round((wx / dw) * nx);
+          const ly = Math.round((wy / dh) * ny);
+
+          if (lx >= 1 && lx < nx - 1 && ly >= 1 && ly < ny - 1) {
+            const idx = lx + ly * nx;
+            this.barrier[idx] = 0;
+            this.setEquilibrium(lx, ly, dirX * localSpeed, dirY * localSpeed, 1.0);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Extrapolación isotrópica simétrica de valores de campo hacia el interior de los obstáculos.
+   * Elimina por completo las sombras rectangulares y los dientes de sierra en el borde del obstáculo.
+   */
   _extrapolateBoundary(srcField, outField) {
     const nx = this.nx;
     const ny = this.ny;
@@ -714,25 +1026,42 @@ class LatticeBoltzmannEngine {
       }
     }
 
-    // Propagar 3 capas hacia el interior del obstáculo sólido
-    for (let pass = 0; pass < 3; pass++) {
+    // Propagar 8 capas hacia el interior del obstáculo sólido de forma simétrica por capas
+    for (let pass = 0; pass < 8; pass++) {
       for (let y = 1; y < ny - 1; y++) {
         const row = y * nx;
         for (let x = 1; x < nx - 1; x++) {
           const id = x + row;
-          if (visited[id]) continue;
+          if (visited[id] === 1) continue;
 
           let sum = 0.0;
           let count = 0;
-          if (visited[id - 1])  { sum += outField[id - 1]; count++; }
-          if (visited[id + 1])  { sum += outField[id + 1]; count++; }
-          if (visited[id - nx]) { sum += outField[id - nx]; count++; }
-          if (visited[id + nx]) { sum += outField[id + nx]; count++; }
+          if (visited[id - 1] === 1)  { sum += outField[id - 1]; count++; }
+          if (visited[id + 1] === 1)  { sum += outField[id + 1]; count++; }
+          if (visited[id - nx] === 1) { sum += outField[id - nx]; count++; }
+          if (visited[id + nx] === 1) { sum += outField[id + nx]; count++; }
 
           if (count > 0) {
             outField[id] = sum / count;
-            visited[id] = 1;
+            visited[id] = 2; // Marcar para confirmación tras completar la pasada
           }
+        }
+      }
+      for (let i = 0; i < total; i++) {
+        if (visited[i] === 2) visited[i] = 1;
+      }
+    }
+
+    // Llenar cualquier celda interna profunda restante con el promedio de borde para evitar fugas de verde
+    for (let y = 1; y < ny - 1; y++) {
+      const row = y * nx;
+      for (let x = 1; x < nx - 1; x++) {
+        const id = x + row;
+        if (barrier[id] && visited[id] === 0) {
+          outField[id] = (x > 1 && visited[id - 1]) ? outField[id - 1] :
+                         (x < nx - 2 && visited[id + 1]) ? outField[id + 1] :
+                         (y > 1 && visited[id - nx]) ? outField[id - nx] :
+                         (y < ny - 2 && visited[id + nx]) ? outField[id + nx] : 0.0;
         }
       }
     }
@@ -740,17 +1069,18 @@ class LatticeBoltzmannEngine {
 
   /**
    * Renderiza el campo LBM al ImageData del canvas con la paleta Jet exacta de Schroeder
-   * @param {ImageData} imageData 
-   * @param {string} plotType 'curl', 'speed', 'density', 'ux', 'uy'
+   * Compatible con resolución estándar (1x) y alta resolución HD bilineal (2x).
    */
   renderToImageData(imageData, plotType = 'curl') {
     const data = imageData.data;
     const nx = this.nx;
     const ny = this.ny;
     const total = nx * ny;
+    const outW = imageData.width;
+    const outH = imageData.height;
+    const isHD = (outW !== nx || outH !== ny);
     const nColors = this.nColors;
     const contrast = this.contrast;
-    const barrier = this.barrier;
     const redList = this.redList;
     const greenList = this.greenList;
     const blueList = this.blueList;
@@ -760,27 +1090,15 @@ class LatticeBoltzmannEngine {
     }
     const visField = this._visField;
 
+    let factor = 7.5 * contrast * nColors;
+    let halfN = (nColors * 0.5) | 0;
+
     if (plotType === 'curl') {
       this.computeCurl();
       this._extrapolateBoundary(this.curl, visField);
-      const factor = 7.5 * contrast * nColors;
-      const halfN = (nColors * 0.5) | 0;
-
-      for (let i = 0; i < total; i++) {
-        const pIdx = i * 4;
-        let cIndex = ((visField[i] * factor) | 0) + halfN;
-        if (cIndex < 0) cIndex = 0;
-        else if (cIndex > nColors) cIndex = nColors;
-
-        data[pIdx]     = redList[cIndex];
-        data[pIdx + 1] = greenList[cIndex];
-        data[pIdx + 2] = blueList[cIndex];
-        data[pIdx + 3] = 255;
-      }
-      return;
-    }
-
-    if (plotType === 'speed') {
+      factor = 7.5 * contrast * nColors;
+      halfN = (nColors * 0.5) | 0;
+    } else if (plotType === 'speed') {
       const ux = this.ux;
       const uy = this.uy;
       if (!this._spdField || this._spdField.length !== total) {
@@ -791,31 +1109,68 @@ class LatticeBoltzmannEngine {
         spdField[i] = Math.hypot(ux[i], uy[i]);
       }
       this._extrapolateBoundary(spdField, visField);
-      const factor = 4.5 * contrast * nColors;
-
-      for (let i = 0; i < total; i++) {
-        const pIdx = i * 4;
-        let cIndex = (visField[i] * factor) | 0;
-        if (cIndex < 0) cIndex = 0;
-        else if (cIndex > nColors) cIndex = nColors;
-
-        data[pIdx]     = redList[cIndex];
-        data[pIdx + 1] = greenList[cIndex];
-        data[pIdx + 2] = blueList[cIndex];
-        data[pIdx + 3] = 255;
-      }
-      return;
-    }
-
-    if (plotType === 'density') {
+      factor = 4.5 * contrast * nColors;
+      halfN = 0;
+    } else if (plotType === 'density') {
       const rho = this.rho;
       this._extrapolateBoundary(rho, visField);
-      const factor = 6.0 * contrast * nColors;
-      const halfN = (nColors * 0.5) | 0;
+      factor = 6.0 * contrast * nColors;
+      halfN = (nColors * 0.5) | 0;
+    }
 
+    if (isHD) {
+      // Muestreo bilineal continuo HD para eliminar pixelado y lograr gradientes sedosos
+      const scaleX = (nx - 1) / (outW - 1);
+      const scaleY = (ny - 1) / (outH - 1);
+      let pIdx = 0;
+
+      for (let py = 0; py < outH; py++) {
+        const gy = py * scaleY;
+        const j0 = gy | 0;
+        const j1 = (j0 < ny - 1) ? j0 + 1 : j0;
+        const fy = gy - j0;
+        const row0 = j0 * nx;
+        const row1 = j1 * nx;
+
+        for (let px = 0; px < outW; px++) {
+          const gx = px * scaleX;
+          const i0 = gx | 0;
+          const i1 = (i0 < nx - 1) ? i0 + 1 : i0;
+          const fx = gx - i0;
+
+          const v0 = visField[row0 + i0] * (1.0 - fx) + visField[row0 + i1] * fx;
+          const v1 = visField[row1 + i0] * (1.0 - fx) + visField[row1 + i1] * fx;
+          const val = v0 * (1.0 - fy) + v1 * fy;
+
+          let cIndex;
+          if (plotType === 'speed') {
+            cIndex = (val * factor) | 0;
+          } else if (plotType === 'density') {
+            cIndex = (((val - 1.0) * factor) | 0) + halfN;
+          } else {
+            cIndex = ((val * factor) | 0) + halfN;
+          }
+          if (cIndex < 0) cIndex = 0;
+          else if (cIndex > nColors) cIndex = nColors;
+
+          data[pIdx++] = redList[cIndex];
+          data[pIdx++] = greenList[cIndex];
+          data[pIdx++] = blueList[cIndex];
+          data[pIdx++] = 255;
+        }
+      }
+    } else {
+      // Bucle estándar 1x
       for (let i = 0; i < total; i++) {
         const pIdx = i * 4;
-        let cIndex = (((visField[i] - 1.0) * factor) | 0) + halfN;
+        let cIndex;
+        if (plotType === 'speed') {
+          cIndex = (visField[i] * factor) | 0;
+        } else if (plotType === 'density') {
+          cIndex = (((visField[i] - 1.0) * factor) | 0) + halfN;
+        } else {
+          cIndex = ((visField[i] * factor) | 0) + halfN;
+        }
         if (cIndex < 0) cIndex = 0;
         else if (cIndex > nColors) cIndex = nColors;
 
@@ -824,7 +1179,6 @@ class LatticeBoltzmannEngine {
         data[pIdx + 2] = blueList[cIndex];
         data[pIdx + 3] = 255;
       }
-      return;
     }
   }
 
@@ -832,6 +1186,7 @@ class LatticeBoltzmannEngine {
    * Dibuja los segmentos tangentes de líneas de corriente (Flowlines de Schroeder)
    */
   drawFlowlines(ctx, screenOrigin, cellPixelW, cellPixelH) {
+    if (this.flowFadeFactor <= 0.01 && !this.hasActiveThrusters) return;
     ctx.save();
     const nx = this.nx;
     const ny = this.ny;
@@ -871,12 +1226,14 @@ class LatticeBoltzmannEngine {
    * Dibuja las partículas trazadoras del simulador de Schroeder
    */
   drawTracers(ctx, screenOrigin, cellPixelW, cellPixelH) {
+    if (this.flowFadeFactor <= 0.01 && !this.hasActiveThrusters) return;
     ctx.save();
     ctx.fillStyle = '#0f172a';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 0.8;
 
     for (let t = 0; t < this.nTracers; t++) {
+      if (this.tracerX[t] < 0) continue;
       const px = screenOrigin.x + this.tracerX[t] * cellPixelW;
       const py = screenOrigin.y + this.tracerY[t] * cellPixelH;
 

@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnNodeEdit = document.getElementById('btn-tool-node-edit');
   const btnDrawFreehand = document.getElementById('btn-tool-draw-freehand');
   const btnDrawPoly = document.getElementById('btn-tool-draw-poly');
-  const btnFinishDraw = document.getElementById('btn-tool-finish-draw');
   const btnProbe = document.getElementById('btn-tool-probe');
+  const btnClean = document.getElementById('btn-tool-clean');
   const btnAddAirfoil = document.getElementById('btn-add-airfoil');
 
   const cbAddShapes = document.getElementById('cb-add-shapes');
@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnZoomIn = document.getElementById('btn-zoom-in');
   const btnZoomOut = document.getElementById('btn-zoom-out');
   const btnResetView = document.getElementById('btn-reset-view');
+  const btnCanvasUndo = document.getElementById('btn-canvas-undo');
+  const btnToolUndo = document.getElementById('btn-tool-undo');
+  const btnToolRedo = document.getElementById('btn-tool-redo');
 
   // Panel Izquierdo (Pestañas: Escena / HUD y Herramientas)
   const tabBtnScene = document.getElementById('tab-btn-scene');
@@ -52,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tabBtnTools) tabBtnTools.addEventListener('click', () => setLeftTab('tools'));
 
   const listSceneElements = document.getElementById('list-scene-elements');
+  const btnCopyElement = document.getElementById('btn-copy-element');
+  const btnPasteElement = document.getElementById('btn-paste-element');
   const btnDeleteElement = document.getElementById('btn-delete-element');
   const btnSaveScene = document.getElementById('btn-save-scene');
   const btnSaveReport = document.getElementById('btn-save-report');
@@ -96,18 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnStepSim = document.getElementById('btn-step-sim');
 
   function updatePlayPauseUI(isPaused) {
+    const isEs = (window.currentLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('fluid_sim_lang') : null)) === 'es';
     if (btnPlayIcon) btnPlayIcon.textContent = isPaused ? '▶️' : '⏸️';
-    if (btnPlayText) btnPlayText.textContent = isPaused ? 'Reanudar' : 'Pausar';
+    if (btnPlayText) btnPlayText.textContent = isPaused ? (isEs ? 'Reanudar' : 'Resume') : (isEs ? 'Pausar' : 'Pause');
     if (btnPlayPause) {
       btnPlayPause.classList.toggle('paused', isPaused);
-      btnPlayPause.title = isPaused ? 'Reanudar Simulación (Espacio)' : 'Pausar Simulación (Espacio)';
+      btnPlayPause.title = isPaused
+        ? (isEs ? 'Reanudar Simulación (Espacio)' : 'Resume Simulation (Space)')
+        : (isEs ? 'Pausar Simulación (Espacio)' : 'Pause Simulation (Space)');
     }
     if (chkPause) chkPause.checked = isPaused;
   }
+  window.updatePlayPauseUI = updatePlayPauseUI;
 
   function updateFlowUI(isFlowActive) {
     if (btnFlowIcon) btnFlowIcon.textContent = isFlowActive ? '⏹️' : '💨';
-    if (btnFlowText) btnFlowText.textContent = isFlowActive ? 'Detener Animación' : 'Iniciar Animación';
+    if (btnFlowText) btnFlowText.textContent = isFlowActive ? (window.currentLang === 'es' ? 'Detener Flujo' : 'Stop Flow') : (window.currentLang === 'es' ? 'Iniciar Flujo' : 'Start Flow');
     if (btnToggleFlow) {
       btnToggleFlow.classList.toggle('is-stopped', !isFlowActive);
       btnToggleFlow.title = isFlowActive
@@ -126,17 +135,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnToggleFlow) {
     btnToggleFlow.addEventListener('click', () => {
-      const newState = !sim.fluid.isFlowActive;
-      sim.fluid.setFlowActive(newState);
+      const newState = !sim.isFlowActive;
+      sim.setFlowActive(newState);
       updateFlowUI(newState);
       if (newState) {
         if (sim.isPaused) {
           sim.isPaused = false;
           updatePlayPauseUI(false);
         }
-        showToast("Flujo iniciado: el aire entra desde el inicio del túnel.", "success", 1800);
+        showToast(window.currentLang === 'es' ? "Flujo iniciado: el aire entra desde el inicio del túnel." : "Flow started: fluid enters from the inlet.", "success", 1800);
       } else {
-        showToast("Flujo detenido: el fluido se desvanece de manera natural.", "info", 1800);
+        showToast(window.currentLang === 'es' ? "Flujo detenido: el fluido se desvanece de manera natural." : "Flow stopped: fluid naturally decays.", "info", 1800);
       }
     });
   }
@@ -164,154 +173,235 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOpenDonate = document.getElementById('btn-open-donate');
   const btnCloseDonate = document.getElementById('btn-close-donate');
 
-  // Notificaciones Toast
+  // Notificaciones Toast - Silenciadas permanentemente según directiva estricta del usuario
   function showToast(message, type = 'info', duration = 3200) {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '✓';
-    else if (type === 'warning') icon = '⚠️';
-    else if (type === 'error') icon = '✕';
-    toast.innerHTML = `<span class="toast-badge">${icon}</span><span>${message}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(-10px)';
-      toast.style.transition = 'all 0.25s ease';
-      setTimeout(() => toast.remove(), 250);
-    }, duration);
+    // No-op absoluto: no se crea ningún elemento ni se muestra nada en pantalla
+    return;
   }
   window.showToast = showToast;
 
   // --- BOTONES DE HERRAMIENTAS Y MODOS ---
-  const modeButtons = [btnSelect, btnNodeEdit, btnDrawFreehand, btnDrawPoly, btnProbe];
+  const modeButtons = [btnSelect, btnNodeEdit, btnDrawFreehand, btnDrawPoly, btnProbe, btnClean].filter(Boolean);
 
-  function setActiveToolButton(btn) {
-    modeButtons.forEach(b => { if (b) b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
+  function updateModeButtonsUI(mode) {
+    modeButtons.forEach(b => b.classList.remove('active'));
+    if (mode === CanvasMode.NODE_EDIT && btnNodeEdit) {
+      btnNodeEdit.classList.add('active');
+    } else if (mode === CanvasMode.DRAW_FREEHAND && btnDrawFreehand) {
+      btnDrawFreehand.classList.add('active');
+    } else if (mode === CanvasMode.DRAW_POLYGON && btnDrawPoly) {
+      btnDrawPoly.classList.add('active');
+    } else if (mode === CanvasMode.PROBE && btnProbe) {
+      btnProbe.classList.add('active');
+    } else if (mode === CanvasMode.CLEAN && btnClean) {
+      btnClean.classList.add('active');
+    }
   }
+
+  sim.onModeChanged = (mode) => {
+    updateModeButtonsUI(mode);
+    if (mode === CanvasMode.SELECT) {
+      if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusReady');
+    } else if (mode === CanvasMode.CLEAN) {
+      if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusClean');
+    }
+  };
 
   if (btnSelect) {
     btnSelect.addEventListener('click', () => {
       sim.setMode(CanvasMode.SELECT);
-      setActiveToolButton(btnSelect);
       if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusReady');
-      if (btnFinishDraw) btnFinishDraw.disabled = true;
     });
   }
 
   if (btnNodeEdit) {
     btnNodeEdit.addEventListener('click', () => {
-      sim.setMode(CanvasMode.NODE_EDIT);
-      setActiveToolButton(btnNodeEdit);
-      if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusNodeEdit');
-      if (btnFinishDraw) btnFinishDraw.disabled = true;
+      if (sim.mode === CanvasMode.NODE_EDIT) {
+        sim.setMode(CanvasMode.SELECT);
+      } else {
+        sim.setMode(CanvasMode.NODE_EDIT);
+        if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusNodeEdit');
+      }
     });
   }
 
   if (btnDrawFreehand) {
     btnDrawFreehand.addEventListener('click', () => {
-      sim.setMode(CanvasMode.DRAW_FREEHAND);
-      setActiveToolButton(btnDrawFreehand);
-      if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusDrawFreehand');
-      if (btnFinishDraw) btnFinishDraw.disabled = true;
+      if (sim.mode === CanvasMode.DRAW_FREEHAND) {
+        sim.setMode(CanvasMode.SELECT);
+      } else {
+        sim.setMode(CanvasMode.DRAW_FREEHAND);
+        if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusDrawFreehand');
+      }
     });
   }
 
   if (btnDrawPoly) {
     btnDrawPoly.addEventListener('click', () => {
-      sim.setMode(CanvasMode.DRAW_POLYGON);
-      setActiveToolButton(btnDrawPoly);
-      if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusDrawPoly');
-      if (btnFinishDraw) btnFinishDraw.disabled = false;
-    });
-  }
-
-  if (btnFinishDraw) {
-    btnFinishDraw.addEventListener('click', () => {
-      sim.finishPolygon();
-      setActiveToolButton(btnSelect);
-      btnFinishDraw.disabled = true;
-      if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusReady');
+      if (sim.mode === CanvasMode.DRAW_POLYGON) {
+        sim.setMode(CanvasMode.SELECT);
+      } else {
+        sim.setMode(CanvasMode.DRAW_POLYGON);
+        if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusDrawPoly');
+      }
     });
   }
 
   if (btnProbe) {
     btnProbe.addEventListener('click', () => {
-      sim.setMode(CanvasMode.PROBE);
-      setActiveToolButton(btnProbe);
-      if (lblStatusMsg) lblStatusMsg.textContent = "Haz clic en el túnel para colocar la sonda de flujo.";
-      if (btnFinishDraw) btnFinishDraw.disabled = true;
+      if (sim.mode === CanvasMode.PROBE) {
+        sim.setMode(CanvasMode.SELECT);
+      } else {
+        sim.setMode(CanvasMode.PROBE);
+        if (lblStatusMsg) lblStatusMsg.textContent = (window.currentLang === 'es' ? "Haz clic en el túnel para colocar la sonda de flujo." : "Click in the tunnel to place the flow sensor probe.");
+      }
     });
   }
 
-  // BOTÓN DIRECTO: AGREGAR PERFIL ALAR NACA
+  if (btnClean) {
+    btnClean.addEventListener('click', () => {
+      if (sim.mode === CanvasMode.CLEAN) {
+        sim.setMode(CanvasMode.SELECT);
+      } else {
+        sim.setMode(CanvasMode.CLEAN);
+        if (lblStatusMsg) lblStatusMsg.textContent = window.t('statusClean');
+      }
+    });
+  }
+
+  // --- CONTROLADORES DE HISTORIAL (UNDO / REDO) ---
+  function handleUndo() {
+    if (sim && typeof sim.undo === 'function') {
+      sim.undo();
+    }
+  }
+
+  function handleRedo() {
+    if (sim && typeof sim.redo === 'function') {
+      sim.redo();
+    }
+  }
+
+  if (btnToolUndo) btnToolUndo.addEventListener('click', handleUndo);
+  if (btnToolRedo) btnToolRedo.addEventListener('click', handleRedo);
+  if (btnCanvasUndo) btnCanvasUndo.addEventListener('click', handleUndo);
+
+  // --- INSERCIÓN DIRECTA DE FIGURAS (CUADRÍCULA 2 POR FILA) ---
+  function addShapeToScene(shapeKey) {
+    if (!shapeKey) return;
+    const cy = sim.fluid.domainHeight / 2.0;
+
+    switch (shapeKey) {
+      case 'naca0012':
+        sim.addElement(HydrodynamicObstacle.createNACA("0012", 3.8, [6.0, cy]));
+        showToast(window.currentLang === 'es' ? "Perfil alar NACA 0012 agregado al túnel." : "NACA 0012 airfoil inserted.", "success");
+        break;
+      case 'naca2412':
+        sim.addElement(HydrodynamicObstacle.createNACA("2412", 3.8, [6.0, cy]));
+        showToast(window.currentLang === 'es' ? "Perfil asimétrico sustentador NACA 2412 insertado." : "NACA 2412 cambered airfoil inserted.", "success");
+        break;
+      case 'cylinder':
+        sim.addElement(HydrodynamicObstacle.createCylinder(1.2, [5.5, cy]));
+        showToast(window.currentLang === 'es' ? "Cilindro circular insertado." : "Circular cylinder inserted.", "info");
+        break;
+      case 'thruster':
+        sim.addElement(HydrodynamicObstacle.createThruster(1.9, 0.85, [5.5, cy]));
+        break;
+      case 'teardrop':
+        sim.addElement(HydrodynamicObstacle.createTeardrop(4.2, 1.8, [6.0, cy]));
+        showToast(window.currentLang === 'es' ? "Gota aerodinámica de bajo arrastre insertada." : "Low-drag teardrop body inserted.", "info");
+        break;
+      case 'wedge':
+        sim.addElement(HydrodynamicObstacle.createWedge(2.6, 2.2, [5.5, cy]));
+        showToast(window.currentLang === 'es' ? "Cuña aerodinámica insertada." : "Aerodynamic wedge inserted.", "info");
+        break;
+      case 'flat_plate':
+        const plate = HydrodynamicObstacle.createFlatPlate(3.5, 0.2, [6.0, cy]);
+        plate.rotate(15 * Math.PI / 180.0);
+        sim.addElement(plate);
+        showToast(window.currentLang === 'es' ? "Placa plana a 15° de ataque insertada." : "Flat plate at 15° AoA inserted.", "info");
+        break;
+      case 'square':
+        sim.addElement(HydrodynamicObstacle.createSquare(1.8, [5.5, cy]));
+        showToast(window.currentLang === 'es' ? "Cuerpo cuadrado romo insertado." : "Bluff square body inserted.", "info");
+        break;
+      case 'swiss_cross':
+        sim.addElement(HydrodynamicObstacle.createSwissCross(2.4, [5.5, cy]));
+        showToast(window.currentLang === 'es' ? "Cruz insertada." : "Cross inserted.", "info");
+        break;
+      case 'car':
+        sim.addElement(HydrodynamicObstacle.createCarProfile(4.6, null, [6.0, cy + 0.5]));
+        showToast(window.currentLang === 'es' ? "Bólido insertado." : "Race car inserted.", "info");
+        break;
+      case 'venturi':
+        const nozzles = HydrodynamicObstacle.createVenturiNozzles(sim.fluid.domainWidth, sim.fluid.domainHeight, 3.2);
+        nozzles.forEach(n => sim.addElement(n));
+        showToast(window.currentLang === 'es' ? "Tobera Venturi insertada." : "Venturi nozzle inserted.", "info");
+        break;
+      case 'schroeder_line':
+        sim.addElement(HydrodynamicObstacle.createLinearBarrier(3.6, [5.5, cy]));
+        showToast(window.currentLang === 'es' ? "Barrera lineal de Schroeder insertada (Generador de vórtices)." : "Schroeder barrier line inserted.", "success");
+        break;
+      case 'probe':
+        sim.addElement(new FlowProbe(8.0, cy, `Sensor ${sim.elements.length + 1}`));
+        showToast(window.currentLang === 'es' ? "Sonda de velocidad y presión insertada." : "Flow probe inserted.", "info");
+        break;
+    }
+  }
+
+  // Enlace de clics sobre las tarjetas de figuras visuales
+  const shapeCards = document.querySelectorAll('.btn-shape-card');
+  shapeCards.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const shapeKey = btn.getAttribute('data-shape');
+      addShapeToScene(shapeKey);
+    });
+  });
+
+  // Control de ventana plegable de figuras (Agregar Figuras)
+  const btnToggleShapesExpand = document.getElementById('btn-toggle-shapes-expand');
+  const shapesHeaderToggle = document.getElementById('shapes-header-toggle');
+  const shapesCollapsibleContent = document.getElementById('shapes-collapsible-content');
+  const lblShapesToggleText = document.getElementById('lbl-shapes-toggle-text');
+  const iconShapesToggleArrow = document.getElementById('icon-shapes-toggle-arrow');
+
+  function toggleShapesCollapsible() {
+    if (!shapesCollapsibleContent) return;
+    const isClosed = (shapesCollapsibleContent.style.display === 'none' || getComputedStyle(shapesCollapsibleContent).display === 'none');
+    shapesCollapsibleContent.style.display = isClosed ? 'block' : 'none';
+    if (lblShapesToggleText) {
+      lblShapesToggleText.textContent = isClosed 
+        ? (window.currentLang === 'en' ? 'Fewer shapes' : 'Menos figuras') 
+        : (window.currentLang === 'en' ? 'More shapes' : 'Más figuras');
+    }
+    if (iconShapesToggleArrow) {
+      iconShapesToggleArrow.textContent = isClosed ? '▲' : '▼';
+    }
+    if (btnToggleShapesExpand) {
+      btnToggleShapesExpand.classList.toggle('active', isClosed);
+      btnToggleShapesExpand.title = isClosed ? 'Plegar figuras' : 'Desplegar más figuras';
+    }
+  }
+
+  if (btnToggleShapesExpand) {
+    btnToggleShapesExpand.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleShapesCollapsible();
+    });
+  }
+  if (shapesHeaderToggle) {
+    shapesHeaderToggle.addEventListener('click', () => {
+      toggleShapesCollapsible();
+    });
+  }
+
   if (btnAddAirfoil) {
-    btnAddAirfoil.addEventListener('click', () => {
-      const airfoil = HydrodynamicObstacle.createNACA("0012", 3.8, [6.0, sim.fluid.domainHeight / 2.0]);
-      sim.addElement(airfoil);
-      showToast("Perfil alar NACA 0012 agregado al túnel.", "success");
-    });
+    btnAddAirfoil.addEventListener('click', () => addShapeToScene('naca0012'));
   }
 
-  // MENÚ DESPLEGABLE DE FIGURAS
   if (cbAddShapes) {
     cbAddShapes.addEventListener('change', (e) => {
-      const val = e.target.value;
-      if (!val) return;
-      const cy = sim.fluid.domainHeight / 2.0;
-
-      switch (val) {
-        case 'naca0012':
-          sim.addElement(HydrodynamicObstacle.createNACA("0012", 3.8, [6.0, cy]));
-          showToast("Perfil simétrico NACA 0012 insertado.", "info");
-          break;
-        case 'naca2412':
-          sim.addElement(HydrodynamicObstacle.createNACA("2412", 3.8, [6.0, cy]));
-          showToast("Perfil asimétrico sustentador NACA 2412 insertado.", "info");
-          break;
-        case 'cylinder':
-          sim.addElement(HydrodynamicObstacle.createCylinder(1.2, [5.5, cy]));
-          showToast("Cilindro circular insertado.", "info");
-          break;
-        case 'teardrop':
-          sim.addElement(HydrodynamicObstacle.createTeardrop(4.2, 1.8, [6.0, cy]));
-          showToast("Gota aerodinámica de bajo arrastre insertada.", "info");
-          break;
-        case 'flat_plate':
-          const plate = HydrodynamicObstacle.createFlatPlate(3.5, 0.2, [6.0, cy]);
-          plate.rotate(15 * Math.PI / 180.0);
-          sim.addElement(plate);
-          showToast("Placa plana a 15° de ataque insertada.", "info");
-          break;
-        case 'square':
-          sim.addElement(HydrodynamicObstacle.createSquare(1.8, [5.5, cy]));
-          showToast("Cuerpo cuadrado romo insertado.", "info");
-          break;
-        case 'wedge':
-          sim.addElement(HydrodynamicObstacle.createWedge(2.6, 2.2, [5.5, cy]));
-          showToast("Cuña aerodinámica insertada.", "info");
-          break;
-        case 'schroeder_line':
-          sim.addElement(HydrodynamicObstacle.createLinearBarrier(3.6, [5.5, cy]));
-          showToast("Barrera lineal de Schroeder insertada (Generador de vórtices).", "success");
-          break;
-        case 'car':
-          sim.addElement(HydrodynamicObstacle.createCarProfile(4.6, 1.6, [6.0, cy + 0.8]));
-          showToast("Silueta de vehículo de competición insertada.", "info");
-          break;
-        case 'venturi':
-          const nozzles = HydrodynamicObstacle.createVenturiNozzles(sim.fluid.domainWidth, sim.fluid.domainHeight, 3.2);
-          nozzles.forEach(n => sim.addElement(n));
-          showToast("Tobera Venturi insertada.", "info");
-          break;
-        case 'probe':
-          sim.addElement(new FlowProbe(8.0, cy, `Sensor ${sim.elements.length + 1}`));
-          showToast("Sonda de velocidad y presión insertada.", "info");
-          break;
-      }
+      addShapeToScene(e.target.value);
       cbAddShapes.value = "";
     });
   }
@@ -591,11 +681,35 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sliderRotation) {
     sliderRotation.addEventListener('input', (e) => {
       if (sim.selectedElement && sim.selectedElement instanceof HydrodynamicObstacle) {
+        if (sim.selectedElement.isAutoRotating) {
+          return;
+        }
         const deg = parseFloat(e.target.value);
         sim.selectedElement.setAbsoluteRotation(deg);
         sim.fluid.rasterizeObstacles(sim.elements);
-        sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
-        if (lblRotValue) lblRotValue.textContent = `${Math.round(deg)}°`;
+        if (sim.isLBMMode && sim.lbm) {
+          sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
+        }
+        const displayDeg = ((Math.round(deg) % 360) + 360) % 360;
+        if (lblRotValue) lblRotValue.textContent = `${displayDeg}°`;
+
+        // Sincronización bidireccional estricta con el ángulo inicial del barrido solo si no hay pieza barrida o si es la pieza sometida al barrido
+        const isSweptPiece = window.AerodynamicSweep && window.AerodynamicSweep.hasExecutedSweepAnimation && window.AerodynamicSweep.getLastSweptElement();
+        if (!isSweptPiece || window.AerodynamicSweep.getLastSweptElement() === sim.selectedElement) {
+          const sweepMinInput = document.getElementById('sweep-min-aoa');
+          if (sweepMinInput) {
+            sweepMinInput.value = displayDeg;
+            const sweepMaxInput = document.getElementById('sweep-max-aoa');
+            if (sweepMaxInput && parseFloat(sweepMaxInput.value) <= displayDeg) {
+              sweepMaxInput.value = displayDeg + 20;
+            }
+          }
+        }
+        if (window.AerodynamicSweep) {
+          if (window.AerodynamicSweep.isOpen) {
+            window.AerodynamicSweep.triggerRealtimeUpdate(sim);
+          }
+        }
       }
     });
   }
@@ -606,7 +720,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sim.selectedElement && sim.selectedElement instanceof HydrodynamicObstacle) {
         sim.selectedElement.isSmooth = e.target.checked;
         sim.fluid.rasterizeObstacles(sim.elements);
-        sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
+        if (sim.isLBMMode && sim.lbm) {
+          sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
+        }
       }
     });
   }
@@ -629,7 +745,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chkClosedWalls.checked = false;
     chkClosedWalls.addEventListener('change', (e) => {
       sim.fluid.closedWalls = e.target.checked;
-      showToast(e.target.checked ? "Túnel cerrado con paredes sólidas." : "Túnel abierto con flujo libre.", "info");
     });
   }
 
@@ -649,10 +764,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const chkShowFlowlines = document.getElementById('chk-show-flowlines');
+  if (chkShowFlowlines) {
+    chkShowFlowlines.checked = (sim.showFlowlines === true);
+    chkShowFlowlines.addEventListener('change', (e) => {
+      sim.showFlowlines = e.target.checked;
+      sim.showLBMFlowlines = e.target.checked;
+      showToast(e.target.checked ? (window.currentLang === 'es' ? "Líneas de flujo activadas." : "Flowlines enabled.") : (window.currentLang === 'es' ? "Líneas de flujo desactivadas." : "Flowlines disabled."), "info", 1200);
+    });
+  }
+
+  // Controles flotantes interactivos del propulsor de fluido
+  const thrusterCard = document.getElementById('thruster-floating-card');
+  const thrusterSlider = document.getElementById('thruster-slider-speed');
+  const thrusterValLabel = document.getElementById('thruster-speed-val');
+  const btnThrusterVapor = document.getElementById('btn-thruster-vapor');
+  const btnThrusterClean = document.getElementById('btn-thruster-clean');
+
+  if (thrusterCard) {
+    thrusterCard.addEventListener('pointerdown', (e) => e.stopPropagation());
+    thrusterCard.addEventListener('mousedown', (e) => e.stopPropagation());
+    thrusterCard.addEventListener('touchstart', (e) => e.stopPropagation());
+  }
+
+  function getActiveThruster() {
+    if (sim.selectedElement && sim.selectedElement.isThruster && sim.selectedElement.isActive) {
+      return sim.selectedElement;
+    }
+    return null;
+  }
+
+  if (thrusterSlider) {
+    thrusterSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      if (thrusterValLabel) thrusterValLabel.textContent = `${val.toFixed(1)} m/s`;
+      const t = getActiveThruster();
+      if (t) {
+        t.thrustSpeed = val;
+      }
+    });
+  }
+
+  if (btnThrusterVapor && btnThrusterClean) {
+    btnThrusterVapor.addEventListener('click', () => {
+      const t = getActiveThruster();
+      if (t) t.smokeMode = 'vapor';
+      btnThrusterVapor.classList.add('active');
+      btnThrusterClean.classList.remove('active');
+    });
+    btnThrusterClean.addEventListener('click', () => {
+      const t = getActiveThruster();
+      if (t) t.smokeMode = 'clean';
+      btnThrusterClean.classList.add('active');
+      btnThrusterVapor.classList.remove('active');
+    });
+  }
+
   // 7. Modos de Visualización CFD / LBM (Desplegables en Barra, Panel Izquierdo y Panel Derecho)
   const cbVisMode = document.getElementById('cb-vis-mode');
   const cbVisModeToolbar = document.getElementById('cb-vis-mode-toolbar');
   const cbVisModeLeft = document.getElementById('cb-vis-mode-left');
+  const btnVisModeToolbarPrev = document.getElementById('btn-vis-mode-toolbar-prev');
+  const btnVisModeToolbarNext = document.getElementById('btn-vis-mode-toolbar-next');
+  const btnVisModeLeftPrev = document.getElementById('btn-vis-mode-left-prev');
+  const btnVisModeLeftNext = document.getElementById('btn-vis-mode-left-next');
 
   function applyVisModeSelection(val, notify = true) {
     if (!val) return;
@@ -675,12 +850,31 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       if (rowLbmContrast) rowLbmContrast.style.display = 'none';
       if (val === 'smoke') sim.setVisMode(VisMode.SMOKE);
-      else if (val === 'pressure') sim.setVisMode(VisMode.PRESSURE);
-      else if (val === 'velocity') sim.setVisMode(VisMode.VELOCITY);
       else if (val === 'vorticity') sim.setVisMode(VisMode.VORTICITY);
+      else if (val === 'cfd_des_les') sim.setVisMode(VisMode.CFD_DES_LES);
+      else if (val === 'pressure') sim.setVisMode(VisMode.PRESSURE);
+      else if (val === 'cfd_combustion') sim.setVisMode(VisMode.CFD_COMBUSTION);
+      else if (val === 'velocity') sim.setVisMode(VisMode.VELOCITY);
       else if (val === 'particles') sim.setVisMode(VisMode.PARTICLES);
     }
   }
+
+  function cycleVisMode(delta) {
+    const select = cbVisModeToolbar || cbVisModeLeft || cbVisMode;
+    if (!select) return;
+    const opts = Array.from(select.options).filter(o => o.value);
+    if (opts.length === 0) return;
+    const curVal = select.value;
+    let idx = opts.findIndex(o => o.value === curVal);
+    if (idx === -1) idx = 0;
+    let nextIdx = (idx + delta + opts.length) % opts.length;
+    applyVisModeSelection(opts[nextIdx].value);
+  }
+
+  if (btnVisModeToolbarPrev) btnVisModeToolbarPrev.addEventListener('click', () => cycleVisMode(-1));
+  if (btnVisModeToolbarNext) btnVisModeToolbarNext.addEventListener('click', () => cycleVisMode(1));
+  if (btnVisModeLeftPrev) btnVisModeLeftPrev.addEventListener('click', () => cycleVisMode(-1));
+  if (btnVisModeLeftNext) btnVisModeLeftNext.addEventListener('click', () => cycleVisMode(1));
 
   if (cbVisMode) {
     cbVisMode.addEventListener('change', (e) => applyVisModeSelection(e.target.value));
@@ -782,27 +976,371 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hudPmaxVal) hudPmaxVal.textContent = `+${metrics.pMax} Pa`;
     if (hudPminVal) hudPminVal.textContent = `${metrics.pMin} Pa`;
 
-    if (sliderRotation && !sim.isRotating) {
-      sliderRotation.value = element.currentRotationDeg;
-      if (lblRotValue) lblRotValue.textContent = `${Math.round(element.currentRotationDeg)}°`;
+    if (sliderRotation && !sim.isRotating && !element.isAutoRotating) {
+      const curRot = ((Math.round(element.currentRotationDeg || 0) % 360) + 360) % 360;
+      sliderRotation.value = curRot;
+      if (lblRotValue) lblRotValue.textContent = `${curRot}°`;
     }
     if (chkSmooth) chkSmooth.checked = element.isSmooth;
   };
 
-  // --- GESTIÓN DE ELEMENTOS DE LA ESCENA (LISTA IZQUIERDA) ---
-  sim.onSceneChanged = updateSceneList;
-  sim.onElementSelected = (elem) => {
-    updateSceneList();
-    if (elem && elem instanceof HydrodynamicObstacle) {
-      if (sliderRotation) sliderRotation.value = elem.currentRotationDeg;
-      if (lblRotValue) lblRotValue.textContent = `${Math.round(elem.currentRotationDeg)}°`;
+  // --- GESTIÓN DE ELEMENTOS DE LA ESCENA (LISTA IZQUIERDA Y PROPIEDADES DERECHA) ---
+  const boxSelectedElementProps = document.getElementById('box-selected-element-props');
+  const lblSelectedObjName = document.getElementById('lbl-selected-obj-name');
+  const btnAlphaSweep = document.getElementById('btn-alpha-sweep');
+  const chkBuoy = document.getElementById('chk-buoy');
+  const chkAutoRotate = document.getElementById('chk-auto-rotate');
+  const btnRotateCW = document.getElementById('btn-rotate-cw');
+  const btnRotateCCW = document.getElementById('btn-rotate-ccw');
+  const sliderAutoRotateSpeed = document.getElementById('slider-auto-rotate-speed');
+  const lblAutoRotateSpeedVal = document.getElementById('lbl-auto-rotate-speed-val');
+  const sliderAutoRotateHigh = document.getElementById('slider-auto-rotate-high');
+  const lblAutoRotateHighVal = document.getElementById('lbl-auto-rotate-high-val');
+
+  function syncAutoRotateControls(elem) {
+    const isRotating = Boolean(elem && elem.isAutoRotating);
+
+    if (btnRotateCW) btnRotateCW.disabled = !isRotating;
+    if (btnRotateCCW) btnRotateCCW.disabled = !isRotating;
+    if (sliderAutoRotateSpeed) sliderAutoRotateSpeed.disabled = !isRotating;
+
+    if (!elem || !(elem instanceof HydrodynamicObstacle) || !isRotating) {
+      if (sliderAutoRotateSpeed) {
+        sliderAutoRotateSpeed.value = elem ? (elem.autoRotateRPM || 5) : 5;
+      }
+      if (sliderAutoRotateHigh) {
+        sliderAutoRotateHigh.value = 200;
+        sliderAutoRotateHigh.disabled = true;
+      }
+      const displayRPM = elem ? (elem.autoRotateRPM || 5) : 5;
+      if (lblAutoRotateSpeedVal) lblAutoRotateSpeedVal.textContent = `${displayRPM} RPM`;
+      if (lblAutoRotateHighVal) {
+        lblAutoRotateHighVal.textContent = '200 RPM';
+        lblAutoRotateHighVal.style.color = '#64748b';
+      }
+      return;
+    }
+
+    const currentRPM = elem.autoRotateRPM || 5;
+    if (currentRPM < 200) {
+      if (sliderAutoRotateSpeed) sliderAutoRotateSpeed.value = currentRPM;
+      if (sliderAutoRotateHigh) {
+        sliderAutoRotateHigh.disabled = true;
+      }
+      if (lblAutoRotateSpeedVal) lblAutoRotateSpeedVal.textContent = `${currentRPM} RPM`;
+      if (lblAutoRotateHighVal) lblAutoRotateHighVal.style.color = '#64748b';
+    } else {
+      if (sliderAutoRotateSpeed) sliderAutoRotateSpeed.value = 200;
+      if (sliderAutoRotateHigh) {
+        sliderAutoRotateHigh.value = currentRPM;
+        sliderAutoRotateHigh.disabled = false;
+      }
+      if (lblAutoRotateSpeedVal) lblAutoRotateSpeedVal.textContent = `${currentRPM} RPM`;
+      if (lblAutoRotateHighVal) {
+        lblAutoRotateHighVal.textContent = `${currentRPM} RPM`;
+        lblAutoRotateHighVal.style.color = 'var(--accent)';
+      }
+    }
+  }
+
+  // --- PORTAPAPELES DE FIGURAS (COPIAR, PEGAR Y DUPLICAR FIGURAS EXACTAS Y DEFORMADAS) ---
+  let elementClipboard = null;
+  let pasteCascadeCount = 0;
+
+  function copySelectedElement() {
+    if (!sim.selectedElement) return;
+    // Clonamos una copia exacta con todas sus deformaciones y propiedades actuales
+    elementClipboard = (typeof sim.selectedElement.clone === 'function')
+      ? sim.selectedElement.clone(0, 0)
+      : sim.selectedElement;
+    pasteCascadeCount = 0;
+    if (btnPasteElement) {
+      btnPasteElement.disabled = false;
+    }
+  }
+
+  function pasteElement() {
+    if (!elementClipboard) return;
+    pasteCascadeCount++;
+    // Desplazamiento progresivo en cascada para no encimar exactamente sobre el original
+    const step = 0.35;
+    const maxStepsX = 6;
+    const maxStepsY = 5;
+    const offsetX = step * (((pasteCascadeCount - 1) % maxStepsX) + 1);
+    const offsetY = step * (((pasteCascadeCount - 1) % maxStepsY) + 1);
+
+    let cloned = null;
+    if (typeof elementClipboard.clone === 'function') {
+      cloned = elementClipboard.clone(offsetX, offsetY);
+    }
+    if (cloned) {
+      sim.addElement(cloned, true); // true registra la acción en el historial undo/redo
+      updateSelectedElementPropsUI(cloned);
+    }
+  }
+
+  function duplicateSelectedElement() {
+    if (!sim.selectedElement) return;
+    copySelectedElement();
+    pasteElement();
+  }
+
+  function updateSelectedElementPropsUI(elem) {
+    const hasElem = Boolean(elem && elem instanceof HydrodynamicObstacle);
+    const hasAnyElem = Boolean(elem);
+
+    if (boxSelectedElementProps) {
+      boxSelectedElementProps.classList.toggle('is-disabled-panel', !hasAnyElem);
+    }
+    if (btnCopyElement) {
+      btnCopyElement.disabled = !hasAnyElem;
+    }
+    if (btnPasteElement) {
+      btnPasteElement.disabled = !elementClipboard;
+    }
+    if (btnDeleteElement) {
+      btnDeleteElement.disabled = !hasAnyElem;
+    }
+
+    if (btnAlphaSweep) btnAlphaSweep.disabled = false;
+    if (sliderRotation) sliderRotation.disabled = !hasElem;
+    if (chkSmooth) chkSmooth.disabled = !hasElem;
+    if (chkShowForces) chkShowForces.disabled = !hasElem;
+    if (chkBuoy) chkBuoy.disabled = !hasElem;
+    if (chkAutoRotate) chkAutoRotate.disabled = !hasElem;
+
+    if (!hasAnyElem) {
+      if (lblSelectedObjName) {
+        lblSelectedObjName.textContent = window.t('lblNoObjSelected') || "(Ninguno)";
+      }
+      if (lblRotValue) lblRotValue.textContent = '0°';
+      if (sliderRotation) sliderRotation.value = 0;
+      if (chkSmooth) chkSmooth.checked = true;
+      if (chkBuoy) chkBuoy.checked = false;
+      if (chkAutoRotate) chkAutoRotate.checked = false;
+      syncAutoRotateControls(null);
+      return;
+    }
+
+    if (lblSelectedObjName) {
+      lblSelectedObjName.textContent = elem.name;
+    }
+
+    if (hasElem) {
+      const curRot = ((Math.round(elem.currentRotationDeg || 0) % 360) + 360) % 360;
+      if (sliderRotation) sliderRotation.value = curRot;
+      if (lblRotValue) lblRotValue.textContent = `${curRot}°`;
+
+      // Vincular estrictamente sweep-target-name y sweep-min-aoa a la pieza sometida a "Iniciar barrido"
+      const hasSweptElem = window.AerodynamicSweep && window.AerodynamicSweep.hasExecutedSweepAnimation && window.AerodynamicSweep.getLastSweptElement();
+      if (!hasSweptElem) {
+        const sweepMinInput = document.getElementById('sweep-min-aoa');
+        if (sweepMinInput && !elem.isAutoRotating) sweepMinInput.value = curRot;
+        const sweepTargetName = document.getElementById('sweep-target-name');
+        if (sweepTargetName) sweepTargetName.textContent = elem.name;
+      } else {
+        const swept = window.AerodynamicSweep.getLastSweptElement();
+        const sweepTargetName = document.getElementById('sweep-target-name');
+        if (sweepTargetName && swept) sweepTargetName.textContent = swept.name;
+      }
+      if (window.AerodynamicSweep && typeof window.AerodynamicSweep.triggerRealtimeUpdate === 'function') {
+        window.AerodynamicSweep.triggerRealtimeUpdate(sim);
+      }
       if (chkSmooth) chkSmooth.checked = elem.isSmooth;
+      if (chkBuoy) chkBuoy.checked = Boolean(elem.isBuoy);
+      if (chkAutoRotate) chkAutoRotate.checked = Boolean(elem.isAutoRotating);
+
+      const isCW = (elem.autoRotateDirection !== 'ccw');
+      if (btnRotateCW) btnRotateCW.classList.toggle('active', isCW);
+      if (btnRotateCCW) btnRotateCCW.classList.toggle('active', !isCW);
+
+      syncAutoRotateControls(elem);
+    } else {
+      if (lblRotValue) lblRotValue.textContent = '0°';
+      if (sliderRotation) sliderRotation.value = 0;
+      if (chkSmooth) chkSmooth.checked = false;
+      if (chkBuoy) chkBuoy.checked = false;
+      if (chkAutoRotate) chkAutoRotate.checked = false;
+      syncAutoRotateControls(null);
+    }
+  }
+
+  sim.onSceneChanged = () => {
+    updateSceneList();
+    if (window.AerodynamicSweep && typeof window.AerodynamicSweep.triggerRealtimeUpdate === 'function') {
+      window.AerodynamicSweep.triggerRealtimeUpdate(sim);
     }
   };
+  sim.onElementSelected = (elem) => {
+    updateSceneList();
+    updateSelectedElementPropsUI(elem);
+  };
+
+  sim.onElementRotationUpdate = (elem) => {
+    if (elem) {
+      const curRot = ((Math.round(elem.currentRotationDeg || 0) % 360) + 360) % 360;
+      if (sliderRotation) sliderRotation.value = curRot;
+      if (lblRotValue) lblRotValue.textContent = `${curRot}°`;
+
+      if (!elem.isAutoRotating) {
+        const hasSweptElem = window.AerodynamicSweep && window.AerodynamicSweep.hasExecutedSweepAnimation && window.AerodynamicSweep.getLastSweptElement();
+        if (!hasSweptElem || window.AerodynamicSweep.getLastSweptElement() === elem) {
+          const sweepMinInput = document.getElementById('sweep-min-aoa');
+          if (sweepMinInput) sweepMinInput.value = curRot;
+        }
+        if (window.AerodynamicSweep && window.AerodynamicSweep.isOpen) {
+          window.AerodynamicSweep.triggerRealtimeUpdate(sim);
+        }
+      }
+    }
+  };
+
+  if (btnAlphaSweep) {
+    btnAlphaSweep.addEventListener('click', () => {
+      if (window.AerodynamicSweep && typeof window.AerodynamicSweep.toggleSweepView === 'function') {
+        window.AerodynamicSweep.toggleSweepView(sim);
+      }
+    });
+  }
+
+  if (btnRotateCW) {
+    btnRotateCW.addEventListener('click', () => {
+      const elem = sim.selectedElement;
+      if (elem && elem instanceof HydrodynamicObstacle) {
+        elem.autoRotateDirection = 'cw';
+        btnRotateCW.classList.add('active');
+        if (btnRotateCCW) btnRotateCCW.classList.remove('active');
+      }
+    });
+  }
+
+  if (btnRotateCCW) {
+    btnRotateCCW.addEventListener('click', () => {
+      const elem = sim.selectedElement;
+      if (elem && elem instanceof HydrodynamicObstacle) {
+        elem.autoRotateDirection = 'ccw';
+        btnRotateCCW.classList.add('active');
+        if (btnRotateCW) btnRotateCW.classList.remove('active');
+      }
+    });
+  }
+
+  if (chkBuoy) {
+    chkBuoy.addEventListener('change', (e) => {
+      if (sim.selectedElement && sim.selectedElement instanceof HydrodynamicObstacle) {
+        sim.selectedElement.isBuoy = e.target.checked;
+        if (e.target.checked) {
+          const flow = (sim.getSurroundingFlow && typeof sim.getSurroundingFlow === 'function')
+            ? sim.getSurroundingFlow(sim.selectedElement)
+            : null;
+          if (flow && (Math.abs(flow.u) > 0.01 || Math.abs(flow.v) > 0.01)) {
+            sim.selectedElement.vx = flow.u;
+            sim.selectedElement.vy = flow.v;
+          } else {
+            sim.selectedElement.vx = (sim.isFlowActive) ? ((sim.fluid && sim.fluid.inflowSpeed) || 5.0) : 0.0;
+            sim.selectedElement.vy = 0.0;
+          }
+        } else {
+          sim.selectedElement.vx = 0.0;
+          sim.selectedElement.vy = 0.0;
+        }
+      }
+    });
+  }
+
+  if (chkAutoRotate) {
+    chkAutoRotate.addEventListener('change', (e) => {
+      const elem = sim.selectedElement;
+      if (elem && elem instanceof HydrodynamicObstacle) {
+        elem.isAutoRotating = e.target.checked;
+        if (e.target.checked) {
+          if (!elem.autoRotateRPM) {
+            elem.autoRotateRPM = 5;
+          }
+          if (!elem.autoRotateDirection) {
+            elem.autoRotateDirection = 'cw';
+          }
+          syncAutoRotateControls(elem);
+        } else {
+          // Desactivación del giro autónomo:
+          elem.angularVelocity = 0.0;
+
+          // Mover exactamente un píxel a la derecha para eliminar residuos de giro
+          const onePixelWorld = 1.0 / Math.max(sim.zoomLevel, 1.0);
+          elem.translate(onePixelWorld, 0.0);
+
+          // Re-rasterizar de inmediato en los motores físicos para limpiar el campo de velocidades sólidas
+          sim.fluid.rasterizeObstacles(sim.elements);
+          if (sim.isLBMMode) {
+            sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
+          }
+
+          syncAutoRotateControls(elem);
+        }
+      }
+    });
+  }
+
+  if (sliderAutoRotateSpeed) {
+    sliderAutoRotateSpeed.addEventListener('input', (e) => {
+      const val1 = parseInt(e.target.value, 10);
+      const val2 = sliderAutoRotateHigh ? parseInt(sliderAutoRotateHigh.value, 10) : 200;
+      const elem = sim.selectedElement;
+
+      if (val1 < 200) {
+        if (sliderAutoRotateHigh) {
+          sliderAutoRotateHigh.disabled = true;
+        }
+        if (lblAutoRotateHighVal) {
+          lblAutoRotateHighVal.style.color = '#64748b';
+        }
+        if (lblAutoRotateSpeedVal) lblAutoRotateSpeedVal.textContent = `${val1} RPM`;
+        if (elem && elem instanceof HydrodynamicObstacle) {
+          elem.autoRotateRPM = val1;
+        }
+      } else {
+        // val1 === 200: habilitar slider de alta velocidad
+        if (sliderAutoRotateHigh) {
+          sliderAutoRotateHigh.disabled = false;
+        }
+        if (lblAutoRotateHighVal) {
+          lblAutoRotateHighVal.style.color = 'var(--accent)';
+          lblAutoRotateHighVal.textContent = `${val2} RPM`;
+        }
+        const activeRPM = val2;
+        if (lblAutoRotateSpeedVal) lblAutoRotateSpeedVal.textContent = `${activeRPM} RPM`;
+        if (elem && elem instanceof HydrodynamicObstacle) {
+          elem.autoRotateRPM = activeRPM;
+        }
+      }
+    });
+  }
+
+  if (sliderAutoRotateHigh) {
+    sliderAutoRotateHigh.addEventListener('input', (e) => {
+      const val2 = parseInt(e.target.value, 10);
+      if (lblAutoRotateHighVal) lblAutoRotateHighVal.textContent = `${val2} RPM`;
+      const val1 = sliderAutoRotateSpeed ? parseInt(sliderAutoRotateSpeed.value, 10) : 5;
+      if (val1 === 200) {
+        if (lblAutoRotateSpeedVal) lblAutoRotateSpeedVal.textContent = `${val2} RPM`;
+        if (sim.selectedElement && sim.selectedElement instanceof HydrodynamicObstacle) {
+          sim.selectedElement.autoRotateRPM = val2;
+        }
+      }
+    });
+  }
 
   function updateSceneList() {
     if (!listSceneElements) return;
     listSceneElements.innerHTML = '';
+
+    if (!sim.elements || sim.elements.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'scene-list-empty';
+      li.textContent = (window.currentLang === 'es') ? 'Sin obstáculos en la escena' : 'No obstacles in scene';
+      listSceneElements.appendChild(li);
+      return;
+    }
 
     sim.elements.forEach((elem) => {
       const li = document.createElement('li');
@@ -820,19 +1358,41 @@ document.addEventListener('DOMContentLoaded', () => {
         icon = '🎯';
       }
 
+      const toggleTitle = (window.currentLang === 'es') ? 'Activar / Ocultar obstáculo' : 'Toggle visibility';
+      const deleteTitle = (window.currentLang === 'es') ? 'Eliminar obstáculo' : 'Delete obstacle';
+
       li.innerHTML = `
         <span class="scene-item-icon">${icon}</span>
         <span class="scene-item-name" style="flex:1;">${elem.name}</span>
-        <button type="button" class="btn-item-toggle" title="Activar/Desactivar" style="background:none; border:none; color:${elem.isActive ? '#00ffcc' : '#64748b'}; cursor:pointer;">
-          ${elem.isActive ? '👁️' : '👁️‍🗨️'}
-        </button>
+        <div class="scene-item-actions">
+          <button type="button" class="btn-item-toggle" title="${toggleTitle}" style="color:${elem.isActive ? '#00ffcc' : '#64748b'};">
+            ${elem.isActive ? '👁️' : '👁️‍🗨️'}
+          </button>
+          <button type="button" class="btn-item-delete" title="${deleteTitle}">
+            🗑️
+          </button>
+        </div>
       `;
 
       li.addEventListener('click', (e) => {
         if (e.target.closest('.btn-item-toggle')) {
+          e.stopPropagation();
           elem.isActive = !elem.isActive;
           sim.fluid.rasterizeObstacles(sim.elements);
+          if (sim.isLBMMode && sim.lbm) {
+            sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
+          }
           updateSceneList();
+          return;
+        }
+        if (e.target.closest('.btn-item-delete')) {
+          e.stopPropagation();
+          sim.removeElement(elem);
+          if (sim.selectedElement === elem) {
+            sim.selectElement(null);
+          }
+          updateSceneList();
+          showToast(window.currentLang === 'es' ? "Obstáculo eliminado." : "Obstacle deleted.", "info");
           return;
         }
         sim.selectElement(elem);
@@ -842,10 +1402,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (btnCopyElement) {
+    btnCopyElement.addEventListener('click', () => {
+      copySelectedElement();
+    });
+  }
+
+  if (btnPasteElement) {
+    btnPasteElement.addEventListener('click', () => {
+      pasteElement();
+    });
+  }
+
   if (btnDeleteElement) {
     btnDeleteElement.addEventListener('click', () => {
       if (sim.selectedElement) {
         sim.removeElement(sim.selectedElement);
+        sim.selectElement(null);
         showToast("Obstáculo eliminado.", "info");
       }
     });
@@ -859,30 +1432,73 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- GUARDAR Y ABRIR ESCENA JSON ---
+  // --- GUARDAR Y ABRIR ESCENA JSON (FIDELIDAD 100% DE PARÁMETROS, FIGURAS E IMÁGENES) ---
   if (btnSaveScene) {
     btnSaveScene.addEventListener('click', () => {
       const data = {
-        inflowSpeed: sim.fluid.inflowSpeed,
-        viscosity: sim.fluid.viscosity,
-        density: sim.fluid.density,
-        closedWalls: sim.fluid.closedWalls,
+        version: "2026.2",
+        timestamp: new Date().toISOString(),
+        solver: sim.isLBMMode ? 'lbm' : 'ns',
+        visMode: sim.visMode,
+        inflowSpeed: sim.fluid ? sim.fluid.inflowSpeed : 5.0,
+        inflowAngle: sim.fluid ? (sim.fluid.inflowAngle || 0.0) : 0.0,
+        viscosity: sim.fluid ? sim.fluid.viscosity : 0.0001,
+        density: sim.fluid ? sim.fluid.density : 1.225,
+        closedWalls: sim.fluid ? Boolean(sim.fluid.closedWalls) : false,
+        flowRegime: sim.fluid ? (sim.fluid.flowRegime || 'laminar') : 'laminar',
+        turbulenceIntensity: sim.fluid ? (sim.fluid.turbulenceIntensity || 0.0) : 0.0,
+        isFlowActive: sim.fluid ? Boolean(sim.fluid.isFlowActive) : true,
+        isPaused: Boolean(sim.isPaused),
+        showParticles: sim.showParticles !== false,
+        showForces: Boolean(sim.showForces),
+        showGrid: Boolean(sim.showGrid),
+        zoomLevel: sim.zoomLevel || 40.0,
+        panOffset: sim.panOffset ? { x: sim.panOffset.x, y: sim.panOffset.y } : { x: 0, y: 0 },
         elements: sim.elements.map(e => {
           if (e instanceof HydrodynamicObstacle) {
+            let croppedDataUrl = null;
+            if (e.imageCroppedCanvas) {
+              try {
+                croppedDataUrl = e.imageCroppedCanvas.toDataURL('image/png');
+              } catch (cropErr) {
+                console.warn("[SaveScene] No se pudo exportar lienzo recortado:", cropErr);
+              }
+            } else if (e.name && (e.name === 'Bólido' || e.name.startsWith('Bólido')) && window.BOLIDO_IMAGE_SRC) {
+              croppedDataUrl = window.BOLIDO_IMAGE_SRC;
+            }
+
             return {
               type: 'HydrodynamicObstacle',
               name: e.name,
-              controlPoints: e.controlPoints,
-              isSmooth: e.isSmooth,
-              rotationDeg: e.currentRotationDeg,
-              loops: e.loops || null,
-              isImportedImage: Boolean(e.isImportedImage)
+              controlPoints: e.controlPoints ? e.controlPoints.map(p => [parseFloat(p[0]), parseFloat(p[1])]) : [],
+              loops: e.loops ? e.loops.map(loop => loop.map(p => [parseFloat(p[0]), parseFloat(p[1])])) : null,
+              isSmooth: Boolean(e.isSmooth),
+              rotationDeg: e.currentRotationDeg || 0.0,
+              color: e.color || '#38bdf8',
+              fillColor: e.fillColor || 'rgba(23, 37, 84, 0.85)',
+              isSolid: (e.isSolid !== undefined) ? Boolean(e.isSolid) : true,
+              isBuoy: Boolean(e.isBuoy),
+              isAutoRotating: Boolean(e.isAutoRotating),
+              autoRotateRPM: e.autoRotateRPM || 5,
+              autoRotateDirection: e.autoRotateDirection || 'cw',
+              isThruster: Boolean(e.isThruster),
+              thrustSpeed: (e.thrustSpeed !== undefined) ? parseFloat(e.thrustSpeed) : 5.0,
+              smokeMode: e.smokeMode || 'vapor',
+              isImportedImage: Boolean(e.isImportedImage),
+              imageWorldWidth: e.imageWorldWidth || null,
+              imageWorldHeight: e.imageWorldHeight || null,
+              imageCenter: e.imageCenter ? [parseFloat(e.imageCenter[0]), parseFloat(e.imageCenter[1])] : null,
+              imageMaskW: e.imageMaskW || null,
+              imageMaskH: e.imageMaskH || null,
+              imageCroppedDataUrl: croppedDataUrl
             };
           } else if (e instanceof FlowProbe) {
             return {
               type: 'FlowProbe',
               name: e.name,
-              x: e.x,
-              y: e.y
+              x: parseFloat(e.x),
+              y: parseFloat(e.y),
+              radius: parseFloat(e.radius || 0.35)
             };
           }
           return null;
@@ -893,10 +1509,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tunel_fluidos_${Date.now()}.json`;
+      a.download = `escena_tunel_fluidos_${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast("Configuración del túnel guardada en archivo.", "success");
+      showToast("Configuración completa del túnel y figuras guardada en archivo JSON.", "success");
     });
   }
 
@@ -906,29 +1522,196 @@ document.addEventListener('DOMContentLoaded', () => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         try {
           const data = JSON.parse(event.target.result);
           sim.clearScene();
-          if (data.inflowSpeed) sim.fluid.inflowSpeed = data.inflowSpeed;
-          if (data.viscosity) sim.fluid.viscosity = data.viscosity;
-          if (data.density) sim.fluid.density = data.density;
-          if (data.closedWalls !== undefined) sim.fluid.closedWalls = data.closedWalls;
 
-          if (data.elements && Array.isArray(data.elements)) {
-            data.elements.forEach(item => {
-              if (item.type === 'HydrodynamicObstacle') {
-                const obs = new HydrodynamicObstacle(item.controlPoints, item.name, item.isSmooth, item.loops || null, Boolean(item.isImportedImage));
-                obs.currentRotationDeg = item.rotationDeg || 0;
-                sim.addElement(obs);
-              } else if (item.type === 'FlowProbe') {
-                sim.addElement(new FlowProbe(item.x, item.y, item.name));
-              }
-            });
+          // 1. Restaurar propiedades globales del túnel, fluido y simulación
+          if (data.inflowSpeed !== undefined) {
+            const spd = parseFloat(data.inflowSpeed);
+            if (sim.fluid) sim.fluid.inflowSpeed = spd;
+            if (sliderSpeed) sliderSpeed.value = spd;
+            if (lblSpeedValue) lblSpeedValue.textContent = `${spd.toFixed(1)} m/s`;
+            if (sim.lbm) {
+              const norm = Math.min(1.0, Math.max(0.0, (spd - 0.5) / 11.5));
+              sim.lbm.speed = 0.060 + norm * 0.055;
+              sim.lbm.stepsPerFrame = Math.round(8 + norm * 20);
+            }
           }
-          showToast("Túnel cargado correctamente.", "success");
+
+          if (data.inflowAngle !== undefined || data.flowAngle !== undefined) {
+            const angRad = parseFloat(data.inflowAngle !== undefined ? data.inflowAngle : data.flowAngle);
+            if (sim.fluid) sim.fluid.inflowAngle = angRad;
+            if (sim.lbm) sim.lbm.inflowAngle = angRad;
+            const deg = Math.round((angRad * 180.0) / Math.PI);
+            if (sliderAngle) sliderAngle.value = deg;
+            if (lblAngleValue) lblAngleValue.textContent = `${deg}°`;
+          }
+
+          if (data.viscosity !== undefined) {
+            const nu = parseFloat(data.viscosity);
+            if (sim.fluid) sim.fluid.viscosity = nu;
+            const logVal = 1 + 99.0 * (Math.log(Math.max(1e-7, nu) / 0.000005) / Math.log(1600));
+            const clampedSlider = Math.max(1, Math.min(100, Math.round(logVal)));
+            if (sliderViscosity) sliderViscosity.value = clampedSlider;
+            if (sim.lbm) {
+              sim.lbm.viscosity = 0.018 + (clampedSlider / 100.0) * 0.052;
+              sim.lbm.contrast = clampedSlider > 75 ? 0.6 : 1.0;
+            }
+            updateViscosityDisplay();
+          }
+
+          if (data.density !== undefined) {
+            setFluidDensity(data.density);
+          }
+
+          if (data.closedWalls !== undefined) {
+            if (sim.fluid) sim.fluid.closedWalls = Boolean(data.closedWalls);
+            if (chkClosedWalls) chkClosedWalls.checked = Boolean(data.closedWalls);
+          }
+
+          if (data.flowRegime || data.turbulenceIntensity !== undefined) {
+            const reg = data.flowRegime || 'laminar';
+            const intens = (data.turbulenceIntensity !== undefined) ? parseFloat(data.turbulenceIntensity) : 0.0;
+            if (sim.fluid) sim.fluid.setFlowRegime(reg, intens);
+            updateRegimeUI(reg, intens);
+          }
+
+          if (data.isFlowActive !== undefined) {
+            const active = Boolean(data.isFlowActive);
+            sim.setFlowActive(active);
+            updateFlowUI(active);
+          }
+
+          if (data.isPaused !== undefined) {
+            sim.isPaused = Boolean(data.isPaused);
+            updatePlayPauseUI(sim.isPaused);
+          }
+
+          if (data.showParticles !== undefined) {
+            sim.showParticles = Boolean(data.showParticles);
+            if (chkShowParticles) chkShowParticles.checked = Boolean(data.showParticles);
+          }
+
+          if (data.showForces !== undefined) {
+            sim.showForces = Boolean(data.showForces);
+            if (chkShowForces) chkShowForces.checked = Boolean(data.showForces);
+          }
+
+          if (data.showGrid !== undefined) {
+            sim.showGrid = Boolean(data.showGrid);
+            if (chkGrid) chkGrid.checked = Boolean(data.showGrid);
+          }
+
+          if (data.visMode) {
+            applyVisModeSelection(data.visMode, false);
+          }
+
+          if (data.zoomLevel !== undefined) {
+            sim.zoomLevel = parseFloat(data.zoomLevel);
+          }
+          if (data.panOffset && typeof data.panOffset.x === 'number') {
+            sim.panOffset.x = data.panOffset.x;
+            sim.panOffset.y = data.panOffset.y;
+            if (sim.clampPanOffset) sim.clampPanOffset();
+          }
+
+          // 2. Restaurar Elementos y Figuras (con soporte asíncrono para imágenes exactas)
+          if (data.elements && Array.isArray(data.elements)) {
+            for (const item of data.elements) {
+              if (item.type === 'HydrodynamicObstacle') {
+                const cPoints = item.controlPoints ? item.controlPoints.map(p => [parseFloat(p[0]), parseFloat(p[1])]) : [];
+                const loops = item.loops ? item.loops.map(l => l.map(p => [parseFloat(p[0]), parseFloat(p[1])])) : null;
+                const isImported = Boolean(item.isImportedImage);
+
+                const obs = new HydrodynamicObstacle(cPoints, item.name || "Figura", Boolean(item.isSmooth), loops, isImported);
+                obs.currentRotationDeg = item.rotationDeg || 0.0;
+                obs.color = item.color || '#38bdf8';
+                obs.fillColor = item.fillColor || 'rgba(23, 37, 84, 0.85)';
+                obs.isSolid = (item.isSolid !== undefined) ? Boolean(item.isSolid) : true;
+                obs.isBuoy = Boolean(item.isBuoy);
+                obs.isAutoRotating = Boolean(item.isAutoRotating);
+                obs.autoRotateRPM = item.autoRotateRPM || 5;
+                obs.autoRotateDirection = item.autoRotateDirection || 'cw';
+                obs.isThruster = Boolean(item.isThruster);
+                obs.thrustSpeed = (item.thrustSpeed !== undefined) ? parseFloat(item.thrustSpeed) : 5.0;
+                obs.smokeMode = item.smokeMode || 'vapor';
+
+                if (isImported) {
+                  obs.imageWorldWidth = item.imageWorldWidth || (loops && loops[0] ? 3.8 : 4.0);
+                  obs.imageWorldHeight = item.imageWorldHeight || 1.35;
+                  obs.imageCenter = item.imageCenter ? [parseFloat(item.imageCenter[0]), parseFloat(item.imageCenter[1])] : obs.getCentroid();
+
+                  if (item.imageCroppedDataUrl) {
+                    await new Promise((resolve) => {
+                      const img = new Image();
+                      img.onload = () => {
+                        try {
+                          const traced = ImageContourTracer.traceImage(
+                            img,
+                            item.name || 'Figura',
+                            obs.imageWorldWidth,
+                            obs.imageCenter
+                          );
+                          obs.imageThemedCanvases = traced.imageThemedCanvases;
+                          obs.imageCroppedCanvas = traced.imageCroppedCanvas;
+                          obs.imageMask = traced.imageMask;
+                          obs.imageMaskW = traced.imageMaskW;
+                          obs.imageMaskH = traced.imageMaskH;
+
+                          // PRESERVAR LOS LOOPS Y CONTROLPOINTS EXACTOS DEL JSON (si el usuario los deformó o escaló)
+                          if (loops && loops.length > 0) {
+                            obs.loops = loops;
+                            obs.controlPoints = cPoints.length > 0 ? cPoints : loops[0];
+                          }
+                        } catch (errTrace) {
+                          console.warn("[OpenScene] Error retracing restored image:", errTrace);
+                        }
+                        resolve();
+                      };
+                      img.onerror = () => {
+                        console.warn("[OpenScene] No se pudo cargar imagen desde imageCroppedDataUrl");
+                        resolve();
+                      };
+                      img.src = item.imageCroppedDataUrl;
+                    });
+                  } else if (item.name && (item.name === 'Bólido' || item.name.startsWith('Bólido')) && HydrodynamicObstacle._bolidoTemplate) {
+                    const tmpl = HydrodynamicObstacle._bolidoTemplate;
+                    obs.imageThemedCanvases = tmpl.imageThemedCanvases;
+                    obs.imageCroppedCanvas = tmpl.imageCroppedCanvas;
+                    obs.imageMask = tmpl.imageMask;
+                    obs.imageMaskW = tmpl.imageMaskW;
+                    obs.imageMaskH = tmpl.imageMaskH;
+                  }
+                }
+
+                obs.invalidateCache();
+                sim.addElement(obs, false);
+              } else if (item.type === 'FlowProbe') {
+                const probe = new FlowProbe(item.x, item.y, item.name || "Sensor");
+                if (item.radius !== undefined) probe.radius = parseFloat(item.radius);
+                sim.addElement(probe, false);
+              }
+            }
+          }
+
+          sim.selectElement(sim.elements.length > 0 ? sim.elements[0] : null);
+          if (sim.fluid) sim.fluid.rasterizeObstacles(sim.elements);
+          if (sim.isLBMMode && sim.lbm) {
+            sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
+          }
+          updateSceneList();
+          if (sim.selectedElement) {
+            updateSelectedElementPropsUI(sim.selectedElement);
+          } else {
+            updateSelectedElementPropsUI(null);
+          }
+          sim.render();
+          showToast("Túnel cargado correctamente con todos sus parámetros e imágenes exactas.", "success");
         } catch (err) {
-          showToast("Error al parsear archivo JSON.", "error");
+          console.error("[OpenScene] Error loading scene:", err);
+          showToast("Error al parsear archivo JSON: " + err.message, "error");
         }
       };
       reader.readAsText(file);
@@ -954,6 +1737,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const obs = new HydrodynamicObstacle(result.points, result.name, false, result.loops, true);
         obs.isImportedImage = true;
+        obs.imageThemedCanvases = result.imageThemedCanvases;
+        obs.imageCroppedCanvas = result.imageCroppedCanvas;
+        obs.imageWorldWidth = result.imageWorldWidth;
+        obs.imageWorldHeight = result.imageWorldHeight;
+        obs.imageCenter = [result.imageCenter[0], result.imageCenter[1]];
+        obs.imageMask = result.imageMask;
+        obs.imageMaskW = result.imageMaskW;
+        obs.imageMaskH = result.imageMaskH;
         obs.color = '#38bdf8';
         sim.addElement(obs);
         sim.selectElement(obs);
@@ -981,12 +1772,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- DEMOS FÍSICAS DE FLUIDOS ---
+  const btnDemosPrev = document.getElementById('btn-demos-prev');
+  const btnDemosNext = document.getElementById('btn-demos-next');
+  let currentDemoId = '1';
+
+  function cycleDemo(delta) {
+    if (!cbDemos) return;
+    const valid = Array.from(cbDemos.options).filter(o => o.value);
+    if (valid.length === 0) return;
+    let idx = valid.findIndex(o => o.value === (cbDemos.value || currentDemoId));
+    if (idx === -1) idx = 0;
+    let nextIdx = (idx + delta + valid.length) % valid.length;
+    const demoId = valid[nextIdx].value;
+    currentDemoId = demoId;
+    cbDemos.value = demoId;
+    loadPhysicsDemo(demoId);
+  }
+
+  if (btnDemosPrev) btnDemosPrev.addEventListener('click', () => cycleDemo(-1));
+  if (btnDemosNext) btnDemosNext.addEventListener('click', () => cycleDemo(1));
+
   if (cbDemos) {
     cbDemos.addEventListener('change', (e) => {
       const demoId = e.target.value;
       if (!demoId) return;
+      currentDemoId = demoId;
       loadPhysicsDemo(demoId);
-      cbDemos.value = '';
     });
   }
 
@@ -1174,15 +1985,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    let currentModeKey = 'schroeder_curl';
-    if (sim.visMode === VisMode.SCHROEDER_CURL) currentModeKey = 'schroeder_curl';
-    else if (sim.visMode === VisMode.SCHROEDER_FLOWLINES) currentModeKey = 'schroeder_flowlines';
-    else if (sim.visMode === VisMode.SCHROEDER_SPEED) currentModeKey = 'schroeder_speed';
-    else if (sim.visMode === VisMode.SMOKE) currentModeKey = 'smoke';
-    else if (sim.visMode === VisMode.PRESSURE) currentModeKey = 'pressure';
-    else if (sim.visMode === VisMode.VELOCITY) currentModeKey = 'velocity';
+    let currentModeKey = 'smoke';
+    if (sim.visMode === VisMode.SMOKE) currentModeKey = 'smoke';
     else if (sim.visMode === VisMode.VORTICITY) currentModeKey = 'vorticity';
+    else if (sim.visMode === VisMode.CFD_DES_LES) currentModeKey = 'cfd_des_les';
+    else if (sim.visMode === VisMode.PRESSURE) currentModeKey = 'pressure';
+    else if (sim.visMode === VisMode.CFD_COMBUSTION) currentModeKey = 'cfd_combustion';
+    else if (sim.visMode === VisMode.VELOCITY) currentModeKey = 'velocity';
+    else if (sim.visMode === VisMode.SCHROEDER_CURL) currentModeKey = 'schroeder_curl';
+    else if (sim.visMode === VisMode.SCHROEDER_SPEED) currentModeKey = 'schroeder_speed';
     else if (sim.visMode === VisMode.PARTICLES) currentModeKey = 'particles';
+    else if (sim.visMode === VisMode.SCHROEDER_FLOWLINES) currentModeKey = 'schroeder_flowlines';
     applyVisModeSelection(currentModeKey, false);
   }
 
@@ -1197,10 +2010,65 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+    // Undo: Ctrl + Z / Cmd + Z (y Redo con Shift)
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault();
+      if (e.shiftKey) {
+        handleRedo();
+      } else {
+        handleUndo();
+      }
+      return;
+    }
+
+    // Redo: Ctrl + Y / Cmd + Y
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+
+    // Copiar: Ctrl + C / Cmd + C
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+      if (sim.selectedElement) {
+        e.preventDefault();
+        copySelectedElement();
+      }
+      return;
+    }
+
+    // Pegar: Ctrl + V / Cmd + V
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+      if (elementClipboard) {
+        e.preventDefault();
+        pasteElement();
+      }
+      return;
+    }
+
+    // Duplicar directo: Ctrl + D / Cmd + D
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+      if (sim.selectedElement) {
+        e.preventDefault();
+        duplicateSelectedElement();
+      }
+      return;
+    }
+
     if (e.key === 'Escape') {
       if (aboutModal) aboutModal.style.display = 'none';
       closeDonateModal();
       closeReportDonateModal();
+      if (sim.mode === CanvasMode.DRAW_POLYGON) {
+        if (sim.drawPoints.length >= 3) {
+          sim.finishPolygon();
+        } else {
+          sim.drawPoints = [];
+          sim.setMode(CanvasMode.SELECT);
+        }
+      } else if (sim.mode === CanvasMode.NODE_EDIT || sim.mode === CanvasMode.PROBE || sim.mode === CanvasMode.DRAW_FREEHAND || sim.mode === CanvasMode.CLEAN) {
+        sim.setMode(CanvasMode.SELECT);
+      }
     }
 
     if (e.code === 'Space') {
@@ -1214,17 +2082,23 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("Obstáculo eliminado.", "info");
       }
     } else if (e.key === '1') {
-      applyVisModeSelection('schroeder_curl');
-    } else if (e.key === '2') {
-      applyVisModeSelection('schroeder_flowlines');
-    } else if (e.key === '3') {
       applyVisModeSelection('smoke');
+    } else if (e.key === '2') {
+      applyVisModeSelection('vorticity');
+    } else if (e.key === '3') {
+      applyVisModeSelection('cfd_des_les');
     } else if (e.key === '4') {
       applyVisModeSelection('pressure');
     } else if (e.key === '5') {
-      applyVisModeSelection('velocity');
+      applyVisModeSelection('cfd_combustion');
     } else if (e.key === '6') {
-      applyVisModeSelection('vorticity');
+      applyVisModeSelection('velocity');
+    } else if (e.key === '7') {
+      applyVisModeSelection('schroeder_curl');
+    } else if (e.key === '8') {
+      applyVisModeSelection('schroeder_speed');
+    } else if (e.key === '9') {
+      applyVisModeSelection('particles');
     }
   });
 
@@ -1269,18 +2143,111 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnOpenDonate) btnOpenDonate.addEventListener('click', openDonateModal);
   if (btnCloseDonate) btnCloseDonate.addEventListener('click', closeDonateModal);
 
-  // Control del Modal de Invitación a Donar al Generar Informe
-  function openReportDonateModal() {
+  let isDownloadingReport = false;
+  let isDownloadingVideo = false;
+
+  // Control del Modal de Invitación a Donar al Generar Informe o Grabar Video
+  function openReportDonateModal(isVideo = false) {
     const modal = document.getElementById('report-donate-modal');
     if (modal) {
       const activeLang = window.currentLang || localStorage.getItem('fluid_sim_lang') || 'es';
+      const isEs = activeLang === 'es';
       if (typeof setLanguage === 'function') {
         setLanguage(activeLang);
       }
+
+      const btnVideo = document.getElementById('btn-download-report-video');
+      const btnJpg = document.getElementById('btn-download-report-jpg');
+      const btnJpgNoMeta = document.getElementById('btn-download-report-jpg-no-meta');
+      const btnCsvModal = document.getElementById('btn-download-polar-csv-modal');
+      const btnExcelModal = document.getElementById('btn-download-polar-excel-modal');
+      const readyTag = document.getElementById('lbl-report-ready-tag');
+      const downloadDesc = document.getElementById('lbl-report-download-desc');
+      const modalBadge = document.querySelector('#report-donate-modal .badge-license');
+
+      if (isVideo) {
+        if (btnVideo) btnVideo.style.display = 'inline-flex';
+        if (btnJpg) btnJpg.style.display = 'none';
+        if (btnJpgNoMeta) btnJpgNoMeta.style.display = 'none';
+        if (btnCsvModal) btnCsvModal.style.display = 'none';
+        if (btnExcelModal) btnExcelModal.style.display = 'none';
+
+        const videoLayout = (window.FluidVideoRecorder && typeof window.FluidVideoRecorder.getVideoLayout === 'function')
+          ? window.FluidVideoRecorder.getVideoLayout()
+          : 'with_meta';
+        const isCleanVideo = (videoLayout === 'no_meta');
+
+        const lblVideo = document.getElementById('lbl-download-report-video');
+        if (lblVideo) {
+          if (isCleanVideo) {
+            lblVideo.textContent = isEs ? "Descargar video sin metadatos" : "Download Video without Metadata";
+          } else {
+            lblVideo.textContent = isEs ? "Descargar video con metadatos" : "Download Video with Metadata";
+          }
+        }
+        if (readyTag) {
+          readyTag.textContent = isEs
+            ? (isCleanVideo ? "Video Limpio Ultra HD (1920×1080) Listo" : "Video Técnico Ultra HD (1920×1080) Listo")
+            : (isCleanVideo ? "Clean Ultra HD Video (1920×1080) Ready" : "Technical Ultra HD Video (1920×1080) Ready");
+        }
+        if (downloadDesc) {
+          downloadDesc.textContent = isEs
+            ? (isCleanVideo ? "Descarga tu video en alta definición con encuadre limpio (simulación, logo, escala y referencia) o apoya el proyecto" : "Descarga tu video técnico en alta definición con telemetría animada o apoya el proyecto")
+            : (isCleanVideo ? "Download your clean high-resolution video (simulation, logo, scale, reference) or support the project" : "Download your animated technical video in high resolution or support the project");
+        }
+        if (modalBadge) modalBadge.textContent = isEs ? "VIDEO LISTO • APOYO OPCIONAL" : "VIDEO READY • OPTIONAL SUPPORT";
+      } else {
+        if (btnVideo) btnVideo.style.display = 'none';
+        if (btnJpg) btnJpg.style.display = 'inline-flex';
+        if (btnJpgNoMeta) btnJpgNoMeta.style.display = 'inline-flex';
+        if (btnCsvModal) btnCsvModal.style.display = 'inline-flex';
+        if (btnExcelModal) btnExcelModal.style.display = 'inline-flex';
+        if (readyTag) readyTag.textContent = isEs ? "Captura Ultra HD (2560×1440) Lista" : "Ultra HD Capture (2560×1440) Ready";
+        if (downloadDesc) downloadDesc.textContent = isEs ? "Obtén el informe en JPG (con o sin metadatos) o exporta el dataset científico completo" : "Get the JPG report (with or without metadata) or export the scientific dataset";
+        if (modalBadge) modalBadge.textContent = isEs ? "INFORME LISTO • APOYO OPCIONAL" : "REPORT READY • OPTIONAL SUPPORT";
+        updateModalSweepButtonsState();
+      }
+
       modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
   }
+
+  function updateModalSweepButtonsState() {
+    const activeLang = window.currentLang || localStorage.getItem('fluid_sim_lang') || 'es';
+    const isEs = activeLang === 'es';
+    const btnCsvModal = document.getElementById('btn-download-polar-csv-modal');
+    const btnExcelModal = document.getElementById('btn-download-polar-excel-modal');
+    if (!btnCsvModal && !btnExcelModal) return;
+
+    const hasSweep = Boolean(
+      window.AerodynamicSweep &&
+      (typeof window.AerodynamicSweep.hasSweepCompleted === 'function'
+        ? window.AerodynamicSweep.hasSweepCompleted(sim)
+        : (window.AerodynamicSweep.hasExecutedSweepAnimation && window.AerodynamicSweep.getLastSweptElement()))
+    );
+
+    const tooltipMsg = (typeof window.t === 'function' && window.t('sweepRequiredTooltip'))
+      ? window.t('sweepRequiredTooltip')
+      : (isEs
+          ? '⚠️ Primero debes realizar el barrido aerodinámico (α-Sweep) para generar estos datos.'
+          : '⚠️ You must perform the aerodynamic sweep (α-Sweep) first to generate this data.');
+
+    [btnCsvModal, btnExcelModal].forEach(btn => {
+      if (!btn) return;
+      if (!hasSweep) {
+        btn.classList.add('has-sweep-disabled-tooltip');
+        btn.setAttribute('data-sweep-tooltip', tooltipMsg);
+        btn.setAttribute('aria-disabled', 'true');
+      } else {
+        btn.classList.remove('has-sweep-disabled-tooltip');
+        btn.classList.remove('tooltip-flash');
+        btn.removeAttribute('data-sweep-tooltip');
+        btn.removeAttribute('aria-disabled');
+      }
+    });
+  }
+  window.updateModalSweepButtonsState = updateModalSweepButtonsState;
 
   function closeReportDonateModal() {
     const modal = document.getElementById('report-donate-modal');
@@ -1299,14 +2266,85 @@ document.addEventListener('DOMContentLoaded', () => {
   function downloadReportFromModal() {
     closeReportDonateModal();
     if (typeof window.generateAerodynamicReport === 'function') {
-      window.generateAerodynamicReport(sim);
+      window.generateAerodynamicReport(sim, 'jpeg');
     }
+  }
+
+  function downloadReportJpgFromModal() {
+    if (isDownloadingReport) return;
+    isDownloadingReport = true;
+    setTimeout(() => { isDownloadingReport = false; }, 1500);
+
+    closeReportDonateModal();
+    const activeSim = sim || window.sim;
+    if (typeof window.generateAerodynamicReport === 'function') {
+      window.generateAerodynamicReport(activeSim, 'jpeg');
+    }
+  }
+
+  function downloadReportJpgNoMetaFromModal() {
+    if (isDownloadingReport) return;
+    isDownloadingReport = true;
+    setTimeout(() => { isDownloadingReport = false; }, 1500);
+
+    closeReportDonateModal();
+    const activeSim = sim || window.sim;
+    if (typeof window.generateAerodynamicReport === 'function') {
+      window.generateAerodynamicReport(activeSim, 'jpeg', { layout: 'no_meta' });
+    }
+  }
+
+  function downloadReportVideoFromModal() {
+    if (isDownloadingVideo) return;
+    isDownloadingVideo = true;
+    setTimeout(() => { isDownloadingVideo = false; }, 1500);
+
+    closeReportDonateModal();
+    if (window.FluidVideoRecorder && typeof window.FluidVideoRecorder.downloadLastVideo === 'function') {
+      window.FluidVideoRecorder.downloadLastVideo();
+    }
+  }
+
+  function downloadCsvFromModal() {
+    closeReportDonateModal();
+    const activeSim = sim || window.sim;
+    if (typeof window.generateSimulationCSV === 'function') {
+      window.generateSimulationCSV(activeSim);
+    }
+  }
+
+  const btnDownloadReportJpgElem = document.getElementById('btn-download-report-jpg');
+  if (btnDownloadReportJpgElem) {
+    btnDownloadReportJpgElem.addEventListener('click', downloadReportJpgFromModal);
+  }
+
+  const btnDownloadReportJpgNoMetaElem = document.getElementById('btn-download-report-jpg-no-meta');
+  if (btnDownloadReportJpgNoMetaElem) {
+    btnDownloadReportJpgNoMetaElem.addEventListener('click', downloadReportJpgNoMetaFromModal);
+  }
+
+  const btnDownloadReportVideoElem = document.getElementById('btn-download-report-video');
+  if (btnDownloadReportVideoElem) {
+    btnDownloadReportVideoElem.addEventListener('click', downloadReportVideoFromModal);
+  }
+
+  // Botón "Grabar" en el encabezado superior
+  const btnOpenRecord = document.getElementById('btn-open-record');
+  if (btnOpenRecord) {
+    btnOpenRecord.addEventListener('click', () => {
+      if (window.FluidVideoRecorder && typeof window.FluidVideoRecorder.openRecordModal === 'function') {
+        window.FluidVideoRecorder.openRecordModal();
+      }
+    });
   }
 
   window.openReportDonateModal = openReportDonateModal;
   window.closeReportDonateModal = closeReportDonateModal;
   window.closeReportDonateModalOnBackdrop = closeReportDonateModalOnBackdrop;
   window.downloadReportFromModal = downloadReportFromModal;
+  window.downloadReportJpgFromModal = downloadReportJpgFromModal;
+  window.downloadReportJpgNoMetaFromModal = downloadReportJpgNoMetaFromModal;
+  window.downloadCsvFromModal = downloadCsvFromModal;
 
   function switchCryptoTab(crypto, modalId) {
     let modal = null;
@@ -1494,34 +2532,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   checkOrientationLock();
 
-  // --- CONTROLES DE PANELES EN MÓVILES Y PESTAÑAS LATERALES DESPLEGABLES ---
+  // --- CONTROLES DE PANEL EN MÓVILES Y PESTAÑA LATERAL DESPLEGABLE ---
   const btnToggleScene = document.getElementById('btn-toggle-scene');
-  const btnToggleProps = document.getElementById('btn-toggle-props');
   const sideTabLeft = document.getElementById('side-tab-left');
-  const sideTabRight = document.getElementById('side-tab-right');
   const arrowTabLeft = document.getElementById('arrow-tab-left');
-  const arrowTabRight = document.getElementById('arrow-tab-right');
   const btnCloseSceneDrawer = document.getElementById('btn-close-scene-drawer');
-  const btnClosePropsDrawer = document.getElementById('btn-close-props-drawer');
   const panelLeft = document.getElementById('panel-left');
-  const panelRight = document.getElementById('panel-right');
 
   function updateSideTabStates() {
     const isLeftOpen = panelLeft && panelLeft.classList.contains('mobile-open');
-    const isRightOpen = panelRight && panelRight.classList.contains('mobile-open');
 
     if (sideTabLeft) {
       sideTabLeft.classList.toggle('is-open', Boolean(isLeftOpen));
       if (arrowTabLeft) arrowTabLeft.textContent = isLeftOpen ? '◀' : '▶';
     }
 
-    if (sideTabRight) {
-      sideTabRight.classList.toggle('is-open', Boolean(isRightOpen));
-      if (arrowTabRight) arrowTabRight.textContent = isRightOpen ? '▶' : '◀';
-    }
-
     if (btnToggleScene) btnToggleScene.classList.toggle('active', Boolean(isLeftOpen));
-    if (btnToggleProps) btnToggleProps.classList.toggle('active', Boolean(isRightOpen));
 
     // Ocultar controles de zoom (+, -, 1:1) en dispositivos móviles
     const isMobile = isMobileOrTabletDevice() || window.innerHeight <= 620 || window.innerWidth <= 950;
@@ -1534,23 +2560,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleLeftPanel() {
     if (!panelLeft) return;
     const willOpen = !panelLeft.classList.contains('mobile-open');
-    // Si se va a abrir el panel izquierdo, cerramos el derecho para no invadir el canvas
-    if (willOpen && panelRight && panelRight.classList.contains('mobile-open')) {
-      panelRight.classList.remove('mobile-open');
-    }
     panelLeft.classList.toggle('mobile-open', willOpen);
     updateSideTabStates();
-  }
-
-  function toggleRightPanel() {
-    if (!panelRight) return;
-    const willOpen = !panelRight.classList.contains('mobile-open');
-    // Si se va a abrir el panel derecho, cerramos el izquierdo para mantener despejada la vista
-    if (willOpen && panelLeft && panelLeft.classList.contains('mobile-open')) {
-      panelLeft.classList.remove('mobile-open');
-    }
-    panelRight.classList.toggle('mobile-open', willOpen);
-    updateSideTabStates();
+    setTimeout(() => {
+      if (sim && typeof sim.resizeCanvas === 'function') {
+        sim.resizeCanvas();
+      }
+    }, 280);
   }
 
   let lastToggleTime = 0;
@@ -1571,22 +2587,22 @@ document.addEventListener('DOMContentLoaded', () => {
     sideTabLeft.addEventListener('touchend', (e) => handleSideTabToggle(e, toggleLeftPanel), { passive: false });
   }
 
-  if (btnToggleProps) btnToggleProps.addEventListener('click', (e) => handleSideTabToggle(e, toggleRightPanel));
-  if (sideTabRight) {
-    sideTabRight.addEventListener('click', (e) => handleSideTabToggle(e, toggleRightPanel));
-    sideTabRight.addEventListener('touchend', (e) => handleSideTabToggle(e, toggleRightPanel), { passive: false });
-  }
-
   if (btnCloseSceneDrawer) btnCloseSceneDrawer.addEventListener('click', () => {
     if (panelLeft) panelLeft.classList.remove('mobile-open');
     updateSideTabStates();
-  });
-  if (btnClosePropsDrawer) btnClosePropsDrawer.addEventListener('click', () => {
-    if (panelRight) panelRight.classList.remove('mobile-open');
-    updateSideTabStates();
+    setTimeout(() => {
+      if (sim && typeof sim.resizeCanvas === 'function') {
+        sim.resizeCanvas();
+      }
+    }, 280);
   });
 
-  window.addEventListener('resize', updateSideTabStates);
+  window.addEventListener('resize', () => {
+    updateSideTabStates();
+    if (sim && typeof sim.resizeCanvas === 'function') {
+      sim.resizeCanvas();
+    }
+  });
   updateSideTabStates();
 
   // Escena inicial: Perfil NACA 0012 · Humo y Líneas de Corriente · Velocidad 10 m/s
@@ -1617,5 +2633,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sliderSpeed) sliderSpeed.value = initSpeed;
     if (lblSpeedValue) lblSpeedValue.textContent = `${initSpeed.toFixed(1)} m/s`;
     if (rowLbmContrast) rowLbmContrast.style.display = 'none';
+
+    // Iniciar con las opciones de objeto seleccionado habilitadas si la pieza inicial ya está seleccionada
+    if (sim.selectedElement) {
+      updateSelectedElementPropsUI(sim.selectedElement);
+    } else {
+      updateSelectedElementPropsUI(null);
+    }
+
+    // Garantizar que la simulación se encuadre con simetría vertical perfecta al cargar la página
+    const alignSimulationView = () => {
+      if (sim && typeof sim.resizeCanvas === 'function') {
+        sim.resizeCanvas();
+      }
+    };
+    requestAnimationFrame(alignSimulationView);
+    setTimeout(alignSimulationView, 60);
+    setTimeout(alignSimulationView, 250);
+    window.addEventListener('load', alignSimulationView);
   })();
 });

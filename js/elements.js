@@ -91,8 +91,17 @@ class HydrodynamicObstacle extends FluidElement {
     this._isSmooth = isSmooth;
     this.currentRotationDeg = 0.0;
     this.color = '#38bdf8'; // Azul aerodinámico
-    this.fillColor = 'rgba(23, 37, 84, 0.85)';
-    this.isImportedImage = Boolean(isImportedImage || (this.loops && this.loops.length > 0) || (name && name.startsWith('Figura:')));
+    this.isImportedImage = Boolean(isImportedImage || (name && name.startsWith('Figura:')));
+
+    // Propiedades de imagen importada (pre-renderizado temático y máscara exacta de colisión)
+    this.imageThemedCanvases = null;
+    this.imageCroppedCanvas = null;
+    this.imageWorldWidth = 0.0;
+    this.imageWorldHeight = 0.0;
+    this.imageCenter = null;
+    this.imageMask = null;
+    this.imageMaskW = 0;
+    this.imageMaskH = 0;
 
     // Cache para acelerar comprobaciones espaciales en la simulación a 60 FPS
     this._cachedBoundaryPts = null;
@@ -102,6 +111,17 @@ class HydrodynamicObstacle extends FluidElement {
     this.vx = 0.0;
     this.vy = 0.0;
     this.angularVelocity = 0.0;
+
+    // Propiedades de boya flotante y rotación autónoma
+    this.isBuoy = false;
+    this.isAutoRotating = false;
+    this.autoRotateRPM = 5;
+    this.autoRotateDirection = 'cw'; // 'cw' = derecha / horario, 'ccw' = izquierda / antihorario
+
+    // Propiedades de propulsor / eyector de fluido activo
+    this.isThruster = false;
+    this.thrustSpeed = 5.0; // Rango 0.0 a 12.0 m/s
+    this.smokeMode = 'vapor'; // 'vapor' (vapor visible por default) o 'clean' (viento limpio)
   }
 
   get isSmooth() {
@@ -135,34 +155,54 @@ class HydrodynamicObstacle extends FluidElement {
 
   getAABB() {
     if (!this._cachedAABB) {
-      let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
-      if (this.loops && this.loops.length > 0) {
-        for (let l = 0; l < this.loops.length; l++) {
-          const loop = this.loops[l];
-          for (let i = 0; i < loop.length; i++) {
-            const pt = loop[i];
+      if (this.isImportedImage && this.imageWorldWidth && this.imageWorldHeight) {
+        const c = this.imageCenter || [(this.controlPoints[0] ? this.controlPoints[0][0] : 6.0), (this.controlPoints[0] ? this.controlPoints[0][1] : 4.5)];
+        const hw = this.imageWorldWidth * 0.5;
+        const hh = this.imageWorldHeight * 0.5;
+        const rad = ((this.currentRotationDeg || 0.0) * Math.PI) / 180.0;
+        const cosR = Math.abs(Math.cos(rad));
+        const sinR = Math.abs(Math.sin(rad));
+        const aabbHalfW = hw * cosR + hh * sinR;
+        const aabbHalfH = hw * sinR + hh * cosR;
+        this._cachedAABB = [
+          c[0] - aabbHalfW - 0.05,
+          c[1] - aabbHalfH - 0.05,
+          c[0] + aabbHalfW + 0.05,
+          c[1] + aabbHalfH + 0.05
+        ];
+      } else {
+        let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+        if (this.loops && this.loops.length > 0) {
+          for (let l = 0; l < this.loops.length; l++) {
+            const loop = this.loops[l];
+            for (let i = 0; i < loop.length; i++) {
+              const pt = loop[i];
+              if (pt[0] < xmin) xmin = pt[0];
+              if (pt[1] < ymin) ymin = pt[1];
+              if (pt[0] > xmax) xmax = pt[0];
+              if (pt[1] > ymax) ymax = pt[1];
+            }
+          }
+        } else {
+          const pts = this.boundaryPoints;
+          for (let i = 0; i < pts.length; i++) {
+            const pt = pts[i];
             if (pt[0] < xmin) xmin = pt[0];
             if (pt[1] < ymin) ymin = pt[1];
             if (pt[0] > xmax) xmax = pt[0];
             if (pt[1] > ymax) ymax = pt[1];
           }
         }
-      } else {
-        const pts = this.boundaryPoints;
-        for (let i = 0; i < pts.length; i++) {
-          const pt = pts[i];
-          if (pt[0] < xmin) xmin = pt[0];
-          if (pt[1] < ymin) ymin = pt[1];
-          if (pt[0] > xmax) xmax = pt[0];
-          if (pt[1] > ymax) ymax = pt[1];
-        }
+        this._cachedAABB = [xmin - 0.05, ymin - 0.05, xmax + 0.05, ymax + 0.05];
       }
-      this._cachedAABB = [xmin - 0.05, ymin - 0.05, xmax + 0.05, ymax + 0.05];
     }
     return this._cachedAABB;
   }
 
   getCentroid() {
+    if (this.isImportedImage && this.imageCenter) {
+      return [this.imageCenter[0], this.imageCenter[1]];
+    }
     const aabb = this.getAABB();
     return [(aabb[0] + aabb[2]) / 2.0, (aabb[1] + aabb[3]) / 2.0];
   }
@@ -172,10 +212,92 @@ class HydrodynamicObstacle extends FluidElement {
     return Math.max(0.2, Math.max(aabb[2] - aabb[0], aabb[3] - aabb[1]));
   }
 
+  getThrusterExhaust() {
+    if (!this.isThruster) return null;
+    const centroid = this.getCentroid();
+    const aabb = this.getAABB();
+    const angleRad = (this.currentRotationDeg * Math.PI) / 180.0;
+    const cosA = Math.cos(angleRad);
+    const sinA = Math.sin(angleRad);
+    const normX = -sinA;
+    const normY = cosA;
+
+    // Dimensiones actuales basadas en AABB
+    const halfL = Math.max(0.4, (aabb[2] - aabb[0]) * 0.5);
+    const halfW = Math.max(0.15, (aabb[3] - aabb[1]) * 0.5);
+
+    // Centro del orificio de salida en la tobera trasera
+    const exitCenterX = centroid[0] + cosA * (halfL * 0.96);
+    const exitCenterY = centroid[1] + sinA * (halfL * 0.96);
+    const nozzleHalfW = halfW * 0.60;
+
+    // Extremos de la apertura de salida (perpendicular a la dirección de avance)
+    const p0 = [exitCenterX - normX * nozzleHalfW, exitCenterY - normY * nozzleHalfW];
+    const p1 = [exitCenterX + normX * nozzleHalfW, exitCenterY + normY * nozzleHalfW];
+
+    return {
+      center: [exitCenterX, exitCenterY],
+      p0,
+      p1,
+      dir: [cosA, sinA],
+      aperture: nozzleHalfW * 2.0,
+      halfL,
+      halfW
+    };
+  }
+
+  getBoundingRadius() {
+    const aabb = this.getAABB();
+    return Math.hypot((aabb[2] - aabb[0]) * 0.5, (aabb[3] - aabb[1]) * 0.5);
+  }
+
+  getArea() {
+    const pts = this.boundaryPoints;
+    if (!pts || pts.length < 3) return 0.5;
+    let sum = 0.0;
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % n];
+      sum += (p1[0] * p2[1] - p2[0] * p1[1]);
+    }
+    return Math.max(0.05, Math.abs(sum) * 0.5);
+  }
+
+  getMass() {
+    // Masa proporcional al área bidimensional del cuerpo sólido
+    return Math.max(0.1, this.getArea() * 2.0);
+  }
+
+  getInertia() {
+    // Momento de inercia rotacional en 2D respecto a su centroide: I ≈ 0.5 * m * R²
+    const m = this.getMass();
+    const r = this.getBoundingRadius();
+    return Math.max(0.01, 0.5 * m * r * r);
+  }
+
   containsPoint(wx, wy) {
     const aabb = this.getAABB();
     if (wx < aabb[0] || wx > aabb[2] || wy < aabb[1] || wy > aabb[3]) {
       return false;
+    }
+    if (this.isImportedImage && this.imageMask) {
+      const c = this.imageCenter || this.getCentroid();
+      const hw = this.imageWorldWidth * 0.5;
+      const hh = this.imageWorldHeight * 0.5;
+      const dx = wx - c[0];
+      const dy = wy - c[1];
+      const rad = -((this.currentRotationDeg || 0.0) * Math.PI) / 180.0;
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
+      const lx = dx * cosR - dy * sinR;
+      const ly = dx * sinR + dy * cosR;
+      const u = (lx + hw) / Math.max(0.01, this.imageWorldWidth);
+      const v = (ly + hh) / Math.max(0.01, this.imageWorldHeight);
+      if (u < 0.0 || u >= 1.0 || v < 0.0 || v >= 1.0) return false;
+      const px = Math.min(this.imageMaskW - 1, Math.max(0, Math.floor(u * this.imageMaskW)));
+      const py = Math.min(this.imageMaskH - 1, Math.max(0, Math.floor(v * this.imageMaskH)));
+      return this.imageMask[py * this.imageMaskW + px] > 0;
     }
     if (this.loops && this.loops.length > 0) {
       let inside = false;
@@ -190,6 +312,10 @@ class HydrodynamicObstacle extends FluidElement {
   }
 
   translate(dx, dy) {
+    if (this.imageCenter) {
+      this.imageCenter[0] += dx;
+      this.imageCenter[1] += dy;
+    }
     if (this.loops && this.loops.length > 0) {
       for (let l = 0; l < this.loops.length; l++) {
         const loop = this.loops[l];
@@ -210,6 +336,14 @@ class HydrodynamicObstacle extends FluidElement {
     if (!center) center = this.getCentroid();
     const cosA = Math.cos(angleRad);
     const sinA = Math.sin(angleRad);
+
+    if (this.imageCenter && center && (center[0] !== this.imageCenter[0] || center[1] !== this.imageCenter[1])) {
+      const rx = this.imageCenter[0] - center[0];
+      const ry = this.imageCenter[1] - center[1];
+      this.imageCenter[0] = center[0] + (rx * cosA - ry * sinA);
+      this.imageCenter[1] = center[1] + (rx * sinA + ry * cosA);
+    }
+
     if (this.loops && this.loops.length > 0) {
       for (let l = 0; l < this.loops.length; l++) {
         const loop = this.loops[l];
@@ -233,13 +367,21 @@ class HydrodynamicObstacle extends FluidElement {
   }
 
   setAbsoluteRotation(targetDeg, center = null) {
-    const deltaDeg = targetDeg - this.currentRotationDeg;
+    let norm = ((targetDeg % 360.0) + 360.0) % 360.0;
+    const deltaDeg = norm - this.currentRotationDeg;
     this.rotate(deltaDeg * Math.PI / 180.0, center);
-    this.currentRotationDeg = targetDeg;
+    this.currentRotationDeg = norm;
   }
 
   scale(scaleX, scaleY, origin = null) {
     if (!origin) origin = this.getCentroid();
+    if (this.imageCenter && origin && (origin[0] !== this.imageCenter[0] || origin[1] !== this.imageCenter[1])) {
+      this.imageCenter[0] = origin[0] + (this.imageCenter[0] - origin[0]) * scaleX;
+      this.imageCenter[1] = origin[1] + (this.imageCenter[1] - origin[1]) * scaleY;
+    }
+    if (this.imageWorldWidth) this.imageWorldWidth *= Math.abs(scaleX);
+    if (this.imageWorldHeight) this.imageWorldHeight *= Math.abs(scaleY);
+
     if (this.loops && this.loops.length > 0) {
       for (let l = 0; l < this.loops.length; l++) {
         const loop = this.loops[l];
@@ -254,6 +396,57 @@ class HydrodynamicObstacle extends FluidElement {
       this.controlPoints[i][1] = origin[1] + (this.controlPoints[i][1] - origin[1]) * scaleY;
     }
     this.invalidateCache();
+  }
+
+  /**
+   * Clona exactamente este obstáculo hidrodinámico con todas sus deformaciones de nodos,
+   * escala, rotación, loops, imagen importada o propiedades de propulsor / boya.
+   */
+  clone(offsetX = 0.35, offsetY = 0.35) {
+    const clonedControlPoints = this.controlPoints ? this.controlPoints.map(p => [p[0] + offsetX, p[1] + offsetY]) : [];
+    const clonedLoops = this.loops ? this.loops.map(loop => loop.map(p => [p[0] + offsetX, p[1] + offsetY])) : null;
+
+    let copyName = this.name || "Figura";
+    const copyMatch = copyName.match(/^(.*?)(?: \(Copia(?: (\d+))?\))?$/);
+    if (copyMatch) {
+      const base = copyMatch[1];
+      const num = copyMatch[2] ? parseInt(copyMatch[2], 10) + 1 : (copyName.includes('(Copia)') ? 2 : null);
+      copyName = num ? `${base} (Copia ${num})` : `${base} (Copia)`;
+    } else {
+      copyName = `${copyName} (Copia)`;
+    }
+
+    const copy = new HydrodynamicObstacle(clonedControlPoints, copyName, this._isSmooth, clonedLoops, this.isImportedImage);
+    copy.currentRotationDeg = this.currentRotationDeg || 0.0;
+    copy.color = this.color;
+    copy.fillColor = this.fillColor;
+    copy.isSolid = (this.isSolid !== undefined) ? this.isSolid : true;
+
+    // Propiedades de imagen importada
+    if (this.isImportedImage) {
+      copy.imageThemedCanvases = this.imageThemedCanvases;
+      copy.imageCroppedCanvas = this.imageCroppedCanvas;
+      copy.imageWorldWidth = this.imageWorldWidth;
+      copy.imageWorldHeight = this.imageWorldHeight;
+      copy.imageCenter = this.imageCenter ? [this.imageCenter[0] + offsetX, this.imageCenter[1] + offsetY] : null;
+      copy.imageMask = this.imageMask;
+      copy.imageMaskW = this.imageMaskW;
+      copy.imageMaskH = this.imageMaskH;
+    }
+
+    // Propiedades de boya y rotación autónoma
+    copy.isBuoy = Boolean(this.isBuoy);
+    copy.isAutoRotating = Boolean(this.isAutoRotating);
+    copy.autoRotateRPM = this.autoRotateRPM || 5;
+    copy.autoRotateDirection = this.autoRotateDirection || 'cw';
+
+    // Propiedades de propulsor de fluido
+    copy.isThruster = Boolean(this.isThruster);
+    copy.thrustSpeed = (this.thrustSpeed !== undefined) ? this.thrustSpeed : 5.0;
+    copy.smokeMode = this.smokeMode || 'vapor';
+
+    copy.invalidateCache();
+    return copy;
   }
 
   // --- FÁBRICAS ESTÁTICAS DE PERFILES Y FORMAS AERODINÁMICAS CLÁSICAS ---
@@ -341,6 +534,36 @@ class HydrodynamicObstacle extends FluidElement {
   }
 
   /**
+   * Crea un propulsor / eyector de fluido activo (forma estilizada idéntica al ícono de la herramienta).
+   * La figura es transparente al viento del túnel (no interactúa como barrera sólida) y genera su propio chorro y vórtices interiores.
+   */
+  static createThruster(length = 1.9, width = 0.85, center = [5.5, 4.5]) {
+    const hl = length / 2.0;
+    const hw = width / 2.0;
+    const cx = center[0];
+    const cy = center[1];
+    // Geometría idéntica a la silueta del ícono SVG:
+    // Nariz redondeada frontal (izq), cuerpo aerodinámico y tobera cilíndrica de escape (der)
+    const pts = [
+      [cx + hl, cy - hw * 0.60],         // Labio superior de la tobera
+      [cx + hl * 0.41, cy - hw * 0.60],  // Transición tobera-cuerpo superior
+      [cx - hl * 0.78, cy - hw],         // Hombro superior
+      [cx - hl * 0.92, cy - hw * 0.70],  // Curva de proa
+      [cx - hl, cy],                     // Vértice de la proa redondeada
+      [cx - hl * 0.92, cy + hw * 0.70],  // Curva de proa inferior
+      [cx - hl * 0.78, cy + hw],         // Hombro inferior
+      [cx + hl * 0.41, cy + hw * 0.60],  // Transición tobera-cuerpo inferior
+      [cx + hl, cy + hw * 0.60]          // Labio inferior de la tobera
+    ];
+    const obs = new HydrodynamicObstacle(pts, "Propulsor de Fluido", false);
+    obs.isThruster = true;
+    obs.isSolid = false; // Transparente al túnel: las líneas de flujo del túnel lo atraviesan sin chocar
+    obs.thrustSpeed = 5.0; // Rango 0.0 a 12.0 m/s (default 5.0 m/s)
+    obs.smokeMode = 'vapor'; // 'vapor' (vapor visible por default) o 'clean'
+    return obs;
+  }
+
+  /**
    * Crea una gota aerodinámica (mínima resistencia de forma / drag ultra bajo).
    */
   static createTeardrop(length = 3.8, width = 1.6, center = [6.0, 4.5], numPoints = 24) {
@@ -404,6 +627,31 @@ class HydrodynamicObstacle extends FluidElement {
   }
 
   /**
+   * Crea una cruz simétrica delgada proporcional exacta a resources/cruz.png.
+   */
+  static createSwissCross(size = 2.4, center = [5.5, 4.5]) {
+    const a = size / 2.0;       // Longitud exterior de cada brazo
+    const b = a * (114.0 / 1041.0); // Semiespesor del brazo (~11% del ancho total según resources/cruz.png)
+    const cx = center[0];
+    const cy = center[1];
+    const pts = [
+      [cx - b, cy - a],
+      [cx + b, cy - a],
+      [cx + b, cy - b],
+      [cx + a, cy - b],
+      [cx + a, cy + b],
+      [cx + b, cy + b],
+      [cx + b, cy + a],
+      [cx - b, cy + a],
+      [cx - b, cy + b],
+      [cx - a, cy + b],
+      [cx - a, cy - b],
+      [cx - b, cy - b]
+    ];
+    return new HydrodynamicObstacle(pts, "Cruz", false);
+  }
+
+  /**
    * Crea una cuña aerodinámica / deflector.
    */
   static createWedge(base = 2.4, height = 2.0, center = [5.5, 4.5]) {
@@ -416,34 +664,58 @@ class HydrodynamicObstacle extends FluidElement {
   }
 
   /**
-   * Crea un perfil de vehículo deportivo (downforce y estela difusora).
+   * Crea el perfil de vehículo de competición (Bólido F1) basado exactamente en resources/bolido.png.
+   * Genera el obstáculo con alta fidelidad gráfica, líneas celestes y máscara de colisión exacta.
    */
-  static createCarProfile(length = 4.4, height = 1.6, center = [6.0, 4.5]) {
-    const x0 = center[0] - length / 2.0;
-    const y0 = center[1] + height / 2.0; // Parte inferior del coche
-    // Silueta aerodinámica de bólido con spoiler
-    const raw = [
-      [0.0, 0.0],
-      [0.15, -0.2],
-      [0.45, -0.3],
-      [1.1, -0.5],
-      [1.8, -0.95],
-      [2.7, -1.0],
-      [3.4, -0.6],
-      [3.9, -0.55],
-      [4.1, -0.85], // Alerón
-      [4.35, -0.85],
-      [4.3, -0.2],
-      [4.4, 0.0],
-      [3.6, 0.0],
-      [3.4, -0.25], // Paso de rueda trasera
-      [2.9, 0.0],
-      [1.6, 0.0],
-      [1.3, -0.25], // Paso de rueda delantera
-      [0.8, 0.0]
+  static createCarProfile(length = 4.6, height = null, center = [6.0, 4.5]) {
+    const targetH = (height !== null && height !== undefined) ? height : (length / 3.8223);
+    const cx = center[0];
+    const cy = center[1];
+
+    if (HydrodynamicObstacle._bolidoTemplate) {
+      const tmpl = HydrodynamicObstacle._bolidoTemplate;
+      const tmplW = tmpl.imageWorldWidth || 4.6;
+      const tmplH = tmpl.imageWorldHeight || (4.6 / 3.8223);
+      const scaleX = length / tmplW;
+      const scaleY = targetH / tmplH;
+      const tc = tmpl.imageCenter || [6.0, 4.5];
+
+      const scaledLoops = (tmpl.loops || []).map(loop =>
+        loop.map(p => [cx + (p[0] - tc[0]) * scaleX, cy + (p[1] - tc[1]) * scaleY])
+      );
+      const scaledPts = (tmpl.points || (scaledLoops[0] || [])).map(p => [
+        cx + (p[0] - tc[0]) * scaleX,
+        cy + (p[1] - tc[1]) * scaleY
+      ]);
+
+      const obs = new HydrodynamicObstacle(scaledPts, "Bólido", false, scaledLoops, true);
+      obs.isImportedImage = true;
+      obs.imageThemedCanvases = tmpl.imageThemedCanvases;
+      obs.imageCroppedCanvas = tmpl.imageCroppedCanvas;
+      obs.imageWorldWidth = length;
+      obs.imageWorldHeight = targetH;
+      obs.imageCenter = [cx, cy];
+      obs.imageMask = tmpl.imageMask;
+      obs.imageMaskW = tmpl.imageMaskW;
+      obs.imageMaskH = tmpl.imageMaskH;
+      obs.color = '#38bdf8';
+      obs.invalidateCache();
+      return obs;
+    }
+
+    // Geometría vectorial idéntica trazada de resources/bolido.png como respaldo
+    const normLoops = [
+      [[0.9978, 0.4545], [0.8054, 0.3512], [0.6032, 0.0868], [0.6141, 0.0248], [0.5751, 0.0], [0.5589, 0.1198], [0.5622, 0.281], [0.5049, 0.2355], [0.4714, 0.4091], [0.4357, 0.4256], [0.4335, 0.343], [0.4141, 0.3636], [0.4162, 0.4256], [0.2357, 0.376], [0.1697, 0.4174], [0.0097, 0.6653], [0.0, 0.8843], [0.1146, 0.8843], [0.1168, 0.7727], [0.1395, 0.9174], [0.1849, 0.9959], [0.2519, 0.8926], [0.8065, 0.8884], [0.8854, 0.9959], [0.9654, 0.8636], [0.9578, 0.6694], [0.9978, 0.624]],
+      [[0.8541, 0.2025], [0.8541, 0.2893], [0.8649, 0.3264], [0.9654, 0.3719], [0.9978, 0.376], [0.9978, 0.2355], [0.9676, 0.2314], [0.9611, 0.2066], [0.9589, 0.1736], [0.8605, 0.1736]]
     ];
-    const pts = raw.map(p => [x0 + (p[0] / 4.4) * length, y0 + (p[1] / 1.0) * height]);
-    return new HydrodynamicObstacle(pts, "Race Car Silhouette", true);
+
+    const x0 = cx - length / 2.0;
+    const y0 = cy - targetH / 2.0;
+    const loops = normLoops.map(loop => loop.map(p => [x0 + p[0] * length, y0 + p[1] * targetH]));
+    const pts = loops[0];
+    const obs = new HydrodynamicObstacle(pts, "Bólido", false, loops, false);
+    obs.color = '#38bdf8';
+    return obs;
   }
 
   /**
@@ -528,6 +800,21 @@ class FlowProbe extends FluidElement {
   getCentroid() {
     return [this.x, this.y];
   }
+
+  clone(offsetX = 0.35, offsetY = 0.35) {
+    let copyName = this.name || "Sensor";
+    const copyMatch = copyName.match(/^(.*?)(?: \(Copia(?: (\d+))?\))?$/);
+    if (copyMatch) {
+      const base = copyMatch[1];
+      const num = copyMatch[2] ? parseInt(copyMatch[2], 10) + 1 : (copyName.includes('(Copia)') ? 2 : null);
+      copyName = num ? `${base} (Copia ${num})` : `${base} (Copia)`;
+    } else {
+      copyName = `${copyName} (Copia)`;
+    }
+    const copy = new FlowProbe(this.x + offsetX, this.y + offsetY, copyName);
+    copy.radius = this.radius;
+    return copy;
+  }
 }
 
 /**
@@ -607,108 +894,250 @@ class ImageContourTracer {
   }
 
   static traceImage(img, filename = 'Figura', targetWidth = 3.8, targetCenter = [6.0, 4.5]) {
-    const maxDim = 240;
-    let w = img.naturalWidth || img.width || 200;
-    let h = img.naturalHeight || img.height || 200;
-    if (w <= 0 || h <= 0) { w = 200; h = 200; }
+    let origW = img.naturalWidth || img.width || 200;
+    let origH = img.naturalHeight || img.height || 200;
+    if (origW <= 0 || origH <= 0) { origW = 200; origH = 200; }
 
-    if (w > maxDim || h > maxDim) {
-      if (w >= h) {
-        h = Math.max(20, Math.round(h * maxDim / w));
-        w = maxDim;
+    // 1. Dibujar imagen en un lienzo de trabajo de alta resolución (máx 1600px para máxima nitidez y rendimiento óptimo)
+    const maxWorkDim = 1600;
+    let workW = origW;
+    let workH = origH;
+    if (workW > maxWorkDim || workH > maxWorkDim) {
+      if (workW >= workH) {
+        workH = Math.max(40, Math.round((workH * maxWorkDim) / workW));
+        workW = maxWorkDim;
       } else {
-        w = Math.max(20, Math.round(w * maxDim / h));
-        h = maxDim;
+        workW = Math.max(40, Math.round((workW * maxWorkDim) / workH));
+        workH = maxWorkDim;
       }
     }
 
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const data = imgData.data;
+    const workCanvas = document.createElement('canvas');
+    workCanvas.width = workW;
+    workCanvas.height = workH;
+    const workCtx = workCanvas.getContext('2d');
+    workCtx.drawImage(img, 0, 0, workW, workH);
 
-    // Detectar canal alfa transparente
+    const workImgData = workCtx.getImageData(0, 0, workW, workH);
+    const workData = workImgData.data;
+
+    // Detectar si el archivo posee canal alfa transparente genuino
     let hasAlpha = false;
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] < 220) {
+    for (let i = 3; i < workData.length; i += 4) {
+      if (workData[i] < 220) {
         hasAlpha = true;
         break;
       }
     }
 
-    const pw = w + 2;
-    const ph = h + 2;
-    const padMask = new Uint8Array(pw * ph);
+    // Auto-recorte inteligente: calcular el cuadro delimitador del objeto sólido sin márgenes vacíos
+    let minPxX = workW, minPxY = workH, maxPxX = -1, maxPxY = -1;
 
     if (hasAlpha) {
-      for (let y = 0; y < h; y++) {
-        const rowSrc = y * w * 4;
-        const rowDst = (y + 1) * pw;
-        for (let x = 0; x < w; x++) {
-          if (data[rowSrc + x * 4 + 3] > 70) {
-            padMask[rowDst + (x + 1)] = 1;
+      for (let y = 0; y < workH; y++) {
+        const row = y * workW * 4;
+        for (let x = 0; x < workW; x++) {
+          if (workData[row + x * 4 + 3] > 60) {
+            if (x < minPxX) minPxX = x;
+            if (x > maxPxX) maxPxX = x;
+            if (y < minPxY) minPxY = y;
+            if (y > maxPxY) maxPxY = y;
           }
         }
       }
     } else {
-      const corners = [0, (w - 1) * 4, ((h - 1) * w) * 4, ((h - 1) * w + w - 1) * 4];
+      // Imagen sin canal alfa: estimar fondo a partir de las esquinas
+      const corners = [0, (workW - 1) * 4, ((workH - 1) * workW) * 4, ((workH - 1) * workW + workW - 1) * 4];
       let bgLum = 0;
       for (let c of corners) {
-        bgLum += 0.299 * data[c] + 0.587 * data[c + 1] + 0.114 * data[c + 2];
+        bgLum += 0.299 * workData[c] + 0.587 * workData[c + 1] + 0.114 * workData[c + 2];
       }
       bgLum /= 4.0;
       const isLightBg = bgLum > 128;
-      const threshold = isLightBg ? Math.min(220, bgLum - 35) : Math.max(35, bgLum + 35);
-      for (let y = 0; y < h; y++) {
-        const rowSrc = y * w * 4;
-        const rowDst = (y + 1) * pw;
-        for (let x = 0; x < w; x++) {
-          const idx = rowSrc + x * 4;
-          const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      const threshold = isLightBg ? Math.min(230, bgLum - 30) : Math.max(25, bgLum + 30);
+
+      for (let y = 0; y < workH; y++) {
+        const row = y * workW * 4;
+        for (let x = 0; x < workW; x++) {
+          const idx = row + x * 4;
+          const lum = 0.299 * workData[idx] + 0.587 * workData[idx + 1] + 0.114 * workData[idx + 2];
           const isFg = isLightBg ? (lum < threshold) : (lum > threshold);
           if (isFg) {
-            padMask[rowDst + (x + 1)] = 1;
+            if (x < minPxX) minPxX = x;
+            if (x > maxPxX) maxPxX = x;
+            if (y < minPxY) minPxY = y;
+            if (y > maxPxY) maxPxY = y;
           }
         }
       }
     }
 
-    // Extraer todos los contornos cerrados (partes separadas y agujeros) con Marching Squares
-    const rawLoops = ImageContourTracer.extractAllMarchingLoops(padMask, pw, ph);
-    if (!rawLoops || rawLoops.length === 0) {
-      throw new Error('No se detectó una figura o contorno sólido contrastante en la imagen.');
+    if (maxPxX < minPxX || maxPxY < minPxY) {
+      throw new Error('No se detectó una figura o contenido sólido contrastante en la imagen.');
     }
 
-    // Simplificar cada contorno con Ramer-Douglas-Peucker
-    const simplifiedLoops = rawLoops.map(loop => {
-      const closed = ImageContourTracer.simplifyDouglasPeucker(loop.concat([loop[0]]), 1.25);
-      return closed.slice(0, -1);
-    }).filter(loop => loop.length >= 3);
+    // Margen de seguridad de 2px
+    minPxX = Math.max(0, minPxX - 2);
+    minPxY = Math.max(0, minPxY - 2);
+    maxPxX = Math.min(workW - 1, maxPxX + 2);
+    maxPxY = Math.min(workH - 1, maxPxY + 2);
 
-    if (simplifiedLoops.length === 0) {
-      throw new Error('Los contornos detectados son demasiado pequeños.');
-    }
+    const cropW = maxPxX - minPxX + 1;
+    const cropH = maxPxY - minPxY + 1;
 
-    // Calcular límites de la figura completa sobre todos los contornos
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (let l = 0; l < simplifiedLoops.length; l++) {
-      const loop = simplifiedLoops[l];
-      for (let i = 0; i < loop.length; i++) {
-        const pt = loop[i];
-        if (pt[0] < minX) minX = pt[0];
-        if (pt[1] < minY) minY = pt[1];
-        if (pt[0] > maxX) maxX = pt[0];
-        if (pt[1] > maxY) maxY = pt[1];
+    // Crear lienzo con la figura perfectamente ajustada y recortada
+    const croppedCanvas = document.createElement('canvas');
+    croppedCanvas.width = cropW;
+    croppedCanvas.height = cropH;
+    const croppedCtx = croppedCanvas.getContext('2d');
+    croppedCtx.drawImage(workCanvas, minPxX, minPxY, cropW, cropH, 0, 0, cropW, cropH);
+
+    const croppedImgData = croppedCtx.getImageData(0, 0, cropW, cropH);
+    const cropData = croppedImgData.data;
+
+    // 2. Análisis estético del contenido (para preservar líneas de planos técnicos y adaptar fondos sin ruido visual)
+    let opaqueCount = 0;
+    let sumLum = 0;
+    let darkPixelCount = 0;
+    let maxSaturation = 0;
+
+    for (let i = 0; i < cropData.length; i += 4) {
+      const a = cropData[i + 3];
+      if (a > 60) {
+        opaqueCount++;
+        const r = cropData[i];
+        const g = cropData[i + 1];
+        const b = cropData[i + 2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        sumLum += lum;
+        if (lum < 110) darkPixelCount++;
+        const sat = Math.max(r, g, b) - Math.min(r, g, b);
+        if (sat > maxSaturation) maxSaturation = sat;
       }
     }
 
-    const bboxW = Math.max(1, maxX - minX);
-    const bboxH = Math.max(1, maxY - minY);
-    const aspect = bboxW / bboxH;
+    const avgLum = opaqueCount > 0 ? (sumLum / opaqueCount) : 128;
+    const isGrayscaleLineDrawing = (maxSaturation < 45);
+    const hasLightBodyWithLines = isGrayscaleLineDrawing && (avgLum > 100) && (darkPixelCount > 0);
 
+    // 3. Generación de lienzos temáticos pre-renderizados
+    // Las zonas sólidas no interactivas se tiñen acordes a la vista (#0f172a en CFD, #000000 en DES/LES)
+    // Las líneas originales del dibujo PNG se mantienen con máximo contraste y fidelidad visual.
+    function createThemedCanvas(bodyRGB, lineRGB) {
+      const c = document.createElement('canvas');
+      c.width = cropW;
+      c.height = cropH;
+      const ctx = c.getContext('2d');
+      const outImgData = ctx.createImageData(cropW, cropH);
+      const out = outImgData.data;
+
+      for (let i = 0; i < cropData.length; i += 4) {
+        const a = cropData[i + 3];
+        if (a <= 40) {
+          out[i + 3] = 0;
+          continue;
+        }
+
+        const r = cropData[i];
+        const g = cropData[i + 1];
+        const b = cropData[i + 2];
+        const lumNorm = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+
+        if (hasLightBodyWithLines) {
+          // Separación de cuerpo y líneas técnicas originales
+          const lineWeight = Math.pow(Math.max(0.0, Math.min(1.0, 1.0 - lumNorm)), 0.85);
+          const bodyWeight = 1.0 - lineWeight;
+
+          out[i] = Math.round(bodyRGB[0] * bodyWeight + lineRGB[0] * lineWeight);
+          out[i + 1] = Math.round(bodyRGB[1] * bodyWeight + lineRGB[1] * lineWeight);
+          out[i + 2] = Math.round(bodyRGB[2] * bodyWeight + lineRGB[2] * lineWeight);
+          out[i + 3] = a;
+        } else if (isGrayscaleLineDrawing && avgLum <= 100) {
+          // Líneas claras sobre fondo oscuro
+          const lineWeight = Math.pow(Math.max(0.0, Math.min(1.0, lumNorm)), 0.85);
+          const bodyWeight = 1.0 - lineWeight;
+
+          out[i] = Math.round(bodyRGB[0] * bodyWeight + lineRGB[0] * lineWeight);
+          out[i + 1] = Math.round(bodyRGB[1] * bodyWeight + lineRGB[1] * lineWeight);
+          out[i + 2] = Math.round(bodyRGB[2] * bodyWeight + lineRGB[2] * lineWeight);
+          out[i + 3] = a;
+        } else {
+          // Imagen con colores propios: conservar los colores originales
+          out[i] = r;
+          out[i + 1] = g;
+          out[i + 2] = b;
+          out[i + 3] = a;
+        }
+      }
+
+      ctx.putImageData(outImgData, 0, 0);
+      return c;
+    }
+
+    const themedCanvases = {
+      cfd: createThemedCanvas([15, 23, 42], [0, 229, 255]),
+      cfd_selected: createThemedCanvas([15, 23, 42], [0, 229, 255]),
+      des_les: createThemedCanvas([0, 0, 0], [0, 229, 255]),
+      des_les_selected: createThemedCanvas([0, 0, 0], [0, 229, 255])
+    };
+
+    // 4. Crear máscara binaria de colisión de alta resolución para fluidos y containsPoint
+    const maskTargetW = Math.min(cropW, 800);
+    const maskTargetH = Math.max(10, Math.round((cropH * maskTargetW) / cropW));
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = maskTargetW;
+    maskCanvas.height = maskTargetH;
+    const maskCtx = maskCanvas.getContext('2d');
+    maskCtx.drawImage(croppedCanvas, 0, 0, maskTargetW, maskTargetH);
+    const maskImgData = maskCtx.getImageData(0, 0, maskTargetW, maskTargetH);
+    const mData = maskImgData.data;
+
+    const collisionMask = new Uint8Array(maskTargetW * maskTargetH);
+    for (let y = 0; y < maskTargetH; y++) {
+      const rowSrc = y * maskTargetW * 4;
+      const rowDst = y * maskTargetW;
+      for (let x = 0; x < maskTargetW; x++) {
+        if (mData[rowSrc + x * 4 + 3] > 70) {
+          collisionMask[rowDst + x] = 1;
+        }
+      }
+    }
+
+    // 5. Extraer contornos simplificados para límites físicos y tiradores
+    const marchW = Math.min(240, maskTargetW);
+    const marchH = Math.max(10, Math.round((maskTargetH * marchW) / maskTargetW));
+    const marchCanvas = document.createElement('canvas');
+    marchCanvas.width = marchW;
+    marchCanvas.height = marchH;
+    const marchCtx = marchCanvas.getContext('2d');
+    marchCtx.drawImage(croppedCanvas, 0, 0, marchW, marchH);
+    const marchImgData = marchCtx.getImageData(0, 0, marchW, marchH);
+    const marchData = marchImgData.data;
+
+    const pw = marchW + 2;
+    const ph = marchH + 2;
+    const padMask = new Uint8Array(pw * ph);
+    for (let y = 0; y < marchH; y++) {
+      const rSrc = y * marchW * 4;
+      const rDst = (y + 1) * pw;
+      for (let x = 0; x < marchW; x++) {
+        if (marchData[rSrc + x * 4 + 3] > 70) {
+          padMask[rDst + (x + 1)] = 1;
+        }
+      }
+    }
+
+    const rawLoops = ImageContourTracer.extractAllMarchingLoops(padMask, pw, ph);
+    let simplifiedLoops = [];
+    if (rawLoops && rawLoops.length > 0) {
+      simplifiedLoops = rawLoops.map(loop => {
+        const closed = ImageContourTracer.simplifyDouglasPeucker(loop.concat([loop[0]]), 1.25);
+        return closed.slice(0, -1);
+      }).filter(loop => loop.length >= 3);
+    }
+
+    // Dimensiones en el espacio mundial virtual
+    const aspect = cropW / cropH;
     let worldW, worldH;
     if (aspect >= 1.0) {
       worldW = targetWidth; // ej: ~3.8 metros
@@ -718,24 +1147,54 @@ class ImageContourTracer {
       worldW = worldH * aspect;
     }
 
-    const scaleX = worldW / bboxW;
-    const scaleY = worldH / bboxH;
-    const cx = (minX + maxX) / 2.0;
-    const cy = (minY + maxY) / 2.0;
+    let worldLoops = [];
+    if (simplifiedLoops.length > 0) {
+      let minLX = Infinity, minLY = Infinity, maxLX = -Infinity, maxLY = -Infinity;
+      for (let l = 0; l < simplifiedLoops.length; l++) {
+        const loop = simplifiedLoops[l];
+        for (let i = 0; i < loop.length; i++) {
+          const pt = loop[i];
+          if (pt[0] < minLX) minLX = pt[0];
+          if (pt[1] < minLY) minLY = pt[1];
+          if (pt[0] > maxLX) maxLX = pt[0];
+          if (pt[1] > maxLY) maxLY = pt[1];
+        }
+      }
+      const scaleX = worldW / Math.max(1, maxLX - minLX);
+      const scaleY = worldH / Math.max(1, maxLY - minLY);
+      const clx = (minLX + maxLX) / 2.0;
+      const cly = (minLY + maxLY) / 2.0;
 
-    // Normalizar coordenadas al espacio virtual del fluido
-    const worldLoops = simplifiedLoops.map(loop => {
-      return loop.map(pt => [
-        targetCenter[0] + (pt[0] - cx) * scaleX,
-        targetCenter[1] + (pt[1] - cy) * scaleY
-      ]);
-    });
+      worldLoops = simplifiedLoops.map(loop => {
+        return loop.map(pt => [
+          targetCenter[0] + (pt[0] - clx) * scaleX,
+          targetCenter[1] + (pt[1] - cly) * scaleY
+        ]);
+      });
+    } else {
+      const hw = worldW / 2.0;
+      const hh = worldH / 2.0;
+      worldLoops = [[
+        [targetCenter[0] - hw, targetCenter[1] - hh],
+        [targetCenter[0] + hw, targetCenter[1] - hh],
+        [targetCenter[0] + hw, targetCenter[1] + hh],
+        [targetCenter[0] - hw, targetCenter[1] + hh]
+      ]];
+    }
 
     const baseName = filename.replace(/\.[^/.]+$/, '').substring(0, 24);
     return {
       name: `Figura: ${baseName}`,
       loops: worldLoops,
-      points: worldLoops[0]
+      points: worldLoops[0],
+      imageThemedCanvases: themedCanvases,
+      imageCroppedCanvas: croppedCanvas,
+      imageWorldWidth: worldW,
+      imageWorldHeight: worldH,
+      imageCenter: [targetCenter[0], targetCenter[1]],
+      imageMask: collisionMask,
+      imageMaskW: maskTargetW,
+      imageMaskH: maskTargetH
     };
   }
 
@@ -862,3 +1321,21 @@ window.FlowProbe = FlowProbe;
 window.catmullRomSpline = catmullRomSpline;
 window.pointInPolygon = pointInPolygon;
 window.ImageContourTracer = ImageContourTracer;
+
+// Pre-cargar e indexar la plantilla de alta resolución para la figura del bólido (resources/bolido.png)
+HydrodynamicObstacle._bolidoTemplate = null;
+HydrodynamicObstacle._initBolidoTemplate = function() {
+  if (typeof Image === 'undefined') return;
+  const bolidoImg = new Image();
+  bolidoImg.onload = () => {
+    try {
+      HydrodynamicObstacle._bolidoTemplate = ImageContourTracer.traceImage(bolidoImg, 'Bólido', 4.6, [6.0, 4.5]);
+    } catch (err) {
+      console.warn('Error indexando plantilla de bólido:', err);
+    }
+  };
+  const src = (typeof window !== 'undefined' && window.BOLIDO_IMAGE_SRC) ? window.BOLIDO_IMAGE_SRC : 'resources/bolido.png';
+  bolidoImg.src = src;
+};
+
+HydrodynamicObstacle._initBolidoTemplate();

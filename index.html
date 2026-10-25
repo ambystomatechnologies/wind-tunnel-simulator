@@ -23,7 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Estilos Principales con versionado para invalidar caché -->
-  <link rel="stylesheet" href="css/style.css?v=20261003_v20_report_donate">
+  <link rel="stylesheet" href="css/style.css?v=20261025_v88_bolido_celeste">
 
   <!-- Estilos Selector de Idioma (Portal Ambystoma Oficial) -->
   <style>
@@ -101,6 +101,10 @@
       <!-- Botón Translúcido de Donar con Ícono de Corazón Blanco (Reemplaza la publicidad superior) -->
       <!-- Botones de Acción Superior: Guardar Informe y Donar -->
       <div class="header-donate-zone">
+        <button type="button" class="btn-record-header" id="btn-open-record" title="Grabar simulación en video HD" data-i18n-title="btnRecordTitle" aria-label="Grabar">
+          <span class="record-pulse-dot"></span>
+          <span data-i18n="btnRecord">Grabar</span>
+        </button>
         <button type="button" class="btn-report-header" id="btn-save-report" title="Guardar informe aerodinámico en HD" data-i18n-title="btnSaveReportTitle" aria-label="Guardar informe">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -177,16 +181,136 @@
             <div class="ctrl-label-row" style="margin-bottom: 0.35rem;">
               <span data-i18n="lblVisMode" style="font-size: 0.8rem; font-weight: 600; color: #8bb4e8;">Modo de Vista CFD / Físico:</span>
             </div>
-            <select id="cb-vis-mode-left" class="select-cfd select-vis-mode-highlight" style="width: 100%;">
-              <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
-              <option value="pressure" data-i18n="visPressure">📊 CFD: Mapa de Presión Estática (Pa)</option>
-              <option value="velocity" data-i18n="visVelocity">⚡ CFD: Magnitud de Velocidad (m/s)</option>
-              <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad y Remolinos (s⁻¹)</option>
-              <option value="particles" data-i18n="visParticles">✨ CFD: Trazadores de Partículas</option>
-              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
-              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
-              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
-            </select>
+            <div class="select-nav-row">
+              <select id="cb-vis-mode-left" class="select-cfd select-vis-mode-highlight" style="flex: 1;">
+                <option value="smoke" selected data-i18n="visSmoke">💨 Humo y líneas de corriente</option>
+                <option value="vorticity" data-i18n="visVorticity">🌀 Velocidad y remolinos</option>
+                <option value="cfd_des_les" data-i18n="visDesLes">🔬 Aerodinámica DES / LES</option>
+                <option value="pressure" data-i18n="visPressure">📊 Mapa de presión estática (Pa)</option>
+                <option value="cfd_combustion" data-i18n="visCombustion">🔥 Termofluidos y Combustión</option>
+                <option value="velocity" data-i18n="visVelocity">⚡ Magnitud de velocidad (m/s)</option>
+                <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM Vorticidad y turbulencia)</option>
+                <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder (LBM Magnitud de velocidad)</option>
+                <option value="particles" data-i18n="visParticles">✨ Trazado de partículas</option>
+              </select>
+              <div class="nav-arrows-group">
+                <button type="button" class="btn-nav-arrow" id="btn-vis-mode-left-prev" title="Vista anterior (Arriba)" data-i18n-title="btnVisModePrev">▲</button>
+                <button type="button" class="btn-nav-arrow" id="btn-vis-mode-left-next" title="Vista siguiente (Abajo)" data-i18n-title="btnVisModeNext">▼</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Demos Didácticas / Físicas en Escena / HUD (Debajo de Modos de Vista) -->
+          <div class="scene-demos-box" style="padding: 0.2rem 0.75rem 0.45rem 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.07); margin-bottom: 0.35rem;">
+            <div class="ctrl-label-row" style="margin-bottom: 0.35rem;">
+              <span data-i18n="lblDemos" style="font-size: 0.8rem; font-weight: 600; color: #8bb4e8;">Demos Didácticas / Físicas:</span>
+            </div>
+            <div class="select-nav-row">
+              <select id="cb-demos" class="select-cfd" style="flex: 1;">
+                <option value="" selected data-i18n="optDemos">Demos de Física...</option>
+                <option value="1" data-i18n="optDemo1">1. Perfil NACA 0012 (Sustentación)</option>
+                <option value="2" data-i18n="optDemo2">2. Calle de Vórtices de Von Kármán</option>
+                <option value="3" data-i18n="optDemo3">3. Gota vs. Placa Plana (Arrastre)</option>
+                <option value="4" data-i18n="optDemo4">4. Pérdida / Stall (Alto Ángulo de Ataque)</option>
+                <option value="5" data-i18n="optDemo5">5. Efecto Venturi y Tubo de Bernoulli</option>
+                <option value="6" data-i18n="optDemo6">6. Aerodinámica de Bólido y Estela</option>
+                <option value="7" data-i18n="optDemo7">7. Ala Multielemento con Flap</option>
+                <option value="8" data-i18n="optDemo8">8. Cuerpos Romos: Cuadrado vs Cilindro</option>
+                <option value="9" data-i18n="optDemo9">9. Rebufo Aerodinámico (Drafting)</option>
+                <option value="10" data-i18n="optDemo10">10. Tobera Convergente-Divergente</option>
+                <option value="11" data-i18n="optDemo11">11. Hidroala con Efecto Suelo</option>
+                <option value="12" data-i18n="optDemo12">12. Figura Esculpida a Mano</option>
+                <option value="13" data-i18n="optDemo13">13. [LBM] Placa / Línea de Schroeder (Vórtices Físicos)</option>
+                <option value="14" data-i18n="optDemo14">14. [LBM] Cuña Aerodinámica con Turbulencia Real</option>
+              </select>
+              <div class="nav-arrows-group">
+                <button type="button" class="btn-nav-arrow" id="btn-demos-prev" title="Demo anterior (Arriba)" data-i18n-title="btnDemosPrev">▲</button>
+                <button type="button" class="btn-nav-arrow" id="btn-demos-next" title="Demo siguiente (Abajo)" data-i18n-title="btnDemosNext">▼</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1. Medio Fluido y Flujo de Entrada (Movido desde el panel derecho) -->
+          <div class="group-box" id="box-fluid-inflow" style="margin: 0.4rem 0.55rem;">
+            <h4 class="group-title" data-i18n="gbFluidTitle">Medio Fluido y Flujo de Entrada</h4>
+
+            <div class="ctrl-row">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblInflowSpeed">Velocidad del Flujo (U∞):</span>
+                <span class="ctrl-value" id="lbl-speed-value">5.0 m/s</span>
+              </div>
+              <input type="range" id="slider-speed" class="slider-custom" min="0.5" max="12.0" step="0.1" value="5.0">
+            </div>
+
+            <div class="ctrl-row">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblInflowAngle">Ángulo de Dirección:</span>
+                <span class="ctrl-value" id="lbl-angle-value">0°</span>
+              </div>
+              <input type="range" id="slider-angle" class="slider-custom" min="-45" max="45" step="1" value="0">
+            </div>
+
+            <!-- Control de Régimen de Flujo (Laminar vs Turbulento) -->
+            <div class="ctrl-row">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblFlowRegimeSelect">Régimen de Flujo:</span>
+                <span class="ctrl-value" id="lbl-regime-status">Laminar</span>
+              </div>
+              <div class="regime-toggle-container">
+                <button type="button" class="btn-regime-toggle active" id="btn-regime-laminar" data-regime="laminar" data-i18n="btnRegimeLaminar">
+                  🌊 Flujo Laminar
+                </button>
+                <button type="button" class="btn-regime-toggle" id="btn-regime-turbulent" data-regime="turbulent" data-i18n="btnRegimeTurbulent">
+                  🌪️ Flujo Turbulento
+                </button>
+              </div>
+            </div>
+
+            <div class="ctrl-row" id="row-turbulence-intensity">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblTurbulenceIntensity">Intensidad de Turbulencia (Tu):</span>
+                <span class="ctrl-value" id="lbl-turb-intensity-val">0% (Laminar)</span>
+              </div>
+              <input type="range" id="slider-turbulence" class="slider-custom" min="0" max="30" step="1" value="0">
+            </div>
+
+            <div class="ctrl-row">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblViscosity">Viscosidad Cinemática (ν):</span>
+                <span class="ctrl-value" id="lbl-viscosity-value">0.00015 m²/s</span>
+              </div>
+              <input type="range" id="slider-viscosity" class="slider-custom" min="1" max="100" value="39" title="Ajusta la resistencia interna del fluido (desde superfluido hasta miel espesa)">
+            </div>
+
+            <div class="ctrl-row">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblDensity">Densidad del Fluido (ρ):</span>
+                <span class="ctrl-value" id="lbl-density-value">1.225 kg/m³</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="range" id="slider-density" class="slider-custom" min="0.1" max="2000.0" step="0.5" value="1.2" style="flex: 1;" title="Control deslizante de densidad (Máximo: 2000 kg/m³)">
+                <input type="number" id="spin-density" class="input-num" min="0.1" max="2000.0" step="0.1" value="1.225" style="width: 82px; text-align: right;" title="Valor numérico de densidad (0.1 a 2000 kg/m³)">
+              </div>
+            </div>
+
+            <div class="preset-buttons-grid">
+              <button type="button" class="btn-mat-preset active" data-mat="air" data-i18n="btnPresetAir">Aire</button>
+              <button type="button" class="btn-mat-preset" data-mat="water" data-i18n="btnPresetWater">Agua</button>
+              <button type="button" class="btn-mat-preset" data-mat="oil" data-i18n="btnPresetOil">Aceite</button>
+              <button type="button" class="btn-mat-preset" data-mat="glycerin" data-i18n="btnPresetGlycerin">Glicerina</button>
+              <button type="button" class="btn-mat-preset" data-mat="superfluid" data-i18n="btnPresetSuper">Superfluido</button>
+            </div>
+
+            <div style="margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-start; gap: 1rem; flex-wrap: wrap;">
+              <label class="chk-row" style="margin: 0; cursor: pointer;">
+                <input type="checkbox" id="chk-show-particles" checked>
+                <span style="font-weight: 600; color: #e2e8f0;" data-i18n="chkShowParticles">Partículas</span>
+              </label>
+              <label class="chk-row" style="margin: 0; cursor: pointer;" title="Líneas de flujo vectoriales instantáneas (activo para todos los modos de visor)">
+                <input type="checkbox" id="chk-show-flowlines">
+                <span style="font-weight: 600; color: #38bdf8;" data-i18n="chkShowFlowlines">Líneas de Flujo</span>
+              </label>
+            </div>
           </div>
 
           <div style="padding: 0.5rem 0.75rem 0.25rem 0.75rem;">
@@ -195,7 +319,21 @@
           <ul class="scene-list" id="list-scene-elements">
             <!-- Renderizado dinámico vía JavaScript -->
           </ul>
-          <button type="button" class="btn-delete-element" id="btn-delete-element" data-i18n="btnDeleteElement">Eliminar Obstáculo</button>
+
+          <!-- Motor Físico y Malla (Movido desde el panel derecho arriba de Telemetría) -->
+          <div class="group-box" id="box-solver-mesh" style="margin: 0.4rem 0.55rem;">
+            <h4 class="group-title" data-i18n="gbSolverTitle">Motor Físico y Malla</h4>
+
+            <label class="chk-row">
+              <input type="checkbox" id="chk-grid" checked>
+              <span data-i18n="chkShowGrid">Mostrar Rejilla del Túnel</span>
+            </label>
+
+            <label class="chk-row">
+              <input type="checkbox" id="chk-closed-walls">
+              <span data-i18n="chkClosedWalls">Túnel Cerrado (Paredes Sólidas)</span>
+            </label>
+          </div>
 
           <!-- Monitor de Telemetría Aerodinámica / Hidrodinámica -->
           <div class="telemetry-box">
@@ -244,80 +382,346 @@
             </div>
           </div>
 
-          <!-- 2. Herramientas de Edición -->
+          <!-- 2. Visualización CFD (Ubicado arriba de Herramientas y Nodos) -->
+          <div class="tools-group">
+            <span class="tools-group-title" data-i18n="groupVisModes">Visualización CFD</span>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;" data-i18n="lblVisMode">Visor CFD / LBM:</div>
+            <div class="select-nav-row" style="margin-bottom: 0.45rem;">
+              <select id="cb-vis-mode-toolbar" class="select-cfd select-vis-mode-highlight" style="flex: 1;">
+                <option value="smoke" selected data-i18n="visSmoke">💨 Humo y líneas de corriente</option>
+                <option value="vorticity" data-i18n="visVorticity">🌀 Velocidad y remolinos</option>
+                <option value="cfd_des_les" data-i18n="visDesLes">🔬 Aerodinámica DES / LES</option>
+                <option value="pressure" data-i18n="visPressure">📊 Mapa de presión estática (Pa)</option>
+                <option value="cfd_combustion" data-i18n="visCombustion">🔥 Termofluidos y Combustión</option>
+                <option value="velocity" data-i18n="visVelocity">⚡ Magnitud de velocidad (m/s)</option>
+                <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM Vorticidad y turbulencia)</option>
+                <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder (LBM Magnitud de velocidad)</option>
+                <option value="particles" data-i18n="visParticles">✨ Trazado de partículas</option>
+              </select>
+              <div class="nav-arrows-group">
+                <button type="button" class="btn-nav-arrow" id="btn-vis-mode-toolbar-prev" title="Vista anterior (Arriba)" data-i18n-title="btnVisModePrev">▲</button>
+                <button type="button" class="btn-nav-arrow" id="btn-vis-mode-toolbar-next" title="Vista siguiente (Abajo)" data-i18n-title="btnVisModeNext">▼</button>
+              </div>
+            </div>
+
+            <!-- Control de Contraste para Schroeder LBM -->
+            <div class="ctrl-row" id="row-lbm-contrast" style="margin-top: 0.35rem; margin-bottom: 0.2rem; display: none;">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblLbmContrast">Contraste de Vorticidad (LBM):</span>
+                <span class="ctrl-value" id="lbl-contrast-value">1.0x</span>
+              </div>
+              <input type="range" id="slider-contrast" class="slider-custom" min="-8" max="8" step="1" value="0">
+            </div>
+          </div>
+
+          <!-- 3. Herramientas y Nodos (Mismo tamaño para los 3 botones principales) -->
           <div class="tools-group">
             <span class="tools-group-title" data-i18n="groupEditTools">Herramientas y Nodos</span>
-            <div class="tools-grid-2col">
-              <button type="button" class="btn-tool active" id="btn-tool-select" data-i18n="btnSelect" data-i18n-title="btnSelectTitle">🔍 Mover / Rotar</button>
+            <div class="tools-grid-3col">
               <button type="button" class="btn-tool" id="btn-tool-node-edit" data-i18n="btnNodeEdit" data-i18n-title="btnNodeEditTitle">✏️ Deformar Nodos</button>
               <button type="button" class="btn-tool" id="btn-tool-draw-freehand" data-i18n="btnDrawFreehand" data-i18n-title="btnDrawFreehandTitle">✍️ Mano Alzada</button>
               <button type="button" class="btn-tool" id="btn-tool-draw-poly" data-i18n="btnDrawPoly" data-i18n-title="btnDrawPolyTitle">📐 Polígono</button>
             </div>
-            <button type="button" class="btn-tool btn-finish-draw" id="btn-tool-finish-draw" data-i18n="btnFinishDraw" data-i18n-title="btnFinishDrawTitle" disabled style="width: 100%; margin-top: 0.35rem;">
-              ✅ Finalizar Polígono
-            </button>
-            <button type="button" class="btn-tool" id="btn-tool-probe" data-i18n="btnProbe" data-i18n-title="btnProbeTitle" style="width: 100%; margin-top: 0.35rem;">
-              🎯 Sensor / Sonda Pitot
-            </button>
+            <!-- Sensor / Sonda Pitot junto con Deshacer y Rehacer (solo ícono) en la misma fila -->
+            <div class="probe-undo-row" style="display: flex; gap: 0.35rem; margin-top: 0.35rem; align-items: stretch;">
+              <button type="button" class="btn-tool" id="btn-tool-probe" data-i18n="btnProbe" data-i18n-title="btnProbeTitle" style="flex: 1; justify-content: center;">
+                🎯 Sensor / Sonda Pitot
+              </button>
+              <button type="button" class="btn-tool btn-tool-icon-only has-clean-tooltip" id="btn-tool-clean" title="Limpieza" data-tooltip="Limpieza" data-i18n-title="tooltipClean" data-i18n-clean-tooltip="tooltipClean" style="width: 38px; min-width: 38px; padding: 0; font-size: 1.15rem; justify-content: center; position: relative;">
+                🧹
+              </button>
+              <button type="button" class="btn-tool btn-tool-icon-only" id="btn-tool-undo" title="Deshacer deformación de la figura (Ctrl+Z)" data-i18n-title="btnUndoTitle" style="width: 38px; min-width: 38px; padding: 0; font-size: 1.15rem; justify-content: center;">
+                ↩️
+              </button>
+              <button type="button" class="btn-tool btn-tool-icon-only" id="btn-tool-redo" title="Rehacer cambio (Ctrl+Y)" data-i18n-title="btnRedoTitle" style="width: 38px; min-width: 38px; padding: 0; font-size: 1.15rem; justify-content: center;">
+                ↪️
+              </button>
+            </div>
           </div>
 
-          <!-- 3. Formas y Perfiles -->
-          <div class="tools-group">
-            <span class="tools-group-title" data-i18n="groupShapes">Agregar Cuerpos</span>
-            <button type="button" class="btn-tool btn-add-airfoil-special" id="btn-add-airfoil" data-i18n="btnAddAirfoil" data-i18n-title="btnAddAirfoilTitle" style="width: 100%;">
-              ✈️ Perfil NACA
+          <!-- 4. Formas y Perfiles / Agregar Figuras (Ventana plegada por defecto; NACA 0012 y NACA 2412 siempre visibles) -->
+          <div class="tools-group tools-shapes-collapsible-group" id="group-shapes-section">
+            <div class="shapes-header-row" id="shapes-header-toggle" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; margin-bottom: 0.45rem;">
+              <span class="tools-group-title" style="margin-bottom: 0;" data-i18n="groupShapes">Agregar Figuras</span>
+              <button type="button" class="btn-toggle-shapes" id="btn-toggle-shapes-expand" title="Desplegar más figuras" style="background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.3); color: var(--accent); border-radius: 6px; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.2s ease;">
+                <span id="lbl-shapes-toggle-text">Más figuras</span>
+                <span id="icon-shapes-toggle-arrow" style="font-size: 0.65rem; transition: transform 0.25s ease;">▼</span>
+              </button>
+            </div>
+
+            <!-- Fila fija siempre visible: NACA 0012 y Propulsor -->
+            <div class="shapes-grid-2col shapes-pinned-grid" style="margin-bottom: 0.35rem;">
+              <!-- NACA 0012 -->
+              <button type="button" class="btn-shape-card" data-shape="naca0012" title="Perfil Alar Simétrico NACA 0012" data-i18n-title="optNaca0012">
+                <div class="shape-card-preview">
+                  <svg viewBox="0 0 60 28" class="shape-svg"><path d="M 6 14 C 6 8, 20 5, 34 8 C 46 11, 54 13.5, 54 14 C 54 14.5, 46 17, 34 20 C 20 23, 6 20, 6 14 Z" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.6"/></svg>
+                </div>
+                <span class="shape-card-name" data-i18n="shapeNaca0012">NACA 0012</span>
+              </button>
+
+              <!-- Propulsor de Fluido Activo (Fila superior principal) -->
+              <button type="button" class="btn-shape-card" data-shape="thruster" title="Propulsor de Fluido Activo (Chorro Regulable)" data-i18n-title="optThruster">
+                <div class="shape-card-preview">
+                  <svg viewBox="0 0 60 28" class="shape-svg">
+                    <path d="M 10 9 L 26 11 L 34 11 L 34 17 L 26 17 L 10 19 C 8 19, 7 17, 7 14 C 7 11, 8 9, 10 9 Z" fill="rgba(0,255,204,0.22)" stroke="#00ffcc" stroke-width="1.5"/>
+                    <polygon points="12,14 26,12.5 26,15.5" fill="#00ffcc"/>
+                    <line x1="36" y1="12" x2="48" y2="12" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
+                    <line x1="37" y1="14" x2="53" y2="14" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round"/>
+                    <line x1="36" y1="16" x2="48" y2="16" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <span class="shape-card-name" data-i18n="shapeThruster">Propulsor</span>
+              </button>
+            </div>
+
+            <!-- Contenedor desplegable con el resto de figuras (plegado naturalmente por defecto) -->
+            <div class="shapes-collapsible-drawer" id="shapes-collapsible-content" style="display: none;">
+              <div class="shapes-grid-2col">
+                <!-- Cilindro -->
+                <button type="button" class="btn-shape-card" data-shape="cylinder" title="Cilindro Circular (Calle de Vórtices)" data-i18n-title="optCylinder">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><circle cx="30" cy="14" r="10" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.6"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeCylinder">Cilindro</span>
+                </button>
+
+                <!-- NACA 2412 -->
+                <button type="button" class="btn-shape-card" data-shape="naca2412" title="Perfil Alar Asimétrico Sustentador NACA 2412" data-i18n-title="optNaca2412">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><path d="M 6 15 C 6 7, 20 4, 34 7 C 46 10, 54 13.5, 54 14 C 54 14.5, 46 19, 34 22 C 20 24, 6 20, 6 15 Z" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.6"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeNaca2412">NACA 2412</span>
+                </button>
+
+                <!-- Cuña -->
+                <button type="button" class="btn-shape-card" data-shape="wedge" title="Cuña Aerodinámica / Deflector" data-i18n-title="optWedge">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><polygon points="12,14 48,6 48,22" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.6"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeWedge">Cuña</span>
+                </button>
+
+                <!-- Placa Plana -->
+                <button type="button" class="btn-shape-card" data-shape="flat_plate" title="Placa Plana a 15° de Ataque" data-i18n-title="optFlatPlate">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><line x1="12" y1="21" x2="48" y2="7" stroke="#00ffcc" stroke-width="3" stroke-linecap="round"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeFlatPlate">Placa 15°</span>
+                </button>
+
+                <!-- Cuadrado Romo -->
+                <button type="button" class="btn-shape-card" data-shape="square" title="Cuerpo Cuadrado Romo" data-i18n-title="optSquare">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><rect x="21" y="5" width="18" height="18" rx="2" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.6"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeSquare">Cuadrado</span>
+                </button>
+
+                <!-- Cruz -->
+                <button type="button" class="btn-shape-card" data-shape="swiss_cross" title="Cruz" data-i18n-title="optSwissCross">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><path d="M 29 5 H 31 V 13 H 39 V 15 H 31 V 23 H 29 V 15 H 21 V 13 H 29 Z" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.2"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeSwissCross">Cruz</span>
+                </button>
+
+                <!-- Silueta de Bólido -->
+                <button type="button" class="btn-shape-card" data-shape="car" title="Silueta de Vehículo de Competición" data-i18n-title="optCar">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><path d="M 48.4 10.0 L 48.4 11.1 L 49.0 11.6 L 54.2 12.3 L 55.9 12.3 L 55.9 10.4 L 54.3 10.3 L 54.0 10.0 L 53.9 9.6 L 48.7 9.6 Z M 55.9 13.4 L 45.9 12.0 L 35.4 8.4 L 35.9 7.5 L 33.9 7.2 L 33.1 8.8 L 33.2 11.0 L 30.3 10.4 L 28.5 12.8 L 26.7 13.0 L 26.5 11.9 L 25.5 12.1 L 25.6 13.0 L 16.3 12.3 L 12.8 12.9 L 4.5 16.2 L 4.0 19.2 L 10.0 19.2 L 10.1 17.7 L 11.3 19.7 L 13.6 20.7 L 17.1 19.3 L 45.9 19.3 L 50.0 20.7 L 54.2 18.9 L 53.8 16.3 L 55.9 15.7 Z" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.3"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeCar">Bólido</span>
+                </button>
+
+                <!-- Tobera Venturi -->
+                <button type="button" class="btn-shape-card" data-shape="venturi" title="Tobera Venturi (Estrangulamiento)" data-i18n-title="optVenturi">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><path d="M 8 6 Q 30 12 52 6 L 52 4 L 8 4 Z M 8 22 Q 30 16 52 22 L 52 24 L 8 24 Z" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.5"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeVenturi">Tobera Venturi</span>
+                </button>
+
+                <!-- Barrera de Schroeder -->
+                <button type="button" class="btn-shape-card" data-shape="schroeder_line" title="Barrera Lineal de Schroeder (Vórtices)" data-i18n-title="optSchroederLine">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><line x1="20" y1="4" x2="20" y2="24" stroke="#00ffcc" stroke-width="3" stroke-linecap="round"/><circle cx="34" cy="9" r="2.8" fill="none" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="2,2"/><circle cx="42" cy="19" r="2.8" fill="none" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="2,2"/><circle cx="52" cy="11" r="2.8" fill="none" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="2,2"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeSchroederLine">Barrera Schroeder</span>
+                </button>
+
+                <!-- Gota Aerodinámica (Movida al lado de Barrera Schroeder) -->
+                <button type="button" class="btn-shape-card" data-shape="teardrop" title="Gota Aerodinámica de Bajo Arrastre" data-i18n-title="optTeardrop">
+                  <div class="shape-card-preview">
+                    <svg viewBox="0 0 60 28" class="shape-svg"><path d="M 12 14 C 12 8, 20 8, 26 10 C 38 12, 52 14, 52 14 C 52 14, 38 16, 26 18 C 20 20, 12 20, 12 14 Z" fill="rgba(0,255,204,0.18)" stroke="#00ffcc" stroke-width="1.6"/></svg>
+                  </div>
+                  <span class="shape-card-name" data-i18n="shapeTeardrop">Gota</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Propiedades del Objeto Seleccionado (Movido abajo de Agregar Figuras) -->
+          <div class="group-box is-disabled-panel" id="box-selected-element-props" style="margin: 0.4rem 0.55rem;">
+            <h4 class="group-title" data-i18n="gbTransformTitle">Propiedades del Objeto Seleccionado</h4>
+
+            <!-- Nombre del Objeto Seleccionado -->
+            <div class="selected-obj-header">
+              <span style="font-size: 0.75rem; color: var(--text-dim); font-weight: 600;" data-i18n="lblSelectedObj">Objeto Seleccionado:</span>
+              <span id="lbl-selected-obj-name" style="font-size: 0.82rem; font-weight: 700; color: var(--accent); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" data-i18n="lblNoObjSelected">(Ninguno)</span>
+            </div>
+
+            <!-- Fila de Acciones de Objeto: Copiar, Pegar, Eliminar -->
+            <div class="element-action-buttons-row" style="display: flex; gap: 0.35rem; margin: 0.35rem 0 0.5rem 0;">
+              <button type="button" class="btn-element-action" id="btn-copy-element" title="Copiar figura seleccionada (Ctrl+C)" data-i18n-title="btnCopyTitle" disabled style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.32rem 0.4rem; font-size: 0.76rem; font-weight: 600; border-radius: 6px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); color: #e2e8f0; cursor: pointer; transition: all 0.15s ease;">
+                <span>📋</span>
+                <span data-i18n="btnCopy">Copiar</span>
+              </button>
+              <button type="button" class="btn-element-action" id="btn-paste-element" title="Pegar figura exacta duplicada (Ctrl+V)" data-i18n-title="btnPasteTitle" disabled style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.32rem 0.4rem; font-size: 0.76rem; font-weight: 600; border-radius: 6px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(0, 255, 204, 0.25); color: #e2e8f0; cursor: pointer; transition: all 0.15s ease;">
+                <span>📄</span>
+                <span data-i18n="btnPaste">Pegar</span>
+              </button>
+              <button type="button" class="btn-element-action" id="btn-delete-element" title="Eliminar figura seleccionada (Supr)" data-i18n-title="btnDeleteTitle" disabled style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.32rem 0.4rem; font-size: 0.76rem; font-weight: 600; border-radius: 6px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(244, 63, 94, 0.25); color: #fda4af; cursor: pointer; transition: all 0.15s ease;">
+                <span>🗑️</span>
+                <span data-i18n="btnDelete">Eliminar</span>
+              </button>
+            </div>
+
+            <div class="ctrl-row">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblAoA">Ángulo de Ataque (α):</span>
+                <span class="ctrl-value" id="lbl-rot-value">0°</span>
+              </div>
+              <input type="range" id="slider-rotation" class="slider-custom" min="0" max="360" value="0" step="1" disabled>
+            </div>
+
+            <!-- Botón de Barrido Automático α-Sweep (Cl-α y Polares) -->
+            <button type="button" class="btn-tool btn-alpha-sweep" id="btn-alpha-sweep" title="Calcular polar aerodinámica (Cl-α y arrastre)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/>
+                <path d="M18 9l-5 5-4-4-6 6"/>
+              </svg>
+              <span data-i18n="btnAlphaSweep">Barrer Ángulo α (Cl-α & Polares)</span>
             </button>
-            <select id="cb-add-shapes" class="select-cfd" style="width: 100%; margin-top: 0.4rem;">
-              <option value="" selected data-i18n="optAddShapes">-- Agregar Figura Hidrodinámica --</option>
-              <option value="schroeder_line" data-i18n="optSchroederLine">Línea / Placa de Schroeder (Calle de Vórtices)</option>
-              <option value="wedge" data-i18n="optWedge">Cuña Aerodinámica / Deflector</option>
-              <option value="naca0012" data-i18n="optNaca0012">Perfil Alar NACA 0012 (Simétrico)</option>
-              <option value="naca2412" data-i18n="optNaca2412">Perfil Alar NACA 2412 (Asimétrico)</option>
-              <option value="cylinder" data-i18n="optCylinder">Cilindro Circular (Calle de Vórtices)</option>
-              <option value="teardrop" data-i18n="optTeardrop">Gota Aerodinámica (Bajo Arrastre)</option>
-              <option value="flat_plate" data-i18n="optFlatPlate">Placa Plana (Ángulo de Ataque)</option>
-              <option value="square" data-i18n="optSquare">Cuerpo Cuadrado Romo (Separación)</option>
-              <option value="car" data-i18n="optCar">Silueta de Bólido / Downforce</option>
-              <option value="venturi" data-i18n="optVenturi">Tobera Venturi / Estrangulamiento</option>
-            </select>
+
+            <!-- Panel Desplegable de Barrido α (Debajo del botón) -->
+            <div id="sweep-panel-drawer" class="sweep-panel-drawer" style="display: none;">
+              <div class="sweep-drawer-header">
+                <div class="sweep-drawer-titles">
+                  <span class="sweep-badge" data-i18n="sweepBadge">ANÁLISIS AERODINÁMICO AVANZADO</span>
+                  <h4 class="sweep-drawer-title" data-i18n="sweepModalTitle">Barrido Automático de Ángulo de Ataque (α-Sweep) & Polares de Arrastre</h4>
+                  <p class="sweep-drawer-subtitle" data-i18n="sweepModalSubtitle">Generador de Curvas Aerodinámicas en Tiempo Real: Cl-α, Cd-α, Polar de Lilienthal y L/D</p>
+                </div>
+                <button type="button" class="sweep-drawer-close" id="btn-close-sweep-drawer" onclick="window.AerodynamicSweep.closeSweepView()" title="Cerrar análisis" data-i18n-title="sweepDrawerCloseTitle">✕</button>
+              </div>
+
+              <!-- Banner Explicativo de Simulación en Vivo -->
+              <div class="sweep-info-banner" data-i18n="sweepInfoBanner">
+                💡 <strong>Simulación en Vivo:</strong> Al pulsar <em>Iniciar Barrido</em>, el modelo en el túnel rotará automáticamente ángulo por ángulo evaluando sustentación, arrastre y entrada en pérdida (Stall) en tiempo real.
+              </div>
+
+              <!-- Configuración del Barrido y Botón de Inicio (Captura 1) -->
+              <div class="sweep-side-controls">
+                <div class="sweep-target-row">
+                  <span class="sweep-target-label" data-i18n="lblSweepTarget">Cuerpo Evaluado:</span>
+                  <strong class="sweep-target-name" id="sweep-target-name">Airfoil NACA 0012</strong>
+                </div>
+
+                <div class="sweep-inputs-grid">
+                  <label class="sweep-grid-label">
+                    <span data-i18n="lblSweepMinAoa">AoA Mín (°):</span>
+                    <input type="number" id="sweep-min-aoa" value="-10" step="1" min="-90" max="90" class="sweep-num-input">
+                  </label>
+                  <label class="sweep-grid-label">
+                    <span data-i18n="lblSweepMaxAoa">AoA Máx (°):</span>
+                    <input type="number" id="sweep-max-aoa" value="20" step="1" min="-90" max="90" class="sweep-num-input">
+                  </label>
+                  <label class="sweep-grid-label">
+                    <span data-i18n="lblSweepStepAoa">Paso Δα (°):</span>
+                    <input type="number" id="sweep-step-aoa" value="1" step="0.5" min="0.5" max="5" class="sweep-num-input">
+                  </label>
+                </div>
+
+                <button type="button" class="btn-run-sweep btn-run-sweep-block" id="btn-run-sweep" onclick="window.AerodynamicSweep.startInteractiveSweep(window.sim)">
+                  <span data-i18n="btnRunSweep">▶ Iniciar Barrido α</span>
+                </button>
+              </div>
+
+              <!-- Tarjetas de Métricas Aerodinámicas Clave (Captura 2) -->
+              <div class="sweep-metrics-grid">
+                <div class="sweep-metric-card" title="Sustentación Máxima (Cl máx)">
+                  <span class="sweep-metric-title" data-i18n="metricClMaxLabel">Sustentación Máx. (Cl máx)</span>
+                  <span class="sweep-metric-val" id="sweep-metric-clmax" style="color: #00ffcc;">--</span>
+                </div>
+                <div class="sweep-metric-card" title="Ángulo de Pérdida (α stall)">
+                  <span class="sweep-metric-title" data-i18n="metricStallLabel">Ángulo Pérdida (α stall)</span>
+                  <span class="sweep-metric-val" id="sweep-metric-stall" style="color: #fb923c;">--</span>
+                </div>
+                <div class="sweep-metric-card" title="Máxima Eficiencia (L/D)">
+                  <span class="sweep-metric-title" data-i18n="metricLodMaxLabel">Máx. Eficiencia (L/D)</span>
+                  <span class="sweep-metric-val" id="sweep-metric-lodmax" style="color: #38bdf8;">--</span>
+                </div>
+                <div class="sweep-metric-card" title="Arrastre Mínimo (Cd0)">
+                  <span class="sweep-metric-title" data-i18n="metricCdMinLabel">Arrastre Mín. (Cd0)</span>
+                  <span class="sweep-metric-val" id="sweep-metric-cdmin" style="color: #c084fc;">--</span>
+                </div>
+              </div>
+
+              <!-- Acción: Descarga CSV -->
+              <button type="button" class="btn-download-sweep-csv btn-download-sweep-block" id="btn-download-sweep-csv" onclick="window.AerodynamicSweep.handleSweepCsvDownloadClick(window.sim)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span data-i18n="btnDownloadSweepCsv">Descargar Polar CSV</span>
+              </button>
+            </div>
+
+            <label class="chk-row">
+              <input type="checkbox" id="chk-smooth" checked disabled>
+              <span data-i18n="chkSmoothCurve">Curva Suave (Catmull-Rom)</span>
+            </label>
+
+            <label class="chk-row">
+              <input type="checkbox" id="chk-show-forces" checked disabled>
+              <span data-i18n="chkShowForces">Mostrar Vectores de Fuerza (Fd, Fl)</span>
+            </label>
+
+            <!-- Opción Boya Flotante -->
+            <label class="chk-row" style="margin-top: 0.35rem;">
+              <input type="checkbox" id="chk-buoy" disabled>
+              <span data-i18n="chkBuoy">Boya (Flotante con corrientes)</span>
+            </label>
+
+            <!-- Opción Giro Autónomo y Dirección -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.35rem; gap: 0.4rem;">
+              <label class="chk-row" style="margin: 0; flex: 1;">
+                <input type="checkbox" id="chk-auto-rotate" disabled>
+                <span data-i18n="chkAutoRotate">Giro Autónomo</span>
+              </label>
+              <div class="auto-rotate-dir-group" style="display: inline-flex; gap: 0.25rem;">
+                <button type="button" class="btn-rotate-dir active" id="btn-rotate-cw" title="Girar a la Derecha (Sentido Horario)" data-i18n-title="titleRotateCW" disabled>↻ Der</button>
+                <button type="button" class="btn-rotate-dir" id="btn-rotate-ccw" title="Girar a la Izquierda (Sentido Antihorario)" data-i18n-title="titleRotateCCW" disabled>↺ Izq</button>
+              </div>
+            </div>
+            <div class="ctrl-row" id="row-auto-rotate-speed" style="margin-top: 0.35rem; padding-left: 0.25rem;">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblAutoRotateSpeed">Velocidad de Giro (1 - 200 RPM):</span>
+                <span class="ctrl-value" id="lbl-auto-rotate-speed-val">5 RPM</span>
+              </div>
+              <input type="range" id="slider-auto-rotate-speed" class="slider-custom" min="1" max="200" step="1" value="5" disabled title="Ajusta la velocidad de giro de 1 a 200 RPM">
+            </div>
+            <div class="ctrl-row" id="row-auto-rotate-high" style="margin-top: 0.35rem; padding-left: 0.25rem;">
+              <div class="ctrl-label-row">
+                <span data-i18n="lblAutoRotateHigh" style="font-size: 0.76rem; color: #94a3b8;">Alta Velocidad (200 - 600 RPM):</span>
+                <span class="ctrl-value" id="lbl-auto-rotate-high-val" style="font-size: 0.75rem; color: #64748b;">200 RPM</span>
+              </div>
+              <input type="range" id="slider-auto-rotate-high" class="slider-custom" min="200" max="600" step="5" value="200" disabled title="Se habilita al alcanzar 200 RPM en el control principal">
+            </div>
           </div>
 
-          <!-- 4. Visualización Rápida y Demos -->
-          <div class="tools-group">
-            <span class="tools-group-title" data-i18n="groupVisDemos">Visualización y Demos</span>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;" data-i18n="lblVisMode">Visor CFD / LBM:</div>
-            <select id="cb-vis-mode-toolbar" class="select-cfd select-vis-mode-highlight" style="width: 100%; margin-bottom: 0.5rem;">
-              <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
-              <option value="pressure" data-i18n="visPressure">📊 CFD: Presión Estática (Pa)</option>
-              <option value="velocity" data-i18n="visVelocity">⚡ CFD: Velocidad (m/s)</option>
-              <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad (s⁻¹)</option>
-              <option value="particles" data-i18n="visParticles">✨ CFD: Partículas Trazadoras</option>
-              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM · Vorticidad)</option>
-              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo</option>
-              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Rapidez de Flujo</option>
-            </select>
-
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;" data-i18n="lblDemos">Demos Didácticas:</div>
-            <select id="cb-demos" class="select-cfd" style="width: 100%;">
-              <option value="" selected data-i18n="optDemos">Demos de Física...</option>
-              <option value="1" data-i18n="optDemo1">1. Perfil NACA 0012 (Sustentación)</option>
-              <option value="2" data-i18n="optDemo2">2. Calle de Vórtices de Von Kármán</option>
-              <option value="3" data-i18n="optDemo3">3. Gota vs. Placa Plana (Arrastre)</option>
-              <option value="4" data-i18n="optDemo4">4. Pérdida / Stall (Alto Ángulo de Ataque)</option>
-              <option value="5" data-i18n="optDemo5">5. Efecto Venturi y Tubo de Bernoulli</option>
-              <option value="6" data-i18n="optDemo6">6. Aerodinámica de Bólido y Estela</option>
-              <option value="7" data-i18n="optDemo7">7. Ala Multielemento con Flap</option>
-              <option value="8" data-i18n="optDemo8">8. Cuerpos Romos: Cuadrado vs Cilindro</option>
-              <option value="9" data-i18n="optDemo9">9. Rebufo Aerodinámico (Drafting)</option>
-              <option value="10" data-i18n="optDemo10">10. Tobera Convergente-Divergente</option>
-              <option value="11" data-i18n="optDemo11">11. Hidroala con Efecto Suelo</option>
-              <option value="12" data-i18n="optDemo12">12. Figura Esculpida a Mano</option>
-              <option value="13" data-i18n="optDemo13">13. [LBM] Placa / Línea de Schroeder (Vórtices Físicos)</option>
-              <option value="14" data-i18n="optDemo14">14. [LBM] Cuña Aerodinámica con Turbulencia Real</option>
-            </select>
-          </div>
-
-          <!-- 5. Acciones y Coordenadas -->
+          <!-- 6. Acciones y Coordenadas -->
           <div class="tools-group">
             <button type="button" class="btn-tool btn-clear-scene" id="btn-clear-scene" data-i18n="btnClear" data-i18n-title="btnClearTitle" style="width: 100%;">
               🗑️ Limpiar Túnel
@@ -327,204 +731,97 @@
               <div class="status-msg-inline" id="status-msg" data-i18n="statusReady" style="text-align: center; white-space: normal;">Listo. Selecciona, deforma o añade figuras en el túnel de viento.</div>
             </div>
           </div>
+
+          <!-- Publicidad en Sidebar Oficial -->
+          <aside class="ad-sidebar-card" style="margin: 0.4rem 0.55rem;">
+            <div style="font-size: 0.62rem; color: #64748b; margin-bottom: 0.35rem;" data-i18n="adLabel">PUBLICIDAD</div>
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5786595894984320"
+                 data-ad-slot="auto"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+          </aside>
         </div>
       </aside>
 
-      <!-- Área Central del Canvas -->
+      <!-- Área Central del Canvas (Ocupa todo el espacio disponible) -->
       <main class="canvas-area">
         <canvas id="fluid-canvas"></canvas>
+ 
+        <!-- Tarjeta Flotante Interactiva del Propulsor (Anclada dinámicamente arriba de la figura) -->
+        <div id="thruster-floating-card" class="thruster-floating-card" style="display: none;">
+          <div class="thruster-card-header">
+            <span class="thruster-badge">🚀 PROPULSOR</span>
+            <span id="thruster-speed-val" class="thruster-val-pill">5.0 m/s</span>
+          </div>
+          <div class="thruster-control-row">
+            <label for="thruster-slider-speed" class="thruster-lbl" data-i18n="lblThrusterSpeed">Velocidad:</label>
+            <input type="range" id="thruster-slider-speed" min="0" max="12" step="0.1" value="5.0" class="thruster-slider">
+          </div>
+          <div class="thruster-control-row" style="margin-top: 0.35rem;">
+            <span class="thruster-lbl" data-i18n="lblThrusterMode">Modo Flujo:</span>
+            <div class="thruster-switch-group">
+              <button type="button" class="btn-thruster-mode active" id="btn-thruster-vapor" data-mode="vapor" title="Expulsa filamento de vapor / humo visible" data-i18n="btnThrusterVapor">💨 Vapor</button>
+              <button type="button" class="btn-thruster-mode" id="btn-thruster-clean" data-mode="clean" title="Expulsa sección vacía de viento transparente" data-i18n="btnThrusterClean">🌬️ Viento Limpio</button>
+            </div>
+          </div>
+        </div>
 
-        <!-- Botón superior izquierdo desplegable (Escena) -->
-        <button type="button" class="side-tab-toggle side-tab-left" id="side-tab-left" title="Desplegar / Ocultar Escena" aria-label="Toggle Scene Panel">
+        <!-- Botón superior izquierdo desplegable (Escena / Herramientas en móviles) -->
+        <button type="button" class="side-tab-toggle side-tab-left" id="side-tab-left" title="Desplegar / Ocultar Panel" aria-label="Toggle Panel">
           <span class="tab-text" data-i18n="btnMobileScene">Túnel</span>
           <span class="tab-arrow" id="arrow-tab-left">▶</span>
         </button>
 
-        <!-- Botón superior derecho desplegable (Ajustes) -->
-        <button type="button" class="side-tab-toggle side-tab-right" id="side-tab-right" title="Desplegar / Ocultar Ajustes" aria-label="Toggle Settings Panel">
-          <span class="tab-arrow" id="arrow-tab-right">◀</span>
-          <span class="tab-text" data-i18n="btnMobileProps">Fluido</span>
-        </button>
-
-        <!-- Controles Flotantes de Zoom / Vista -->
+        <!-- Controles Flotantes de Zoom / Vista y Deshacer -->
         <div class="canvas-view-controls">
+          <button type="button" class="btn-view-ctl" id="btn-canvas-undo" title="Deshacer (Ctrl+Z)" data-i18n-title="btnUndoTitle" style="font-size: 0.95rem;">↩️</button>
           <button type="button" class="btn-view-ctl" id="btn-zoom-in" title="Zoom In (+)">+</button>
           <button type="button" class="btn-view-ctl" id="btn-zoom-out" title="Zoom Out (-)">−</button>
           <button type="button" class="btn-view-ctl" id="btn-reset-view" title="Reset View (1:1)" style="font-size: 0.75rem;">1:1</button>
         </div>
+
+        <!-- Superposición Flotante de Gráficas Aerodinámicas (Esquina Inferior Izquierda) -->
+        <div id="sweep-chart-floating-overlay" class="sweep-chart-floating-overlay" style="display: none;" onclick="if(this.classList.contains('is-folded')) window.AerodynamicSweep.toggleFoldOverlay()">
+          <!-- Pestaña lateral vertical visible únicamente al estar plegado (lado derecho del contenedor retraído a la izquierda) -->
+          <div class="sweep-overlay-fold-handle" id="sweep-overlay-fold-handle" onclick="window.AerodynamicSweep.toggleFoldOverlay()" title="Desplegar gráficas" data-i18n-title="btnFoldOverlayTitleUnfold">
+            <span data-i18n="sweepOverlayFoldHandle">📈 GRÁFICAS ▶</span>
+          </div>
+          <div class="sweep-overlay-topbar">
+            <!-- Pestañas de Curvas Polares -->
+            <div class="sweep-tabs-bar">
+              <button type="button" class="sweep-tab-btn active" data-sweep-tab="cl_alpha" onclick="window.AerodynamicSweep.switchSweepTab('cl_alpha')" title="Curva de Sustentación (Cl vs α)" data-i18n-title="sweepTabClAlphaTitle">
+                <span data-i18n="sweepTabClAlphaShort">Cl vs α</span>
+              </button>
+              <button type="button" class="sweep-tab-btn" data-sweep-tab="drag_polar" onclick="window.AerodynamicSweep.switchSweepTab('drag_polar')" title="Polar de Arrastre de Lilienthal (Cl vs Cd)" data-i18n-title="sweepTabDragPolarTitle">
+                <span data-i18n="sweepTabDragPolarShort">Polar Cl-Cd</span>
+              </button>
+              <button type="button" class="sweep-tab-btn" data-sweep-tab="cd_alpha" onclick="window.AerodynamicSweep.switchSweepTab('cd_alpha')" title="Curva de Resistencia al Avance (Cd vs α)" data-i18n-title="sweepTabCdAlphaTitle">
+                <span data-i18n="sweepTabCdAlphaShort">Cd vs α</span>
+              </button>
+              <button type="button" class="sweep-tab-btn" data-sweep-tab="lod_alpha" onclick="window.AerodynamicSweep.switchSweepTab('lod_alpha')" title="Eficiencia Aerodinámica (L/D vs α)" data-i18n-title="sweepTabLodAlphaTitle">
+                <span data-i18n="sweepTabLodAlphaShort">L/D (Eficiencia)</span>
+              </button>
+            </div>
+            <div class="sweep-overlay-ctl-buttons">
+              <button type="button" class="sweep-overlay-realtime-btn" id="btn-toggle-sweep-realtime" onclick="event.stopPropagation(); window.AerodynamicSweep.toggleRealtime()" title="Tiempo real desactivado (haz clic para activar)" data-i18n-title="btnToggleRealtimeTitleInactive">
+                <span class="realtime-dot">●</span> <span data-i18n="lblRealtime">Tiempo real</span>
+              </button>
+              <button type="button" class="sweep-overlay-fold-btn" id="btn-fold-sweep-overlay" onclick="event.stopPropagation(); window.AerodynamicSweep.toggleFoldOverlay()" title="Plegar gráfica a la izquierda" data-i18n-title="btnFoldOverlayTitleFold">◀</button>
+              <button type="button" class="sweep-overlay-close-btn" id="btn-close-sweep-overlay" onclick="event.stopPropagation(); window.AerodynamicSweep.closeSweepView()" title="Cerrar Gráfica" data-i18n-title="btnCloseSweepOverlayTitle">✕</button>
+            </div>
+          </div>
+
+          <!-- Lienzo del Gráfico Científico en Tiempo Real -->
+          <div class="sweep-chart-container">
+            <canvas id="sweep-chart-canvas" width="600" height="190"></canvas>
+          </div>
+        </div>
       </main>
-
-      <!-- Columna Derecha: Propiedades Físicas del Fluido -->
-      <aside class="panel-right" id="panel-right">
-        <div class="mobile-drawer-header">
-          <span class="mobile-drawer-title" data-i18n="panelPropertiesTitle">Propiedades del Fluido y Túnel</span>
-          <button type="button" class="btn-close-drawer" id="btn-close-props-drawer" data-i18n="btnCloseDrawer">✕ Cerrar</button>
-        </div>
-
-        <!-- 1. Medio Fluido y Flujo de Entrada -->
-        <div class="group-box">
-          <h4 class="group-title" data-i18n="gbFluidTitle">Medio Fluido y Flujo de Entrada</h4>
-
-          <div class="ctrl-row">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblInflowSpeed">Velocidad del Flujo (U∞):</span>
-              <span class="ctrl-value" id="lbl-speed-value">5.0 m/s</span>
-            </div>
-            <input type="range" id="slider-speed" class="slider-custom" min="0.5" max="12.0" step="0.1" value="5.0">
-          </div>
-
-          <div class="ctrl-row">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblInflowAngle">Ángulo de Dirección:</span>
-              <span class="ctrl-value" id="lbl-angle-value">0°</span>
-            </div>
-            <input type="range" id="slider-angle" class="slider-custom" min="-45" max="45" step="1" value="0">
-          </div>
-
-          <!-- Control de Régimen de Flujo (Laminar vs Turbulento) -->
-          <div class="ctrl-row">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblFlowRegimeSelect">Régimen de Flujo:</span>
-              <span class="ctrl-value" id="lbl-regime-status">Laminar</span>
-            </div>
-            <div class="regime-toggle-container">
-              <button type="button" class="btn-regime-toggle active" id="btn-regime-laminar" data-regime="laminar" data-i18n="btnRegimeLaminar">
-                🌊 Flujo Laminar
-              </button>
-              <button type="button" class="btn-regime-toggle" id="btn-regime-turbulent" data-regime="turbulent" data-i18n="btnRegimeTurbulent">
-                🌪️ Flujo Turbulento
-              </button>
-            </div>
-          </div>
-
-          <div class="ctrl-row" id="row-turbulence-intensity">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblTurbulenceIntensity">Intensidad de Turbulencia (Tu):</span>
-              <span class="ctrl-value" id="lbl-turb-intensity-val">0% (Laminar)</span>
-            </div>
-            <input type="range" id="slider-turbulence" class="slider-custom" min="0" max="30" step="1" value="0">
-          </div>
-
-          <div class="ctrl-row">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblViscosity">Viscosidad Cinemática (ν):</span>
-              <span class="ctrl-value" id="lbl-viscosity-value">0.00015 m²/s</span>
-            </div>
-            <input type="range" id="slider-viscosity" class="slider-custom" min="1" max="100" value="39" title="Ajusta la resistencia interna del fluido (desde superfluido hasta miel espesa)">
-          </div>
-
-          <div class="ctrl-row">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblDensity">Densidad del Fluido (ρ):</span>
-              <span class="ctrl-value" id="lbl-density-value">1.225 kg/m³</span>
-            </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <input type="range" id="slider-density" class="slider-custom" min="0.1" max="2000.0" step="0.5" value="1.2" style="flex: 1;" title="Control deslizante de densidad (Máximo: 2000 kg/m³)">
-              <input type="number" id="spin-density" class="input-num" min="0.1" max="2000.0" step="0.1" value="1.225" style="width: 82px; text-align: right;" title="Valor numérico de densidad (0.1 a 2000 kg/m³)">
-            </div>
-          </div>
-
-          <div class="preset-buttons-grid">
-            <button type="button" class="btn-mat-preset active" data-mat="air" data-i18n="btnPresetAir">Aire</button>
-            <button type="button" class="btn-mat-preset" data-mat="water" data-i18n="btnPresetWater">Agua</button>
-            <button type="button" class="btn-mat-preset" data-mat="oil" data-i18n="btnPresetOil">Aceite</button>
-            <button type="button" class="btn-mat-preset" data-mat="glycerin" data-i18n="btnPresetGlycerin">Glicerina</button>
-            <button type="button" class="btn-mat-preset" data-mat="superfluid" data-i18n="btnPresetSuper">Superfluido</button>
-          </div>
-
-          <div style="margin-top: 0.85rem; padding-top: 0.65rem; border-top: 1px solid var(--border);">
-            <label class="chk-row" style="margin: 0; cursor: pointer;">
-              <input type="checkbox" id="chk-show-particles" checked>
-              <span style="font-weight: 600; color: #e2e8f0;" data-i18n="chkShowParticles">Partículas</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- 2. Transformación y Ángulo de Ataque -->
-        <div class="group-box">
-          <h4 class="group-title" data-i18n="gbTransformTitle">Transformación y Ángulo de Ataque</h4>
-          <div class="ctrl-row">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblAoA">Ángulo de Ataque (α):</span>
-              <span class="ctrl-value" id="lbl-rot-value">0°</span>
-            </div>
-            <input type="range" id="slider-rotation" class="slider-custom" min="0" max="360" value="0">
-          </div>
-
-          <label class="chk-row">
-            <input type="checkbox" id="chk-smooth" checked>
-            <span data-i18n="chkSmoothCurve">Curva Suave (Catmull-Rom)</span>
-          </label>
-
-          <label class="chk-row">
-            <input type="checkbox" id="chk-show-forces" checked>
-            <span data-i18n="chkShowForces">Mostrar Vectores de Fuerza (Fd, Fl)</span>
-          </label>
-        </div>
-
-        <!-- 3. Modos de Visualización CFD -->
-        <div class="group-box">
-          <h4 class="group-title" data-i18n="gbVisTitle">Visualización y Renderizado CFD</h4>
-
-          <div class="ctrl-row">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblVisMode">Modo de Vista CFD / Físico:</span>
-            </div>
-            <select id="cb-vis-mode" class="select-cfd" style="width: 100%; margin-top: 0.35rem;">
-              <option value="smoke" selected data-i18n="visSmoke">💨 CFD: Humo y Líneas de Corriente</option>
-              <option value="pressure" data-i18n="visPressure">📊 CFD: Mapa de Presión Estática (Pa)</option>
-              <option value="velocity" data-i18n="visVelocity">⚡ CFD: Magnitud de Velocidad (m/s)</option>
-              <option value="vorticity" data-i18n="visVorticity">🌀 CFD: Vorticidad y Remolinos (s⁻¹)</option>
-              <option value="particles" data-i18n="visParticles">✨ CFD: Trazadores de Partículas</option>
-              <option value="schroeder_curl" data-i18n="visSchroederCurl">🌪️ Schroeder (LBM · Vorticidad y Turbulencia Física)</option>
-              <option value="schroeder_flowlines" data-i18n="visSchroederFlowlines">〰️ Schroeder LBM: Líneas de Flujo (Flowlines)</option>
-              <option value="schroeder_speed" data-i18n="visSchroederSpeed">⚡ Schroeder LBM: Magnitud de Velocidad</option>
-            </select>
-          </div>
-
-          <div class="ctrl-row" id="row-lbm-contrast" style="margin-top: 0.45rem; display: none;">
-            <div class="ctrl-label-row">
-              <span data-i18n="lblLbmContrast">Contraste de Vorticidad (LBM):</span>
-              <span class="ctrl-value" id="lbl-contrast-value">1.0x</span>
-            </div>
-            <input type="range" id="slider-contrast" class="slider-custom" min="-8" max="8" step="1" value="0">
-          </div>
-
-          <label class="chk-row" style="margin-top: 0.65rem; background: rgba(255, 255, 255, 0.05); padding: 0.45rem 0.6rem; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.12);">
-            <input type="checkbox" id="chk-pause">
-            <span style="font-weight: 700; color: #ffffff;" data-i18n="chkPause">⏸️ Pausar Simulación (Espacio)</span>
-          </label>
-        </div>
-
-        <!-- 4. Túnel y Simulación Global -->
-        <div class="group-box">
-          <h4 class="group-title" data-i18n="gbSolverTitle">Túnel de Viento y Simulación</h4>
-
-          <label class="chk-row">
-            <input type="checkbox" id="chk-grid" checked>
-            <span data-i18n="chkShowGrid">Mostrar Rejilla del Túnel</span>
-          </label>
-
-          <label class="chk-row">
-            <input type="checkbox" id="chk-closed-walls">
-            <span data-i18n="chkClosedWalls">Túnel Cerrado (Paredes Sólidas)</span>
-          </label>
-        </div>
-
-        <!-- Publicidad en Sidebar Oficial -->
-        <aside class="ad-sidebar-card">
-          <div style="font-size: 0.62rem; color: #64748b; margin-bottom: 0.35rem;" data-i18n="adLabel">PUBLICIDAD</div>
-          <ins class="adsbygoogle"
-               style="display:block"
-               data-ad-client="ca-pub-5786595894984320"
-               data-ad-slot="auto"
-               data-ad-format="auto"
-               data-full-width-responsive="true"></ins>
-          <script>
-               (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-        </aside>
-      </aside>
     </div>
 
   </div>
@@ -746,25 +1043,6 @@
           </p>
         </div>
 
-        <!-- Zona Destacada de Descarga Directa del Informe -->
-        <div class="report-download-hero">
-          <div class="report-download-info">
-            <div class="report-ready-tag">
-              <span class="pulse-dot"></span>
-              <span data-i18n="reportReadyTag">Captura Ultra HD (2560×1440) Lista</span>
-            </div>
-            <p class="report-download-desc" data-i18n="reportDownloadDesc">Obtén la imagen técnica en alta resolución con telemetría completa</p>
-          </div>
-          <button type="button" class="btn-download-report-now" id="btn-download-report-now" onclick="downloadReportFromModal()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span data-i18n="btnDownloadReportOnly">Solo descargar informe</span>
-          </button>
-        </div>
-
         <div class="donate-grid">
           <!-- 1. De cualquier parte del mundo (PayPal) -->
           <div class="donate-card donate-card-paypal">
@@ -915,21 +1193,210 @@
           </div>
         </div>
 
+        <!-- Zona Destacada de Descarga Directa del Informe (Debajo de los medios de pago) -->
+        <div class="report-download-hero">
+          <div class="report-download-info">
+            <div class="report-ready-tag">
+              <span class="pulse-dot"></span>
+              <span id="lbl-report-ready-tag" data-i18n="reportReadyTag">Captura Ultra HD (2560×1440) Lista</span>
+            </div>
+            <p class="report-download-desc" id="lbl-report-download-desc" data-i18n="reportDownloadDesc">Obtén la imagen técnica en alta resolución con telemetría completa o exporta el dataset científico</p>
+          </div>
+          <div class="report-download-btn-group">
+            <div class="report-download-btn-row">
+              <button type="button" class="btn-download-report-now" id="btn-download-report-jpg" title="Guardar informe JPG con metadatos" data-i18n-title="btnDownloadReportJpgTitle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span data-i18n="btnDownloadReportJpg">Guardar informe JPG con metadatos</span>
+              </button>
+              <button type="button" class="btn-download-report-now btn-download-report-clean" id="btn-download-report-jpg-no-meta" title="Guardar informe JPG sin metadatos" data-i18n-title="btnDownloadReportJpgNoMetaTitle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <span data-i18n="btnDownloadReportJpgNoMeta">Guardar informe JPG sin metadatos</span>
+              </button>
+              <button type="button" class="btn-download-report-now btn-download-video-action" id="btn-download-report-video" style="display: none;" title="Descargar video procesado en alta definición" data-i18n-title="btnDownloadProcessedVideoTitle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span id="lbl-download-report-video" data-i18n="btnDownloadProcessedVideo">Descargar video procesado</span>
+              </button>
+              <button type="button" class="btn-download-polar-hero" id="btn-download-polar-csv-modal" onclick="window.AerodynamicSweep.downloadPolarFromReportModal(window.sim)" title="Descargar datos de la polar aerodinámica del barrido (α-Sweep)" data-i18n-title="btnDownloadPolarSweepTitle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3v18h18"/>
+                  <path d="M18 9l-5 5-4-4-6 6"/>
+                </svg>
+                <span data-i18n="btnDownloadPolarSweep">Descargar Polar α CSV</span>
+              </button>
+            </div>
+            <button type="button" class="btn-download-excel-hero" id="btn-download-polar-excel-modal" onclick="window.AerodynamicSweep.downloadPolarExcelFromReportModal(window.sim)" title="Descargar informe completo en Excel (.xlsx) con datos crudos, gráficas y logo" data-i18n-title="btnDownloadPolarExcelTitle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="8" y1="13" x2="16" y2="13"/>
+                <line x1="8" y1="17" x2="16" y2="17"/>
+              </svg>
+              <span data-i18n="btnDownloadPolarExcel">Descargar Excel (.xlsx)</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Acciones Inferiores -->
         <div class="report-bottom-actions">
-          <button type="button" class="btn-download-report-bottom" onclick="downloadReportFromModal()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span data-i18n="btnDownloadReportOnly">Solo descargar informe</span>
-          </button>
           <button type="button" class="btn-close-report-modal" onclick="closeReportDonateModal()">
             <span data-i18n="btnCloseModal">Cerrar</span>
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal de Grabación de Video HD (Renderizado Extrapolado o En Vivo) -->
+  <div class="modal-overlay" id="record-modal" style="display: none;" onclick="if(event.target===this) FluidVideoRecorder.closeRecordModal()">
+    <div class="modal-card record-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="record-badge" data-i18n="recordModalBadge">GRABACIÓN TÉCNICA HD • 1080P</div>
+          <h3 data-i18n="recordModalTitle">Grabar Simulación Aerodinámica</h3>
+          <p class="modal-subtitle" data-i18n="recordModalSubtitle">Exporta la simulación técnica con telemetría animada idéntica al informe oficial</p>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-close-record-modal" onclick="FluidVideoRecorder.closeRecordModal()" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- VISTA 1: CONFIGURACIÓN DE GRABACIÓN -->
+        <div id="record-modal-config-view">
+          <!-- 1. Selección de Modo -->
+          <div class="record-section">
+            <label class="record-section-title" data-i18n="recordSectionMode">1. Selecciona el Modo de Grabación</label>
+            <div class="record-modes-grid">
+              <!-- Tarjeta 1: Renderizar (Física Rápida) -->
+              <div class="record-mode-card active" id="btn-record-mode-render" onclick="FluidVideoRecorder.setMode('render')">
+                <div class="record-mode-header">
+                  <div class="record-mode-icon">⚡</div>
+                  <div class="record-mode-tag" data-i18n="recordModeRenderBadge">⚡ Rápido</div>
+                </div>
+                <h4 class="record-mode-title" data-i18n="recordModeRenderTitle">Renderizar (Física Acelerada)</h4>
+                <p class="record-mode-desc" data-i18n="recordModeRenderDesc">Extrapola el movimiento del fluido en segundo plano sin esperar tiempo real. Muestra barra de carga y procesa a máxima velocidad.</p>
+              </div>
+
+              <!-- Tarjeta 2: En Vivo (Interactiva) -->
+              <div class="record-mode-card" id="btn-record-mode-live" onclick="FluidVideoRecorder.setMode('live')">
+                <div class="record-mode-header">
+                  <div class="record-mode-icon record-mode-icon-live">●</div>
+                  <div class="record-mode-tag record-mode-tag-live" data-i18n="recordModeLiveBadge">🔴 En Vivo</div>
+                </div>
+                <h4 class="record-mode-title" data-i18n="recordModeLiveTitle">En Vivo (Grabación Interactiva)</h4>
+                <p class="record-mode-desc" data-i18n="recordModeLiveDesc">Filma en pantalla en tiempo real mientras interactúas con libertad, mueves obstáculos o ajustas los parámetros del túnel.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Duración con Slider y Presets Rápidos -->
+          <div class="record-section">
+            <div class="record-slider-header">
+              <label class="record-section-title" style="margin-bottom: 0;" data-i18n="recordSectionDuration">2. Duración de la Grabación</label>
+              <span class="record-duration-badge" id="record-duration-val">15 s</span>
+            </div>
+            <div class="record-slider-box">
+              <input type="range" class="record-range-slider" id="record-duration-slider" min="5" max="120" step="1" value="15">
+              <div class="record-slider-limits">
+                <span data-i18n="recordSliderMin">5s (Mín)</span>
+                <span>30s</span>
+                <span>60s</span>
+                <span data-i18n="recordSliderMax">120s (Máx)</span>
+              </div>
+            </div>
+
+            <!-- Presets rápidos -->
+            <div class="record-presets-row">
+              <span class="record-presets-label" data-i18n="recordPresetsLabel">Ajustes rápidos:</span>
+              <button type="button" class="record-preset-pill" data-sec="5">5s</button>
+              <button type="button" class="record-preset-pill" data-sec="10">10s</button>
+              <button type="button" class="record-preset-pill active" data-sec="15">15s</button>
+              <button type="button" class="record-preset-pill" data-sec="30">30s</button>
+              <button type="button" class="record-preset-pill" data-sec="60">60s</button>
+              <button type="button" class="record-preset-pill" data-sec="120">120s</button>
+            </div>
+          </div>
+
+          <!-- 3. Formato Visual del Video (Con vs Sin Metadatos) -->
+          <div class="record-section">
+            <label class="record-section-title" data-i18n="recordSectionLayout">3. Formato Visual del Video</label>
+            <div class="record-modes-grid">
+              <!-- Tarjeta 1: Con Metadatos Técnicos -->
+              <div class="record-mode-card active" id="btn-record-layout-with-meta" onclick="FluidVideoRecorder.setLayout('with_meta')">
+                <div class="record-mode-header">
+                  <div class="record-mode-icon">📊</div>
+                  <div class="record-mode-tag" data-i18n="recordLayoutWithMetaBadge">Completo</div>
+                </div>
+                <h4 class="record-mode-title" data-i18n="recordLayoutWithMetaTitle">Con Metadatos Técnicos</h4>
+                <p class="record-mode-desc" data-i18n="recordLayoutWithMetaDesc">Diseño técnico con telemetría completa, fuerzas, condiciones de corriente y solver numérico.</p>
+              </div>
+
+              <!-- Tarjeta 2: Sin Metadatos (Limpio) -->
+              <div class="record-mode-card" id="btn-record-layout-no-meta" onclick="FluidVideoRecorder.setLayout('no_meta')">
+                <div class="record-mode-header">
+                  <div class="record-mode-icon" style="color:#00ffcc;">🖥️</div>
+                  <div class="record-mode-tag" style="background:rgba(0,255,204,0.15); color:#00ffcc; border-color:rgba(0,255,204,0.3);" data-i18n="recordLayoutNoMetaBadge">Limpio</div>
+                </div>
+                <h4 class="record-mode-title" data-i18n="recordLayoutNoMetaTitle">Sin Metadatos (Limpio)</h4>
+                <p class="record-mode-desc" data-i18n="recordLayoutNoMetaDesc">Simulación a pantalla ancha, logotipo oficial, referencia científica y escala de colores.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Banner Informativo de Calidad y Formato -->
+          <div class="record-info-banner" data-i18n="recordInfoBanner">
+            🎬 <strong>Formato Técnico:</strong> El video se descargará exactamente en el mismo formato visual y telemetría de alta resolución que los informes técnicos.
+          </div>
+        </div>
+
+        <!-- VISTA 2: PROGRESO DE RENDERIZADO EXTRAPOLADO -->
+        <div id="record-modal-progress-view" style="display: none;">
+          <div class="record-progress-box">
+            <div class="record-progress-header">
+              <div class="record-progress-icon-spin">⚙️</div>
+              <div>
+                <div class="record-badge" data-i18n="recordProgressBadge">EXTRAPOLACIÓN EN SEGUNDO PLANO</div>
+                <h4 class="record-progress-title" data-i18n="recordProgressTitle">Renderizando animación técnica...</h4>
+              </div>
+              <div class="record-progress-pct-val" id="record-progress-pct">0%</div>
+            </div>
+
+            <div class="record-progress-track">
+              <div class="record-progress-fill" id="record-progress-fill" style="width: 0%;"></div>
+            </div>
+
+            <p class="record-progress-frames-desc" id="record-progress-frames" data-i18n="recordProgressStatus">Procesando fotogramas de la simulación...</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer record-modal-footer">
+        <button type="button" class="btn-cancel-modal" id="btn-cancel-record" data-i18n="btnCancel">Cancelar</button>
+        <button type="button" class="btn-cancel-modal" id="btn-cancel-render-progress" style="display: none;" data-i18n="btnCancelRender">Cancelar Renderizado</button>
+        <button type="button" class="btn-primary btn-start-record-action" id="btn-start-record">
+          <span>⚡</span> <span data-i18n="btnStartRendering">Iniciar Renderizado</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicador Flotante de Grabación En Vivo en Pantalla -->
+  <div class="floating-record-overlay" id="floating-record-indicator" style="display: none;">
+    <div class="floating-record-pill">
+      <span class="floating-rec-dot"></span>
+      <span class="floating-rec-label" data-i18n="floatingRecordLive">GRABANDO EN VIVO</span>
+      <span class="floating-rec-timer" id="floating-record-timer">00:00 / 00:15</span>
+      <button type="button" class="btn-stop-live-action" id="btn-stop-live-record">
+        <span>■</span> <span data-i18n="btnStopRecord">Finalizar</span>
+      </button>
     </div>
   </div>
 
@@ -1135,12 +1602,18 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts en orden de dependencia con versionado anticaché -->
-  <script src="js/i18n.js?v=20261003_v22_bilingual"></script>
-  <script src="js/physics.js?v=20261002_v16_glycerin"></script>
-  <script src="js/lbm.js?v=20261002_v16_glycerin"></script>
-  <script src="js/elements.js?v=20261002_v16_glycerin"></script>
-  <script src="js/canvas.js?v=20261003_v18_arc_half"></script>
-  <script src="js/report.js?v=20261003_v5_all_colormaps"></script>
-  <script src="js/app.js?v=20261003_v22_bilingual"></script>
+  <script src="js/i18n.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/bolido-asset.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/physics.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/lbm.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/elements.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/canvas.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/exceljs.min.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/sweep.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/mp4-muxer.min.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/webm-muxer.min.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/report.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/recorder.js?v=20261025_v91_fluid_live_recording"></script>
+  <script src="js/app.js?v=20261025_v91_fluid_live_recording"></script>
 </body>
 </html>
