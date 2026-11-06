@@ -1516,6 +1516,201 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  async function restoreSceneFromData(data, isDemo = false) {
+    if (!data) return;
+    sim.clearScene();
+
+    // 1. Restaurar propiedades globales del túnel, fluido y simulación
+    if (data.inflowSpeed !== undefined) {
+      const spd = parseFloat(data.inflowSpeed);
+      if (sim.fluid) sim.fluid.inflowSpeed = spd;
+      if (sliderSpeed) sliderSpeed.value = spd;
+      if (lblSpeedValue) lblSpeedValue.textContent = `${spd.toFixed(1)} m/s`;
+      if (sim.lbm) {
+        const norm = Math.min(1.0, Math.max(0.0, (spd - 0.5) / 11.5));
+        sim.lbm.speed = 0.060 + norm * 0.055;
+        sim.lbm.stepsPerFrame = Math.round(8 + norm * 20);
+      }
+    }
+
+    if (data.inflowAngle !== undefined || data.flowAngle !== undefined) {
+      const angRad = parseFloat(data.inflowAngle !== undefined ? data.inflowAngle : data.flowAngle);
+      if (sim.fluid) sim.fluid.inflowAngle = angRad;
+      if (sim.lbm) sim.lbm.inflowAngle = angRad;
+      const deg = Math.round((angRad * 180.0) / Math.PI);
+      if (sliderAngle) sliderAngle.value = deg;
+      if (lblAngleValue) lblAngleValue.textContent = `${deg}°`;
+    }
+
+    if (data.viscosity !== undefined) {
+      const nu = parseFloat(data.viscosity);
+      if (sim.fluid) sim.fluid.viscosity = nu;
+      const logVal = 1 + 99.0 * (Math.log(Math.max(1e-7, nu) / 0.000005) / Math.log(1600));
+      const clampedSlider = Math.max(1, Math.min(100, Math.round(logVal)));
+      if (sliderViscosity) sliderViscosity.value = clampedSlider;
+      if (sim.lbm) {
+        sim.lbm.viscosity = 0.018 + (clampedSlider / 100.0) * 0.052;
+        sim.lbm.contrast = clampedSlider > 75 ? 0.6 : 1.0;
+      }
+      updateViscosityDisplay();
+    }
+
+    if (data.density !== undefined) {
+      setFluidDensity(data.density);
+    }
+
+    if (data.closedWalls !== undefined) {
+      if (sim.fluid) sim.fluid.closedWalls = Boolean(data.closedWalls);
+      if (chkClosedWalls) chkClosedWalls.checked = Boolean(data.closedWalls);
+    }
+
+    if (data.flowRegime || data.turbulenceIntensity !== undefined) {
+      const reg = data.flowRegime || 'laminar';
+      const intens = (data.turbulenceIntensity !== undefined) ? parseFloat(data.turbulenceIntensity) : 0.0;
+      if (sim.fluid) sim.fluid.setFlowRegime(reg, intens);
+      updateRegimeUI(reg, intens);
+    }
+
+    if (data.isFlowActive !== undefined) {
+      const active = Boolean(data.isFlowActive);
+      sim.setFlowActive(active);
+      updateFlowUI(active);
+    }
+
+    if (data.isPaused !== undefined) {
+      sim.isPaused = Boolean(data.isPaused);
+      updatePlayPauseUI(sim.isPaused);
+    }
+
+    if (data.showParticles !== undefined) {
+      sim.showParticles = Boolean(data.showParticles);
+      if (chkShowParticles) chkShowParticles.checked = Boolean(data.showParticles);
+    }
+
+    if (data.showForces !== undefined) {
+      sim.showForces = Boolean(data.showForces);
+      if (chkShowForces) chkShowForces.checked = Boolean(data.showForces);
+    }
+
+    if (data.showGrid !== undefined) {
+      sim.showGrid = Boolean(data.showGrid);
+      if (chkGrid) chkGrid.checked = Boolean(data.showGrid);
+    }
+
+    if (data.visMode) {
+      applyVisModeSelection(data.visMode, false);
+    }
+
+    if (!isDemo && data.zoomLevel !== undefined) {
+      sim.zoomLevel = parseFloat(data.zoomLevel);
+      if (data.panOffset && typeof data.panOffset.x === 'number') {
+        sim.panOffset.x = data.panOffset.x;
+        sim.panOffset.y = data.panOffset.y;
+        if (sim.clampPanOffset) sim.clampPanOffset();
+      }
+    } else {
+      sim.resetView();
+    }
+
+    // 2. Restaurar Elementos y Figuras (con soporte asíncrono para imágenes exactas)
+    if (data.elements && Array.isArray(data.elements)) {
+      for (const item of data.elements) {
+        if (item.type === 'HydrodynamicObstacle') {
+          const cPoints = item.controlPoints ? item.controlPoints.map(p => [parseFloat(p[0]), parseFloat(p[1])]) : [];
+          const loops = item.loops ? item.loops.map(l => l.map(p => [parseFloat(p[0]), parseFloat(p[1])])) : null;
+          const isImported = Boolean(item.isImportedImage);
+
+          const obs = new HydrodynamicObstacle(cPoints, item.name || "Figura", Boolean(item.isSmooth), loops, isImported);
+          obs.currentRotationDeg = item.rotationDeg || 0.0;
+          obs.color = item.color || '#38bdf8';
+          obs.fillColor = item.fillColor || 'rgba(23, 37, 84, 0.85)';
+          obs.isSolid = (item.isSolid !== undefined) ? Boolean(item.isSolid) : true;
+          obs.isBuoy = Boolean(item.isBuoy);
+          obs.isAutoRotating = Boolean(item.isAutoRotating);
+          obs.autoRotateRPM = item.autoRotateRPM || 5;
+          obs.autoRotateDirection = item.autoRotateDirection || 'cw';
+          obs.isThruster = Boolean(item.isThruster);
+          obs.thrustSpeed = (item.thrustSpeed !== undefined) ? parseFloat(item.thrustSpeed) : 5.0;
+          obs.smokeMode = item.smokeMode || 'vapor';
+
+          if (isImported) {
+            obs.imageWorldWidth = item.imageWorldWidth || (loops && loops[0] ? 3.8 : 4.0);
+            obs.imageWorldHeight = item.imageWorldHeight || 1.35;
+            obs.imageCenter = item.imageCenter ? [parseFloat(item.imageCenter[0]), parseFloat(item.imageCenter[1])] : obs.getCentroid();
+
+            if (item.imageCroppedDataUrl) {
+              await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                  try {
+                    const traced = ImageContourTracer.traceImage(
+                      img,
+                      item.name || 'Figura',
+                      obs.imageWorldWidth,
+                      obs.imageCenter
+                    );
+                    obs.imageThemedCanvases = traced.imageThemedCanvases;
+                    obs.imageCroppedCanvas = traced.imageCroppedCanvas;
+                    obs.imageMask = traced.imageMask;
+                    obs.imageMaskW = traced.imageMaskW;
+                    obs.imageMaskH = traced.imageMaskH;
+
+                    // PRESERVAR LOS LOOPS Y CONTROLPOINTS EXACTOS DEL JSON (si el usuario los deformó o escaló)
+                    if (loops && loops.length > 0) {
+                      obs.loops = loops;
+                      obs.controlPoints = cPoints.length > 0 ? cPoints : loops[0];
+                    }
+                  } catch (errTrace) {
+                    console.warn("[OpenScene] Error retracing restored image:", errTrace);
+                  }
+                  resolve();
+                };
+                img.onerror = () => {
+                  console.warn("[OpenScene] No se pudo cargar imagen desde imageCroppedDataUrl");
+                  resolve();
+                };
+                img.src = item.imageCroppedDataUrl;
+              });
+            } else if (item.name && (item.name === 'Bólido' || item.name.startsWith('Bólido')) && HydrodynamicObstacle._bolidoTemplate) {
+              const tmpl = HydrodynamicObstacle._bolidoTemplate;
+              obs.imageThemedCanvases = tmpl.imageThemedCanvases;
+              obs.imageCroppedCanvas = tmpl.imageCroppedCanvas;
+              obs.imageMask = tmpl.imageMask;
+              obs.imageMaskW = tmpl.imageMaskW;
+              obs.imageMaskH = tmpl.imageMaskH;
+            }
+          }
+
+          obs.invalidateCache();
+          sim.addElement(obs, false);
+        } else if (item.type === 'FlowProbe') {
+          const probe = new FlowProbe(item.x, item.y, item.name || "Sensor");
+          if (item.radius !== undefined) probe.radius = parseFloat(item.radius);
+          sim.addElement(probe, false);
+        }
+      }
+    }
+
+    if (isDemo) {
+      sim.selectElement(null);
+      updateSelectedElementPropsUI(null);
+    } else {
+      sim.selectElement(sim.elements.length > 0 ? sim.elements[0] : null);
+      if (sim.selectedElement) {
+        updateSelectedElementPropsUI(sim.selectedElement);
+      } else {
+        updateSelectedElementPropsUI(null);
+      }
+    }
+
+    if (sim.fluid) sim.fluid.rasterizeObstacles(sim.elements);
+    if (sim.isLBMMode && sim.lbm) {
+      sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
+    }
+    updateSceneList();
+    sim.render();
+  }
+
   if (btnOpenScene && fileInputScene) {
     btnOpenScene.addEventListener('click', () => fileInputScene.click());
     fileInputScene.addEventListener('change', (e) => {
@@ -1525,189 +1720,7 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.onload = async (event) => {
         try {
           const data = JSON.parse(event.target.result);
-          sim.clearScene();
-
-          // 1. Restaurar propiedades globales del túnel, fluido y simulación
-          if (data.inflowSpeed !== undefined) {
-            const spd = parseFloat(data.inflowSpeed);
-            if (sim.fluid) sim.fluid.inflowSpeed = spd;
-            if (sliderSpeed) sliderSpeed.value = spd;
-            if (lblSpeedValue) lblSpeedValue.textContent = `${spd.toFixed(1)} m/s`;
-            if (sim.lbm) {
-              const norm = Math.min(1.0, Math.max(0.0, (spd - 0.5) / 11.5));
-              sim.lbm.speed = 0.060 + norm * 0.055;
-              sim.lbm.stepsPerFrame = Math.round(8 + norm * 20);
-            }
-          }
-
-          if (data.inflowAngle !== undefined || data.flowAngle !== undefined) {
-            const angRad = parseFloat(data.inflowAngle !== undefined ? data.inflowAngle : data.flowAngle);
-            if (sim.fluid) sim.fluid.inflowAngle = angRad;
-            if (sim.lbm) sim.lbm.inflowAngle = angRad;
-            const deg = Math.round((angRad * 180.0) / Math.PI);
-            if (sliderAngle) sliderAngle.value = deg;
-            if (lblAngleValue) lblAngleValue.textContent = `${deg}°`;
-          }
-
-          if (data.viscosity !== undefined) {
-            const nu = parseFloat(data.viscosity);
-            if (sim.fluid) sim.fluid.viscosity = nu;
-            const logVal = 1 + 99.0 * (Math.log(Math.max(1e-7, nu) / 0.000005) / Math.log(1600));
-            const clampedSlider = Math.max(1, Math.min(100, Math.round(logVal)));
-            if (sliderViscosity) sliderViscosity.value = clampedSlider;
-            if (sim.lbm) {
-              sim.lbm.viscosity = 0.018 + (clampedSlider / 100.0) * 0.052;
-              sim.lbm.contrast = clampedSlider > 75 ? 0.6 : 1.0;
-            }
-            updateViscosityDisplay();
-          }
-
-          if (data.density !== undefined) {
-            setFluidDensity(data.density);
-          }
-
-          if (data.closedWalls !== undefined) {
-            if (sim.fluid) sim.fluid.closedWalls = Boolean(data.closedWalls);
-            if (chkClosedWalls) chkClosedWalls.checked = Boolean(data.closedWalls);
-          }
-
-          if (data.flowRegime || data.turbulenceIntensity !== undefined) {
-            const reg = data.flowRegime || 'laminar';
-            const intens = (data.turbulenceIntensity !== undefined) ? parseFloat(data.turbulenceIntensity) : 0.0;
-            if (sim.fluid) sim.fluid.setFlowRegime(reg, intens);
-            updateRegimeUI(reg, intens);
-          }
-
-          if (data.isFlowActive !== undefined) {
-            const active = Boolean(data.isFlowActive);
-            sim.setFlowActive(active);
-            updateFlowUI(active);
-          }
-
-          if (data.isPaused !== undefined) {
-            sim.isPaused = Boolean(data.isPaused);
-            updatePlayPauseUI(sim.isPaused);
-          }
-
-          if (data.showParticles !== undefined) {
-            sim.showParticles = Boolean(data.showParticles);
-            if (chkShowParticles) chkShowParticles.checked = Boolean(data.showParticles);
-          }
-
-          if (data.showForces !== undefined) {
-            sim.showForces = Boolean(data.showForces);
-            if (chkShowForces) chkShowForces.checked = Boolean(data.showForces);
-          }
-
-          if (data.showGrid !== undefined) {
-            sim.showGrid = Boolean(data.showGrid);
-            if (chkGrid) chkGrid.checked = Boolean(data.showGrid);
-          }
-
-          if (data.visMode) {
-            applyVisModeSelection(data.visMode, false);
-          }
-
-          if (data.zoomLevel !== undefined) {
-            sim.zoomLevel = parseFloat(data.zoomLevel);
-          }
-          if (data.panOffset && typeof data.panOffset.x === 'number') {
-            sim.panOffset.x = data.panOffset.x;
-            sim.panOffset.y = data.panOffset.y;
-            if (sim.clampPanOffset) sim.clampPanOffset();
-          }
-
-          // 2. Restaurar Elementos y Figuras (con soporte asíncrono para imágenes exactas)
-          if (data.elements && Array.isArray(data.elements)) {
-            for (const item of data.elements) {
-              if (item.type === 'HydrodynamicObstacle') {
-                const cPoints = item.controlPoints ? item.controlPoints.map(p => [parseFloat(p[0]), parseFloat(p[1])]) : [];
-                const loops = item.loops ? item.loops.map(l => l.map(p => [parseFloat(p[0]), parseFloat(p[1])])) : null;
-                const isImported = Boolean(item.isImportedImage);
-
-                const obs = new HydrodynamicObstacle(cPoints, item.name || "Figura", Boolean(item.isSmooth), loops, isImported);
-                obs.currentRotationDeg = item.rotationDeg || 0.0;
-                obs.color = item.color || '#38bdf8';
-                obs.fillColor = item.fillColor || 'rgba(23, 37, 84, 0.85)';
-                obs.isSolid = (item.isSolid !== undefined) ? Boolean(item.isSolid) : true;
-                obs.isBuoy = Boolean(item.isBuoy);
-                obs.isAutoRotating = Boolean(item.isAutoRotating);
-                obs.autoRotateRPM = item.autoRotateRPM || 5;
-                obs.autoRotateDirection = item.autoRotateDirection || 'cw';
-                obs.isThruster = Boolean(item.isThruster);
-                obs.thrustSpeed = (item.thrustSpeed !== undefined) ? parseFloat(item.thrustSpeed) : 5.0;
-                obs.smokeMode = item.smokeMode || 'vapor';
-
-                if (isImported) {
-                  obs.imageWorldWidth = item.imageWorldWidth || (loops && loops[0] ? 3.8 : 4.0);
-                  obs.imageWorldHeight = item.imageWorldHeight || 1.35;
-                  obs.imageCenter = item.imageCenter ? [parseFloat(item.imageCenter[0]), parseFloat(item.imageCenter[1])] : obs.getCentroid();
-
-                  if (item.imageCroppedDataUrl) {
-                    await new Promise((resolve) => {
-                      const img = new Image();
-                      img.onload = () => {
-                        try {
-                          const traced = ImageContourTracer.traceImage(
-                            img,
-                            item.name || 'Figura',
-                            obs.imageWorldWidth,
-                            obs.imageCenter
-                          );
-                          obs.imageThemedCanvases = traced.imageThemedCanvases;
-                          obs.imageCroppedCanvas = traced.imageCroppedCanvas;
-                          obs.imageMask = traced.imageMask;
-                          obs.imageMaskW = traced.imageMaskW;
-                          obs.imageMaskH = traced.imageMaskH;
-
-                          // PRESERVAR LOS LOOPS Y CONTROLPOINTS EXACTOS DEL JSON (si el usuario los deformó o escaló)
-                          if (loops && loops.length > 0) {
-                            obs.loops = loops;
-                            obs.controlPoints = cPoints.length > 0 ? cPoints : loops[0];
-                          }
-                        } catch (errTrace) {
-                          console.warn("[OpenScene] Error retracing restored image:", errTrace);
-                        }
-                        resolve();
-                      };
-                      img.onerror = () => {
-                        console.warn("[OpenScene] No se pudo cargar imagen desde imageCroppedDataUrl");
-                        resolve();
-                      };
-                      img.src = item.imageCroppedDataUrl;
-                    });
-                  } else if (item.name && (item.name === 'Bólido' || item.name.startsWith('Bólido')) && HydrodynamicObstacle._bolidoTemplate) {
-                    const tmpl = HydrodynamicObstacle._bolidoTemplate;
-                    obs.imageThemedCanvases = tmpl.imageThemedCanvases;
-                    obs.imageCroppedCanvas = tmpl.imageCroppedCanvas;
-                    obs.imageMask = tmpl.imageMask;
-                    obs.imageMaskW = tmpl.imageMaskW;
-                    obs.imageMaskH = tmpl.imageMaskH;
-                  }
-                }
-
-                obs.invalidateCache();
-                sim.addElement(obs, false);
-              } else if (item.type === 'FlowProbe') {
-                const probe = new FlowProbe(item.x, item.y, item.name || "Sensor");
-                if (item.radius !== undefined) probe.radius = parseFloat(item.radius);
-                sim.addElement(probe, false);
-              }
-            }
-          }
-
-          sim.selectElement(sim.elements.length > 0 ? sim.elements[0] : null);
-          if (sim.fluid) sim.fluid.rasterizeObstacles(sim.elements);
-          if (sim.isLBMMode && sim.lbm) {
-            sim.lbm.rasterizeObstacles(sim.elements, sim.fluid.domainWidth, sim.fluid.domainHeight);
-          }
-          updateSceneList();
-          if (sim.selectedElement) {
-            updateSelectedElementPropsUI(sim.selectedElement);
-          } else {
-            updateSelectedElementPropsUI(null);
-          }
-          sim.render();
+          await restoreSceneFromData(data, false);
           showToast("Túnel cargado correctamente con todos sus parámetros e imágenes exactas.", "success");
         } catch (err) {
           console.error("[OpenScene] Error loading scene:", err);
@@ -1776,7 +1789,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnDemosNext = document.getElementById('btn-demos-next');
   let currentDemoId = '1';
 
-  function cycleDemo(delta) {
+  async function getDemoData(id) {
+    if (window.DEMOS_DATA && window.DEMOS_DATA[id]) {
+      return window.DEMOS_DATA[id];
+    }
+    const filenameMap = {
+      '14': 'ventiladores flujo cruzado.json',
+      '15': 'vórtices opuestos.json',
+      '16': 'race car.json',
+      '17': 'Aire acondicionado auto.json'
+    };
+    const fn = filenameMap[id];
+    if (!fn) return null;
+    const candidates = [
+      `resources/Demos/${fn}`,
+      `resources/demos/${fn}`,
+      encodeURI(`resources/Demos/${fn}`),
+      encodeURI(`resources/demos/${fn}`)
+    ];
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        // Continúa con el siguiente candidato
+      }
+    }
+    return null;
+  }
+
+  async function cycleDemo(delta) {
     if (!cbDemos) return;
     const valid = Array.from(cbDemos.options).filter(o => o.value);
     if (valid.length === 0) return;
@@ -1786,23 +1830,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const demoId = valid[nextIdx].value;
     currentDemoId = demoId;
     cbDemos.value = demoId;
-    loadPhysicsDemo(demoId);
+    await loadPhysicsDemo(demoId);
   }
 
   if (btnDemosPrev) btnDemosPrev.addEventListener('click', () => cycleDemo(-1));
   if (btnDemosNext) btnDemosNext.addEventListener('click', () => cycleDemo(1));
 
   if (cbDemos) {
-    cbDemos.addEventListener('change', (e) => {
+    cbDemos.addEventListener('change', async (e) => {
       const demoId = e.target.value;
       if (!demoId) return;
       currentDemoId = demoId;
-      loadPhysicsDemo(demoId);
+      await loadPhysicsDemo(demoId);
     });
   }
 
-  function loadPhysicsDemo(id) {
+  async function loadPhysicsDemo(id) {
     sim.clearScene();
+    sim.fluid.closedWalls = false;
+    if (chkClosedWalls) chkClosedWalls.checked = false;
+    sim.setFlowActive(true);
+    updateFlowUI(true);
+    sim.resetView();
     const w = sim.fluid.domainWidth;
     const h = sim.fluid.domainHeight;
     const cy = h / 2.0;
@@ -1866,16 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
       }
       case '6': {
-        // Demo 6: Bólido de Carreras y Carga Aerodinámica (Downforce)
-        const car = HydrodynamicObstacle.createCarProfile(5.2, 1.8, [6.2, cy + 1.2]);
-        sim.addElement(car);
-        sim.fluid.closedWalls = true;
-        sim.setVisMode(VisMode.SMOKE);
-        showToast("Demo 6: Aerodinámica de bólido con alerón y estela trasera.", "success");
-        break;
-      }
-      case '7': {
-        // Demo 7: Ala Multielemento con Ranura (Main + Flap)
+        // Demo 6: Ala Multielemento con Ranura (Main + Flap)
         const mainWing = HydrodynamicObstacle.createNACA("2412", 3.2, [5.0, cy]);
         mainWing.rotate(6 * Math.PI / 180.0);
         const flap = HydrodynamicObstacle.createNACA("0012", 1.6, [7.2, cy + 0.35]);
@@ -1883,49 +1923,49 @@ document.addEventListener('DOMContentLoaded', () => {
         sim.addElement(mainWing);
         sim.addElement(flap);
         sim.setVisMode(VisMode.PRESSURE);
-        showToast("Demo 7: Ala con Flap ranurado para alta sustentación.", "success");
+        showToast("Demo 6: Ala con Flap ranurado para alta sustentación.", "success");
         break;
       }
-      case '8': {
-        // Demo 8: Cuerpos Romos (Cuadrado vs. Cilindro)
+      case '7': {
+        // Demo 7: Cuerpos Romos (Cuadrado vs. Cilindro)
         const sq = HydrodynamicObstacle.createSquare(1.6, [4.5, cy - 2.0]);
         const cyld = HydrodynamicObstacle.createCylinder(0.9, [4.5, cy + 2.0]);
         sim.addElement(sq);
         sim.addElement(cyld);
         sim.setVisMode(VisMode.VORTICITY);
-        showToast("Demo 8: Separación en esquinas afiladas (cuadrado) vs. cuerpo circular.", "info");
+        showToast("Demo 7: Separación en esquinas afiladas (cuadrado) vs. cuerpo circular.", "info");
         break;
       }
-      case '9': {
-        // Demo 9: Rebufo Aerodinámico (Drafting / Slipstream)
+      case '8': {
+        // Demo 8: Rebufo Aerodinámico (Drafting / Slipstream)
         const lead = HydrodynamicObstacle.createTeardrop(2.8, 1.4, [4.2, cy]);
         const chase = HydrodynamicObstacle.createTeardrop(2.8, 1.4, [8.2, cy]);
         sim.addElement(lead);
         sim.addElement(chase);
         sim.setVisMode(VisMode.VELOCITY);
-        showToast("Demo 9: Rebufo (Slipstream) - El vehículo trasero experimenta menos drag.", "success");
+        showToast("Demo 8: Rebufo (Slipstream) - El vehículo trasero experimenta menos drag.", "success");
         break;
       }
-      case '10': {
-        // Demo 10: Tobera Convergente-Divergente
+      case '9': {
+        // Demo 9: Tobera Convergente-Divergente
         const diff = HydrodynamicObstacle.createVenturiNozzles(w, h, 2.0);
         diff.forEach(n => sim.addElement(n));
         sim.setVisMode(VisMode.PRESSURE);
-        showToast("Demo 10: Tobera convergente-divergente.", "info");
+        showToast("Demo 9: Tobera convergente-divergente.", "info");
         break;
       }
-      case '11': {
-        // Demo 11: Efecto Suelo (Ala próxima a pared inferior)
+      case '10': {
+        // Demo 10: Efecto Suelo (Ala próxima a pared inferior)
         const hydrofoil = HydrodynamicObstacle.createNACA("4412", 3.8, [6.0, h - 1.2]);
         hydrofoil.rotate(5 * Math.PI / 180.0);
         sim.addElement(hydrofoil);
         sim.fluid.closedWalls = true;
         sim.setVisMode(VisMode.PRESSURE);
-        showToast("Demo 11: Efecto Suelo - Sobrepresión bajo el intradós que dispara la sustentación.", "success");
+        showToast("Demo 10: Efecto Suelo - Sobrepresión bajo el intradós que dispara la sustentación.", "success");
         break;
       }
-      case '12': {
-        // Demo 12: Figura Orgánica Esculpida
+      case '11': {
+        // Demo 11: Figura Orgánica Esculpida
         const organicPts = [
           [4.0, cy - 0.8],
           [5.5, cy - 1.4],
@@ -1940,11 +1980,11 @@ document.addEventListener('DOMContentLoaded', () => {
         sim.setMode(CanvasMode.NODE_EDIT);
         setActiveToolButton(btnNodeEdit);
         sim.setVisMode(VisMode.SMOKE);
-        showToast("Demo 12: ¡Arrastra los nodos para esculpir tu propio cuerpo aerodinámico!", "success");
+        showToast("Demo 11: ¡Arrastra los nodos para esculpir tu propio cuerpo aerodinámico!", "success");
         break;
       }
-      case '13': {
-        // Demo 13: Placa / Línea de Schroeder (Calle de Vórtices de Von Kármán en LBM HD)
+      case '12': {
+        // Demo 12: Placa / Línea de Schroeder (Calle de Vórtices de Von Kármán en LBM HD)
         sim.clearScene();
         const line = HydrodynamicObstacle.createLinearBarrier(2.4, [4.8, cy]);
         sim.addElement(line);
@@ -1961,11 +2001,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sliderContrast) sliderContrast.value = 0;
         if (lblContrastValue) lblContrastValue.textContent = "1.0x";
         if (rowLbmContrast) rowLbmContrast.style.display = 'block';
-        showToast("Demo 13: Schroeder LBM HD · Desprendimiento continuo de vórtices de Von Kármán.", "success", 3000);
+        showToast("Demo 12: Schroeder LBM HD · Desprendimiento continuo de vórtices de Von Kármán.", "success", 3000);
         break;
       }
-      case '14': {
-        // Demo 14: Cuña Aerodinámica con Turbulencia Real en LBM HD
+      case '13': {
+        // Demo 13: Cuña Aerodinámica con Turbulencia Real en LBM HD
         sim.clearScene();
         const wedge = HydrodynamicObstacle.createWedge(2.6, 2.2, [4.8, cy]);
         sim.addElement(wedge);
@@ -1980,7 +2020,43 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sliderContrast) sliderContrast.value = 1;
         if (lblContrastValue) lblContrastValue.textContent = "1.2x";
         if (rowLbmContrast) rowLbmContrast.style.display = 'block';
-        showToast("Demo 14: Cuña deflector en LBM HD · Vórtices libres y estela turbulenta real.", "success", 3000);
+        showToast("Demo 13: Cuña deflector en LBM HD · Vórtices libres y estela turbulenta real.", "success", 3000);
+        break;
+      }
+      case '14': {
+        // Demo 14: Ventiladores de Flujo Cruzado (Rotores Giratorios)
+        const demoData = await getDemoData('14');
+        if (demoData) {
+          await restoreSceneFromData(demoData, true);
+        }
+        showToast("Demo 14: Ventiladores de flujo cruzado con doble rotor giratorio.", "success");
+        break;
+      }
+      case '15': {
+        // Demo 15: Vórtices Opuestos (Rotores Contrarrotativos)
+        const demoData = await getDemoData('15');
+        if (demoData) {
+          await restoreSceneFromData(demoData, true);
+        }
+        showToast("Demo 15: Vórtices opuestos generados por rotores contrarrotativos.", "success");
+        break;
+      }
+      case '16': {
+        // Demo 16: Bólido de Carreras en Túnel Cerrado (CFD de Combustión)
+        const demoData = await getDemoData('16');
+        if (demoData) {
+          await restoreSceneFromData(demoData, true);
+        }
+        showToast("Demo 16: Bólido de carreras en túnel cerrado con visualización CFD de combustión.", "success");
+        break;
+      }
+      case '17': {
+        // Demo 17: Aire Acondicionado de Automóvil (Flujo Interno)
+        const demoData = await getDemoData('17');
+        if (demoData) {
+          await restoreSceneFromData(demoData, true);
+        }
+        showToast("Demo 17: Climatización y ventilación de flujo interno en cabina de automóvil.", "success");
         break;
       }
     }

@@ -1,0 +1,173 @@
+{
+  "version": "2026.2",
+  "timestamp": "2026-11-06T00:37:19.025Z",
+  "solver": "ns",
+  "visMode": "vorticity",
+  "inflowSpeed": 5,
+  "inflowAngle": 0,
+  "viscosity": 0.00015,
+  "density": 1.225,
+  "closedWalls": false,
+  "flowRegime": "laminar",
+  "turbulenceIntensity": 0,
+  "isFlowActive": false,
+  "isPaused": false,
+  "showParticles": true,
+  "showForces": true,
+  "showGrid": true,
+  "zoomLevel": 60.8,
+  "panOffset": {
+    "x": 0,
+    "y": 44.00000610351566
+  },
+  "elements": [
+    {
+      "type": "HydrodynamicObstacle",
+      "name": "Cruz",
+      "controlPoints": [
+        [
+          5.349619613310125,
+          3.062751751804355
+        ],
+        [
+          5.612014953253996,
+          3.047743433445367
+        ],
+        [
+          5.673035616055763,
+          4.11458764453291
+        ],
+        [
+          6.739879827143259,
+          4.053566981731131
+        ],
+        [
+          6.754888145502306,
+          4.315962321674972
+        ],
+        [
+          5.688043934414742,
+          4.376982984476761
+        ],
+        [
+          5.749064597216538,
+          5.443827195564273
+        ],
+        [
+          5.486669257272674,
+          5.458835513923272
+        ],
+        [
+          5.42564859447093,
+          4.391991302835781
+        ],
+        [
+          4.358804383383394,
+          4.453011965637493
+        ],
+        [
+          4.343796065024405,
+          4.190616625693659
+        ],
+        [
+          5.410640276111895,
+          4.129595962891876
+        ]
+      ],
+      "loops": null,
+      "isSmooth": false,
+      "rotationDeg": 356.72639998055,
+      "color": "#38bdf8",
+      "fillColor": "rgba(23, 37, 84, 0.85)",
+      "isSolid": true,
+      "isBuoy": false,
+      "isAutoRotating": true,
+      "autoRotateRPM": 103,
+      "autoRotateDirection": "ccw",
+      "isThruster": false,
+      "thrustSpeed": 5,
+      "smokeMode": "vapor",
+      "isImportedImage": false,
+      "imageWorldWidth": null,
+      "imageWorldHeight": null,
+      "imageCenter": null,
+      "imageMaskW": null,
+      "imageMaskH": null,
+      "imageCroppedDataUrl": null
+    },
+    {
+      "type": "HydrodynamicObstacle",
+      "name": "Cruz",
+      "controlPoints": [
+        [
+          12.815379505635736,
+          3.144098884239019
+        ],
+        [
+          13.053287133782494,
+          3.255797248209893
+        ],
+        [
+          12.59914510132187,
+          4.223079578438363
+        ],
+        [
+          13.566427431550434,
+          4.677221610899017
+        ],
+        [
+          13.454729067579486,
+          4.915129239045825
+        ],
+        [
+          12.487446737350984,
+          4.460987206585172
+        ],
+        [
+          12.033304704890396,
+          5.428269536813684
+        ],
+        [
+          11.795397076743592,
+          5.316571172842804
+        ],
+        [
+          12.249539109204221,
+          4.349288842614259
+        ],
+        [
+          11.282256778975755,
+          3.895146810153663
+        ],
+        [
+          11.393955142946627,
+          3.6572391820068573
+        ],
+        [
+          12.36123747317508,
+          4.111381214467505
+        ]
+      ],
+      "loops": null,
+      "isSmooth": false,
+      "rotationDeg": 25.15019999938707,
+      "color": "#38bdf8",
+      "fillColor": "rgba(23, 37, 84, 0.85)",
+      "isSolid": true,
+      "isBuoy": false,
+      "isAutoRotating": true,
+      "autoRotateRPM": 103,
+      "autoRotateDirection": "cw",
+      "isThruster": false,
+      "thrustSpeed": 5,
+      "smokeMode": "vapor",
+      "isImportedImage": false,
+      "imageWorldWidth": null,
+      "imageWorldHeight": null,
+      "imageCenter": null,
+      "imageMaskW": null,
+      "imageMaskH": null,
+      "imageCroppedDataUrl": null
+    }
+  ]
+}
